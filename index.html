@@ -116,6 +116,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .card-subtitle{font-size:11px;color:var(--gray-400);margin-top:2px}
 .card-body{padding:16px 20px}
 .chart-wrap{padding:12px 20px 20px}
+.print-chart-img{display:none;width:100%;height:100%;object-fit:contain}
 
 /* TABLE */
 .data-table{width:100%;border-collapse:collapse;font-size:13px}
@@ -212,6 +213,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   .data-table tr{page-break-inside:avoid!important}
   canvas{max-width:100%!important}
   .chart-wrap{page-break-inside:avoid!important}
+  .chart-wrap canvas{display:none!important}
+  .chart-wrap .print-chart-img{display:block!important}
   .kpi-value{font-size:17px!important}
   .section-title{font-size:16px!important}
 }
@@ -1194,7 +1197,6 @@ function syncChartsForPrint(){
   Object.values(charts).forEach(chart => {
     if(!chart) return;
     try{
-      chart.options.animation = false;
       chart.resize();
       chart.update('none');
     }catch(e){}
@@ -1204,6 +1206,33 @@ function syncChartsForPrint(){
 function rerenderChartsForPrint(){
   renderAll();
   syncChartsForPrint();
+}
+
+function prepareChartSnapshots(){
+  document.querySelectorAll('.chart-wrap canvas').forEach((canvas, index) => {
+    if(!canvas) return;
+    const parent = canvas.parentElement;
+    if(!parent) return;
+
+    let key = canvas.dataset.printKey;
+    if(!key){
+      key = 'chart-' + index;
+      canvas.dataset.printKey = key;
+    }
+
+    let img = parent.querySelector(`.print-chart-img[data-print-key="${key}"]`);
+    if(!img){
+      img = document.createElement('img');
+      img.className = 'print-chart-img';
+      img.setAttribute('data-print-key', key);
+      img.alt = 'Grafico para impressao';
+      parent.appendChild(img);
+    }
+
+    try{
+      img.src = canvas.toDataURL('image/png', 1.0);
+    }catch(e){}
+  });
 }
 
 function restoreAfterPrint(){
@@ -1217,6 +1246,7 @@ function restoreAfterPrint(){
 window.addEventListener('beforeprint', ()=>{
   if(_printingAll){
     rerenderChartsForPrint();
+    prepareChartSnapshots();
   }
 });
 
@@ -1229,6 +1259,7 @@ function printAll(){
   requestAnimationFrame(()=>{
     requestAnimationFrame(()=>{
       rerenderChartsForPrint();
+      prepareChartSnapshots();
       window.print();
       restoreAfterPrint();
     });
