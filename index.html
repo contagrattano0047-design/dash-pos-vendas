@@ -1194,10 +1194,16 @@ function syncChartsForPrint(){
   Object.values(charts).forEach(chart => {
     if(!chart) return;
     try{
+      chart.options.animation = false;
       chart.resize();
       chart.update('none');
     }catch(e){}
   });
+}
+
+function rerenderChartsForPrint(){
+  renderAll();
+  syncChartsForPrint();
 }
 
 function restoreAfterPrint(){
@@ -1210,7 +1216,7 @@ function restoreAfterPrint(){
 
 window.addEventListener('beforeprint', ()=>{
   if(_printingAll){
-    syncChartsForPrint();
+    rerenderChartsForPrint();
   }
 });
 
@@ -1219,10 +1225,10 @@ window.addEventListener('afterprint', restoreAfterPrint);
 function printAll(){
   _printingAll = true;
   document.querySelectorAll('.view').forEach(v=>v.style.display='block');
-  syncChartsForPrint();
+  rerenderChartsForPrint();
   requestAnimationFrame(()=>{
     requestAnimationFrame(()=>{
-      syncChartsForPrint();
+      rerenderChartsForPrint();
       window.print();
       restoreAfterPrint();
     });
