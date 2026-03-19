@@ -192,31 +192,88 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 
 /* PRINT */
 @media print{
-  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-  body{background:#fff!important;font-size:11px}
-  .tabs-wrapper,.status-bar,.first-run,.loading-overlay,.btn,
-  .pill-group,#searchPendentes,#pendentesCount{display:none!important}
-  .header{position:static!important;padding:10px 18px!important}
-  .header-title h1{font-size:14px!important}
-  .main{padding:8px 14px!important}
-  .view{display:block!important;page-break-before:always!important;break-before:page!important}
+  /* ── Cores exatas ── */
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box!important}
+
+  /* ── Ocultar UI ── */
+  .tabs-wrapper,.status-bar,.first-run,.loading-overlay,
+  .pill-group,#searchPendentes,#pendentesCount,
+  .btn,.recorte-tag{display:none!important}
+
+  /* ── Página ── */
+  @page{size:A4 landscape;margin:12mm 10mm}
+  html,body{width:100%!important;background:#fff!important;font-size:10px!important}
+
+  /* ── Header ── */
+  .header{position:static!important;padding:8px 14px!important;break-inside:avoid!important}
+  .header-title h1{font-size:13px!important}
+  .header-title p{font-size:9px!important}
+  .logo-mark{width:32px!important;height:32px!important;font-size:14px!important}
+
+  /* ── Main container ── */
+  .main{padding:6px 10px!important;width:100%!important}
+
+  /* ── Cada aba = nova página ── */
+  .view{display:block!important;page-break-before:always!important;break-before:page!important;width:100%!important}
   .view:first-of-type{page-break-before:avoid!important;break-before:avoid!important}
-  .card{page-break-inside:avoid!important;break-inside:avoid!important;box-shadow:none!important;border:1px solid #e0e4ea!important;margin-bottom:10px!important}
-  .kpi-card{page-break-inside:avoid!important;break-inside:avoid!important;box-shadow:none!important}
-  .aging-row{page-break-inside:avoid!important}
-  .grid-2,.grid-3,.grid-2-1,.grid-1-2{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;margin-bottom:10px!important}
-  .kpi-grid{grid-template-columns:repeat(4,1fr)!important;gap:7px!important}
+
+  /* ── Cards ── */
+  .card{
+    page-break-inside:avoid!important;break-inside:avoid!important;
+    box-shadow:none!important;border:1px solid #ccc!important;
+    margin-bottom:8px!important;overflow:visible!important;
+  }
+  .kpi-card{page-break-inside:avoid!important;break-inside:avoid!important;box-shadow:none!important;padding:12px 14px!important}
+  .aging-row{page-break-inside:avoid!important;break-inside:avoid!important}
+
+  /* ── Grids: landscape A4 permite 2 colunas confortáveis ── */
+  .grid-2{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;margin-bottom:8px!important}
+  .grid-3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:6px!important;margin-bottom:8px!important}
+  .grid-2-1{display:grid!important;grid-template-columns:1.6fr 1fr!important;gap:8px!important;margin-bottom:8px!important}
+  .grid-1-2{display:grid!important;grid-template-columns:1fr 1.6fr!important;gap:8px!important;margin-bottom:8px!important}
+  .kpi-grid{grid-template-columns:repeat(4,1fr)!important;gap:6px!important;margin-bottom:8px!important}
+
+  /* ── Tabelas ── */
   [style*="max-height"]{max-height:none!important;overflow:visible!important}
-  .data-table{font-size:9px!important}
-  .data-table th{font-size:8px!important;padding:4px 6px!important}
-  .data-table td{padding:4px 6px!important}
+  [style*="overflow-y"]{overflow-y:visible!important}
+  .data-table{font-size:8px!important;width:100%!important}
+  .data-table th{font-size:7px!important;padding:3px 5px!important;background:#f0f2f5!important}
+  .data-table td{padding:3px 5px!important}
   .data-table tr{page-break-inside:avoid!important}
-  canvas{max-width:100%!important}
-  .chart-wrap{page-break-inside:avoid!important}
-  .chart-wrap canvas{display:none!important}
-  .chart-wrap .print-chart-img{display:block!important}
-  .kpi-value{font-size:17px!important}
-  .section-title{font-size:16px!important}
+
+  /* ── Gráficos: OCULTAR canvas, MOSTRAR snapshot img ── */
+  .chart-wrap{
+    page-break-inside:avoid!important;break-inside:avoid!important;
+    padding:8px 12px 12px!important;
+    overflow:visible!important;
+  }
+  /* Remove height fixo do chart-wrap para impressão */
+  .chart-wrap[style*="height"]{height:auto!important}
+  .chart-wrap canvas{display:none!important;visibility:hidden!important}
+  .chart-wrap .print-chart-img{
+    display:block!important;
+    width:100%!important;
+    height:auto!important;
+    max-height:220px!important;
+    object-fit:contain!important;
+    object-position:left center!important;
+  }
+
+  /* ── Tipografia ── */
+  .kpi-value{font-size:15px!important}
+  .kpi-label{font-size:8px!important}
+  .kpi-sub{font-size:8px!important}
+  .section-title{font-size:15px!important}
+  .section-subtitle{font-size:9px!important}
+  .card-title{font-size:11px!important}
+  .card-subtitle{font-size:9px!important}
+  .badge{font-size:8px!important;padding:1px 5px!important}
+  .progress-name{font-size:9px!important}
+  .progress-val{font-size:9px!important}
+  .legend-label,.legend-val,.legend-pct{font-size:9px!important}
+  .aging-label{font-size:10px!important}
+  .aging-count{font-size:8px!important}
+  .aging-value .val{font-size:13px!important}
 }
 </style>
 </head>
@@ -1204,15 +1261,13 @@ function syncChartsForPrint(){
 }
 
 function rerenderChartsForPrint(){
-  // Disable animation for instant draw
-  Object.values(charts).forEach(c => {
-    if(c && c.options) {
-      c.options.animation = false;
-      c.options.animations = false;
-    }
-  });
+  // Disable Chart.js animation for instant drawing
+  if(typeof Chart !== 'undefined'){
+    Chart.defaults.animation = false;
+    Chart.defaults.animations = {colors:false, x:false};
+  }
   renderAll();
-  // Force immediate update with no animation
+  // Force immediate redraw on all existing charts
   Object.values(charts).forEach(c => {
     if(c) try{ c.update('none'); }catch(e){}
   });
@@ -1237,17 +1292,16 @@ function prepareChartSnapshots(){
     }
 
     try{
-      // Only snapshot if canvas has content (width > 0)
-      if(canvas.width > 0 && canvas.height > 0){
+      if(canvas.width > 10 && canvas.height > 10){
         const dataUrl = canvas.toDataURL('image/png', 1.0);
-        // Verify it's not a blank canvas (blank = all white/transparent)
-        if(dataUrl && dataUrl.length > 100){
+        if(dataUrl && dataUrl.length > 200){
           img.src = dataUrl;
-          img.style.width = canvas.offsetWidth + 'px';
-          img.style.height = canvas.offsetHeight + 'px';
+          // Store natural dimensions as data attributes for CSS reference
+          img.dataset.w = canvas.width;
+          img.dataset.h = canvas.height;
         }
       }
-    }catch(e){ console.warn('Snapshot failed for chart', key, e); }
+    }catch(e){ console.warn('Snapshot error:', key, e); }
   });
 }
 
@@ -1274,26 +1328,31 @@ async function printAll(){
   // 1. Mostrar todas as abas
   document.querySelectorAll('.view').forEach(v => v.style.display = 'block');
 
-  // 2. Re-renderizar todos os gráficos (abas ocultas não renderizam)
+  // 2. Expandir chart-wraps com altura mínima antes do snapshot
+  const chartWraps = document.querySelectorAll('.chart-wrap');
+  const origHeights = [];
+  chartWraps.forEach((el, i) => {
+    origHeights[i] = el.style.height;
+    if(el.offsetHeight < 200) el.style.height = '260px';
+  });
+
+  // 3. Re-renderizar sem animação e aguardar
   rerenderChartsForPrint();
-
-  // 3. Aguardar Chart.js terminar a animação
-  await new Promise(resolve => setTimeout(resolve, 700));
-
-  // 4. Segunda passada para garantir
+  await new Promise(r => setTimeout(r, 900));
   rerenderChartsForPrint();
-  await new Promise(resolve => setTimeout(resolve, 300));
+  await new Promise(r => setTimeout(r, 400));
 
-  // 5. Tirar snapshot PNG de cada canvas e injetar como <img>
+  // 4. Tirar snapshots PNG de todos os gráficos
   prepareChartSnapshots();
+  await new Promise(r => setTimeout(r, 200));
 
-  // 6. Aguardar imagens serem atribuídas
-  await new Promise(resolve => setTimeout(resolve, 200));
+  // 5. Restaurar alturas
+  chartWraps.forEach((el, i) => { el.style.height = origHeights[i] || ''; });
 
-  // 7. Imprimir
+  // 6. Abrir diálogo de impressão
   window.print();
 
-  // 8. Restaurar após fechar diálogo
+  // 7. Restaurar exibição das abas após fechar
   restoreAfterPrint();
 }
 
