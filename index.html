@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard PÃ³s-Vendas â€” LicitaÃ§Ã£o</title>
+<title>Dashboard Pos-Vendas - Licitacao</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
 window.__msalReadyPromise = (async () => {
@@ -256,28 +256,28 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 
 <div class="first-run" id="firstRun">
   <div class="first-run-box">
-    <div class="first-run-icon">ðŸ“Š</div>
+    <div class="first-run-icon">SP</div>
     <h2>Conectar SharePoint</h2>
-    <p>Faça login com sua conta Microsoft corporativa para ler o <b>Controle Geral.xlsx</b> em tempo real.</p>
-    <div class="hint"><b>Pelo SharePoint:</b><br>1. O login abre sua conta corporativa<br>2. O dashboard localiza o arquivo automaticamente<br>3. O botão Atualizar relê a planilha sempre que precisar</div>
+    <p>Faca login com sua conta Microsoft corporativa para ler o <b>Controle Geral.xlsx</b> em tempo real.</p>
+    <div class="hint"><b>Pelo SharePoint:</b><br>1. O login abre sua conta corporativa<br>2. O dashboard localiza o arquivo automaticamente<br>3. O botao Atualizar rele a planilha sempre que precisar</div>
     <div class="first-run-actions">
       <button class="btn btn-primary" id="btnLoginMicrosoft" style="justify-content:center;font-size:14px;padding:12px" onclick="msalLogin()">Entrar com Microsoft</button>
-      <button class="btn" style="justify-content:center;background:var(--gray-100);color:var(--gray-600);font-size:12px" onclick="usePreloaded()">Continuar com dados prÃ©-carregados</button>
+      <button class="btn" style="justify-content:center;background:var(--gray-100);color:var(--gray-600);font-size:12px" onclick="usePreloaded()">Continuar com dados pre-carregados</button>
     </div>
     <div id="loginError" style="margin-top:14px;font-size:12px;color:var(--red);display:none"></div>
   </div>
 </div>
 
 <div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-box"><div class="spinner"></div><p id="loadingMsg">Lendo planilhaâ€¦</p></div>
+  <div class="loading-box"><div class="spinner"></div><p id="loadingMsg">Lendo planilha...</p></div>
 </div>
 
 <header class="header">
   <div class="header-left">
     <div class="logo-mark">PV</div>
     <div class="header-title">
-      <h1>Dashboard PÃ³s-Vendas â€” LicitaÃ§Ã£o</h1>
-      <p>ReuniÃ£o Semanal Â· Carteira de Empenhos</p>
+      <h1>Dashboard Pos-Vendas - Licitacao</h1>
+      <p>Reuniao Semanal - Carteira de Empenhos</p>
     </div>
   </div>
   <div class="header-right">
@@ -634,6 +634,75 @@ function showLoginError(message){
   if(!errEl) return;
   errEl.textContent = message;
   errEl.style.display = 'block';
+}
+
+function isPopupFallbackError(error){
+  return error?.errorCode === 'popup_window_error' || error?.errorCode === 'empty_window_error';
+}
+
+function needsMsalInteraction(error){
+  if(!error) return false;
+  if(typeof msal !== 'undefined' && error instanceof msal.InteractionRequiredAuthError){
+    return true;
+  }
+  const raw = [
+    error.errorCode,
+    error.subError,
+    error.message,
+    error.errorMessage
+  ].filter(Boolean).join(' ').toLowerCase();
+  return [
+    'interaction_required',
+    'login_required',
+    'consent_required',
+    'invalid_grant',
+    'aadsts70008',
+    'token has expired',
+    'refresh token',
+    'no_tokens_found'
+  ].some(token => raw.includes(token));
+}
+
+function getFriendlyAuthError(error){
+  if(needsMsalInteraction(error)){
+    return 'Sua sessao expirou. Clique em "Entrar com Microsoft" para fazer login novamente.';
+  }
+  return error?.message || 'Nao foi possivel concluir a autenticacao.';
+}
+
+async function requestInteractiveToken(app, account){
+  try{
+    const resp = await app.acquireTokenPopup({
+      scopes: GRAPH_SCOPES,
+      account: account || undefined,
+      prompt: 'select_account',
+    });
+    if(resp?.account){
+      app.setActiveAccount(resp.account);
+    }
+    return resp?.accessToken || null;
+  }catch(tokenErr){
+    if(isPopupFallbackError(tokenErr)){
+      await app.acquireTokenRedirect({
+        scopes: GRAPH_SCOPES,
+        account: account || undefined,
+        prompt: 'select_account',
+      });
+      return null;
+    }
+    if(!needsMsalInteraction(tokenErr)){
+      throw tokenErr;
+    }
+  }
+
+  const loginResp = await app.loginPopup({
+    scopes: GRAPH_SCOPES,
+    prompt: 'select_account',
+  });
+  if(loginResp?.account){
+    app.setActiveAccount(loginResp.account);
+  }
+  return loginResp?.accessToken || null;
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1029,7 +1098,10 @@ async function msalLogin(){
     const {app} = await bootstrapMsal();
     const account = getActiveMsalAccount(app);
     if(account){
-      await onLoginSuccess();
+      _msalToken = await getToken(true);
+      if(_msalToken){
+        await onLoginSuccess();
+      }
       return;
     }
 
@@ -1059,9 +1131,11 @@ async function msalLogin(){
       _msalToken = await getToken(true);
     }
 
-    await onLoginSuccess();
+    if(_msalToken){
+      await onLoginSuccess();
+    }
   }catch(e){
-    showLoginError('Erro no login: ' + e.message);
+    showLoginError(getFriendlyAuthError(e));
     console.error('Login error:', e);
   }finally{
     setLoginBusy(false);
@@ -1071,7 +1145,12 @@ async function msalLogin(){
 async function getToken(interactive = false){
   const {app} = await bootstrapMsal();
   const account = getActiveMsalAccount(app);
-  if(!account) throw new Error('Nenhuma conta autenticada.');
+  if(!account){
+    if(interactive){
+      return await requestInteractiveToken(app, null);
+    }
+    throw new Error('Nenhuma conta autenticada. Clique em "Entrar com Microsoft".');
+  }
 
   try{
     const resp = await app.acquireTokenSilent({scopes: GRAPH_SCOPES, account});
@@ -1080,17 +1159,13 @@ async function getToken(interactive = false){
     }
     return resp.accessToken;
   }catch(e){
-    if(typeof msal !== 'undefined' && e instanceof msal.InteractionRequiredAuthError){
+    if(needsMsalInteraction(e)){
       if(interactive){
-        const resp = await app.acquireTokenPopup({scopes: GRAPH_SCOPES, account, prompt: 'select_account'});
-        if(resp?.account){
-          app.setActiveAccount(resp.account);
-        }
-        return resp.accessToken;
+        return await requestInteractiveToken(app, account);
       }
-      throw new Error('Sua sessão expirou ou precisa de confirmação. Clique em "Entrar com Microsoft" para continuar.');
+      throw new Error('Sua sessao expirou. Clique em "Entrar com Microsoft" para fazer login novamente.');
     }
-    throw e;
+    throw new Error(getFriendlyAuthError(e));
   }
 }
 
