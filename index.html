@@ -975,27 +975,40 @@ async function readFromSharePoint(){
     // Resolve file via share link → get download URL
     const encShare=btoa('u!'+MSAL_CONFIG.spFileId).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
     // Use Graph shares endpoint for the share link
+    // Encode share URL for Graph API (base64url with u! prefix)
     const shareUrl='https://grattanomarck.sharepoint.com/:x:/s/SistemadeArquivosGrattanoMarck/IQDOUFT6aPpnSao_qNNOh008AeAyg0tqNPcoI8_c_6pNrQ4?e=DO0hdT';
     const encodedShare='u!'+btoa(shareUrl).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_');
 
     setLoading(true,'Buscando arquivo…');
-    // Get file metadata via Graph
-    const metaResp=await fetch('https://graph.microsoft.com/v1.0/shares/'+encodedShare+'/driveItem',{
-      headers:{Authorization:'Bearer '+_msalToken}
-    });
+    // Try Graph shares API first
+    let buf;
+    let fileName='Controle Geral.xlsx';
+    const graphBase='https://graph.microsoft.com/v1.0';
+    const headers={Authorization:'Bearer '+_msalToken};
+
+    // Get driveItem to find download URL
+    const metaResp=await fetch(graphBase+'/shares/'+encodedShare+'/driveItem',{headers});
     if(!metaResp.ok){
       const err=await metaResp.json().catch(()=>({}));
-      throw new Error('Erro ao acessar arquivo: '+(err.error?.message||metaResp.status));
+      const msg=err.error?.message||metaResp.status;
+      // 401 = token expired
+      if(metaResp.status===401){_msalToken=null;try{localStorage.removeItem('dashToken');}catch(e){}throw new Error('Sessão expirada. Faça login novamente.');}
+      throw new Error('Sem acesso ao arquivo: '+msg);
     }
     const meta=await metaResp.json();
+    fileName=meta.name||fileName;
 
     setLoading(true,'Baixando planilha…');
-    const dlResp=await fetch('https://graph.microsoft.com/v1.0/shares/'+encodedShare+'/driveItem/content',{
-      headers:{Authorization:'Bearer '+_msalToken}
-    });
-    if(!dlResp.ok) throw new Error('Erro ao baixar arquivo: '+dlResp.status);
+    // Download via @microsoft.graph.downloadUrl (pre-auth URL, no auth header needed)
+    let dlResp;
+    if(meta['@microsoft.graph.downloadUrl']){
+      dlResp=await fetch(meta['@microsoft.graph.downloadUrl']);
+    } else {
+      dlResp=await fetch(graphBase+'/shares/'+encodedShare+'/driveItem/content',{headers});
+    }
+    if(!dlResp.ok) throw new Error('Erro ao baixar: '+dlResp.status);
 
-    const buf=await dlResp.arrayBuffer();
+    buf=await dlResp.arrayBuffer();
     setLoading(true,'Processando dados…');
     const wb=XLSX.read(buf,{type:'array',cellDates:true,cellNF:false});
     const sn=wb.SheetNames.find(n=>/resultado\s*vend/i.test(n))||wb.SheetNames[0];
@@ -1006,7 +1019,7 @@ async function readFromSharePoint(){
     D=parseSheet(rows);
     renderAll();
 
-    const fileName=meta.name||'Controle Geral.xlsx';
+
     document.getElementById('fileDot').className='file-dot linked';
     document.getElementById('fileStatusText').innerHTML='Conectado: <b>'+fileName+'</b> · SharePoint';
     document.getElementById('statusHint').textContent='Clique em Atualizar para reler do SharePoint';
@@ -1016,13 +1029,17 @@ async function readFromSharePoint(){
     document.getElementById('lastUpdateTime').textContent=new Date().toLocaleString('pt-BR');
   }catch(e){
     setError(e.message);
-    const errEl=document.getElementById('loginError');
-    if(errEl){errEl.textContent='Erro: '+e.message;errEl.style.display='block';}
-    document.getElementById('firstRun').classList.remove('hidden');
-    // If token expired, force re-login
-    if(e.message.includes('401')||e.message.includes('token')){
+    // If session expired, show login screen again
+    const expired=e.message.includes('expirada')||e.message.includes('401')||!_msalToken;
+    if(expired){
       _msalToken=null;
-      try{localStorage.removeItem('dashToken');}catch(ex){}
+      try{localStorage.removeItem('dashToken');localStorage.removeItem('dashTokenExp');}catch(ex){}
+      document.getElementById('firstRun').classList.remove('hidden');
+      const errEl=document.getElementById('loginError');
+      if(errEl){errEl.textContent=e.message;errEl.style.display='block';}
+    } else {
+      // Non-auth error: keep dashboard visible, show error in status bar only
+      document.getElementById('statusHint').textContent='Erro: '+e.message+' — tente Atualizar';
     }
   }finally{setLoading(false);}
 }
@@ -1038,7 +1055,6 @@ function usePreloaded(){
 
 // Kept for legacy fallback
 async function pickFile(){ msalLogin(); }
-async function refresh(){ refreshFromSharePoint(); }
 
 function setLoading(on,msg=''){const el=document.getElementById('loadingOverlay');if(on){document.getElementById('loadingMsg').textContent=msg;el.classList.add('show');}else{el.classList.remove('show');}}
 function setLinked(name){
