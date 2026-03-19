@@ -1186,7 +1186,46 @@ function setLinked(name){
 }
 function setError(msg){document.getElementById('fileDot').className='file-dot error';document.getElementById('fileStatusText').innerHTML='Erro ao ler arquivo';document.getElementById('statusHint').textContent=msg;}
 function switchTab(view,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));el.classList.add('active');document.getElementById('view-'+view).classList.add('active');}
-function printAll(){document.querySelectorAll('.view').forEach(v=>v.style.display='block');window.print();setTimeout(()=>{document.querySelectorAll('.view').forEach(v=>v.style.display='');document.querySelectorAll('.view.active').forEach(v=>v.style.display='block');},500);}
+let _printingAll = false;
+
+function syncChartsForPrint(){
+  Object.values(charts).forEach(chart => {
+    if(!chart) return;
+    try{
+      chart.resize();
+      chart.update('none');
+    }catch(e){}
+  });
+}
+
+function restoreAfterPrint(){
+  if(!_printingAll) return;
+  document.querySelectorAll('.view').forEach(v=>v.style.display='');
+  document.querySelectorAll('.view.active').forEach(v=>v.style.display='block');
+  syncChartsForPrint();
+  _printingAll = false;
+}
+
+window.addEventListener('beforeprint', ()=>{
+  if(_printingAll){
+    syncChartsForPrint();
+  }
+});
+
+window.addEventListener('afterprint', restoreAfterPrint);
+
+function printAll(){
+  _printingAll = true;
+  document.querySelectorAll('.view').forEach(v=>v.style.display='block');
+  syncChartsForPrint();
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      syncChartsForPrint();
+      window.print();
+      restoreAfterPrint();
+    });
+  });
+}
 
 // PARSE SHEET
 // ════════════════════════════════════════════
