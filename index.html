@@ -1429,6 +1429,341 @@ function renderAll(){
   renderGargalos();
 }
 
+// Restored from Dashboard_Pos_Vendas.html (pre-SharePoint version)
+(function(){
+  let panoramaAno = '2026';
+  let statusAno = '2026';
+  let clientesAno = '2026';
+  let pendentesData = [];
+  let pendentesSort = {col:'dias', asc:false};
+
+  const fmt = v => (v == null || isNaN(v)) ? '—' : 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const fmtS = v => {
+    if(v == null || isNaN(v)) return '—';
+    if(Math.abs(v) >= 1e6) return 'R$ ' + (v / 1e6).toFixed(2) + 'M';
+    if(Math.abs(v) >= 1e3) return 'R$ ' + (v / 1e3).toFixed(0) + 'k';
+    return fmt(v);
+  };
+  const pct = v => (v || 0).toFixed(1) + '%';
+  const C = {navy:'#0a1628', gold:'#c9a84c', teal:'#2a9d8f', red:'#e63946', green:'#40916c', orange:'#f4a261'};
+  const LABEL = {'2026':'Pedidos 2026','2025':'Pedidos 2025','total':'Toda a carteira'};
+
+  function killChart(id){
+    if(charts[id]){
+      charts[id].destroy();
+      delete charts[id];
+    }
+  }
+
+  function kpiCard(accent, icon, label, value, sub, badgeClass = '', badgeText = ''){
+    const badge = badgeText ? `<div class="kpi-badge ${badgeClass}">${badgeText}</div>` : '';
+    return `<div class="kpi-card ${accent}">${badge}<div class="kpi-icon">${icon}</div><div class="kpi-label">${label}</div><div class="kpi-value ${String(value).length > 11 ? 'sm' : ''}">${value}</div><div class="kpi-sub">${sub}</div></div>`;
+  }
+
+  function recorteTag(txt){
+    return `<div class="recorte-tag">📌 Recorte: ${txt}</div>`;
+  }
+
+  function renderPanoramaRestored(){
+    const ano = panoramaAno;
+    const k = D.kpis[ano];
+    const execPct = k.total_carteira > 0 ? (k.valor_executado / k.total_carteira * 100).toFixed(1) : '0.0';
+    const lbl = LABEL[ano];
+
+    document.getElementById('recorteTagPanorama').innerHTML = recorteTag(lbl);
+    document.getElementById('kpiPanorama').innerHTML =
+      kpiCard('gold','🏛','Total Empenhos',fmtS(k.total_carteira),`${k.total_empenhos} PVs únicos · ${lbl}`) +
+      kpiCard('green','✅','Valor Executado',fmtS(k.valor_executado),`${execPct}% concluído`,'badge-pos',execPct + '%') +
+      kpiCard('red','⏳','A Executar',fmtS(k.valor_a_executar),`${k.pendentes} PVs pendentes`,'badge-danger',k.pendentes + ' PVs') +
+      kpiCard('teal','📈','MC Total',fmtS(k.mc_total),`Margem: ${pct(k.mc_pct)}`,'badge-pos',pct(k.mc_pct));
+
+    const m25 = D.mensal['2025'];
+    const m26 = D.mensal['2026'];
+    const mesesUnion = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const fat25 = mesesUnion.map((_, i) => m25.faturamento[i] || null);
+    const fat26 = mesesUnion.map((m, i) => {
+      const idx = m26.meses.indexOf(m);
+      return idx >= 0 ? m26.faturamento[idx] : null;
+    });
+
+    killChart('chartMensal');
+    charts.chartMensal = new Chart(document.getElementById('chartMensal'), {
+      type:'bar',
+      data:{labels:mesesUnion,datasets:[
+        {label:'2025',data:fat25.map(v => v ? v / 1000 : null),backgroundColor:C.navy + '99',borderRadius:4,order:2},
+        {label:'2026',data:fat26.map(v => v ? v / 1000 : null),backgroundColor:C.gold + 'dd',borderRadius:4,order:1,
+         borderColor:fat26.map((_, i) => mesesUnion[i] === 'Mar' ? C.orange : 'transparent'),
+         borderWidth:fat26.map((_, i) => mesesUnion[i] === 'Mar' ? 2 : 0)}
+      ]},
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{position:'top',labels:{font:{family:'DM Sans',size:11},boxWidth:10}},
+          tooltip:{callbacks:{label:ctx => {
+            const v = ctx.raw;
+            if(v === null) return null;
+            const suffix = ctx.dataset.label === '2026' && ctx.label === 'Mar' ? ' em andamento' : '';
+            return ctx.dataset.label + ': R$ ' + v.toFixed(0) + 'k' + suffix;
+          }}}
+        },
+        scales:{
+          y:{grid:{color:'#f0f2f5'},ticks:{callback:v => 'R$' + v + 'k',font:{size:10}}},
+          x:{grid:{display:false},ticks:{font:{size:11}}}
+        }
+      }
+    });
+
+    document.getElementById('subtitleExec').textContent = lbl;
+    document.getElementById('tagExec').textContent = '📌 ' + lbl;
+    killChart('chartExecucao');
+    charts.chartExecucao = new Chart(document.getElementById('chartExecucao'), {
+      type:'doughnut',
+      data:{labels:['Executado','A Executar'],datasets:[{data:[k.valor_executado,k.valor_a_executar],backgroundColor:[C.green,C.red],borderWidth:3,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx => ctx.label + ': ' + fmtS(ctx.raw)}}}}
+    });
+
+    document.getElementById('execLegend').innerHTML = [
+      {l:'Executado',v:k.valor_executado,c:C.green},
+      {l:'A Executar',v:k.valor_a_executar,c:C.red}
+    ].map(x => `<div class="legend-item"><div class="legend-dot" style="background:${x.c}"></div><div class="legend-label">${x.l}</div><div class="legend-val">${fmtS(x.v)}</div><div class="legend-pct">${pct(k.total_carteira > 0 ? x.v / k.total_carteira * 100 : 0)}</div></div>`).join('');
+
+    const emp = D.empresas[ano];
+    document.getElementById('subtitleMC').textContent = 'MC por empresa · ' + lbl;
+    document.getElementById('tagMC').textContent = '📌 ' + lbl;
+    const maxMC = Math.max(...emp.mc);
+    document.getElementById('mcPanel').innerHTML = emp.nomes.map((nome, i) => {
+      const mcP = emp.faturamento[i] > 0 ? (emp.mc[i] / emp.faturamento[i] * 100).toFixed(1) : '0.0';
+      const barW = Math.max(0, emp.mc[i] / (maxMC || 1) * 100).toFixed(0);
+      return `<div class="progress-item"><div class="progress-header"><div class="progress-name">${nome}</div><div class="progress-val">${fmtS(emp.mc[i])} <span style="font-size:10px;color:var(--gray-400)">(${mcP}%)</span></div></div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${barW}%;background:${[C.navy,C.gold][i] || C.teal}"></div></div><div style="font-size:11px;color:var(--gray-400);margin-top:3px">Fat: ${fmtS(emp.faturamento[i])}</div></div>`;
+    }).join('');
+  }
+
+  function renderEnvelhecimentoRestored(){
+    const env = D.envelhecimento;
+    const totalPend = D.kpis.total.valor_a_executar;
+    const totalPVs = env.reduce((a, e) => a + e.qtd, 0);
+
+    document.getElementById('kpiAging').innerHTML =
+      kpiCard('navy','📦','Total PVs Pendentes',totalPVs + ' PVs',fmtS(totalPend),'badge-warn',totalPVs + ' PVs') +
+      kpiCard('red','🚨','Críticos +180 dias',env[4].qtd + ' PVs',fmtS(env[4].valor),'badge-danger','Urgente') +
+      kpiCard('orange','⚠️','Alerta 91-180 dias',env[3].qtd + ' PVs',fmtS(env[3].valor),'badge-warn','Alerta') +
+      kpiCard('green','✅','Saudáveis 0-30 dias',env[0].qtd + ' PVs',fmtS(env[0].valor),'badge-pos','OK');
+
+    killChart('chartAging');
+    charts.chartAging = new Chart(document.getElementById('chartAging'), {
+      type:'bar',
+      data:{labels:env.map(e => e.faixa),datasets:[{data:env.map(e => e.valor),backgroundColor:[C.green,C.teal,C.gold,C.orange,C.red],borderRadius:6}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx => 'R$ ' + ctx.raw.toLocaleString('pt-BR',{minimumFractionDigits:2})}}},scales:{y:{grid:{color:'#f0f2f5'},ticks:{callback:v => fmtS(v),font:{size:10}}},x:{grid:{display:false}}}}
+    });
+
+    const cls = ['ok','ok','warn','warn','danger'];
+    const st = ['Saudável','Atenção leve','Atenção','Alerta','Crítico'];
+    document.getElementById('agingRows').innerHTML = env.map((e, i) => `<div class="aging-row ${cls[i]}"><div><div class="aging-label">${e.faixa}</div><div class="aging-count">${e.qtd} PV${e.qtd !== 1 ? 's' : ''} · ${st[i]}</div></div><div class="aging-value"><div class="val">${fmtS(e.valor)}</div><div class="sub">${pct(totalPend > 0 ? e.valor / totalPend * 100 : 0)}</div></div></div>`).join('');
+
+    document.getElementById('criticosTbody').innerHTML = (D.criticos || []).filter(c => c.valor > 0).map(c => {
+      const risco = c.dias > 300 ? '<span class="badge badge-red">Altíssimo</span>' : c.dias > 200 ? '<span class="badge badge-red">Alto</span>' : c.dias > 90 ? '<span class="badge badge-orange">Médio</span>' : '<span class="badge badge-navy">Normal</span>';
+      const db = c.dias > 200 ? 'badge-red' : c.dias > 90 ? 'badge-orange' : 'badge-navy';
+      return `<tr><td><strong>${c.pv}</strong></td><td>${c.cliente}</td><td style="font-size:12px;color:var(--gray-600)">${c.empenho}</td><td style="font-size:12px;color:var(--gray-600)">${c.uasg || '—'}</td><td style="text-align:right"><strong>${fmt(c.valor)}</strong></td><td style="text-align:center"><span class="badge ${db}">${c.dias}d</span></td><td style="font-size:12px">${c.prev_ent || '—'}</td><td>${risco}</td></tr>`;
+    }).join('');
+  }
+
+  function setStatusAnoRestored(ano, el){
+    statusAno = ano;
+    document.querySelectorAll('#pillsStatus .pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    renderStatusRestored();
+  }
+
+  function renderStatusRestored(){
+    const ano = statusAno;
+    const s = D.status[ano];
+    const lbl = LABEL[ano];
+    const total = s.entregue_pvs + s.pendente_pvs;
+
+    document.getElementById('tagStatusDonut').textContent = '📌 ' + lbl;
+    document.getElementById('subtitleStatusDonut').textContent = 'PVs únicos com valor > 0 · ' + lbl;
+
+    killChart('chartStatus');
+    charts.chartStatus = new Chart(document.getElementById('chartStatus'), {
+      type:'doughnut',
+      data:{labels:['Entregue','Pendente'],datasets:[{data:[s.entregue_pvs,s.pendente_pvs],backgroundColor:[C.green,C.red],borderWidth:3,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx => ctx.label + ': ' + ctx.raw + ' PVs (' + pct(total > 0 ? ctx.raw / total * 100 : 0) + ')'}}}}
+    });
+
+    document.getElementById('statusLegend').innerHTML = [
+      {l:'Entregue',v:s.entregue_pvs,f:s.fat_entregue,c:C.green},
+      {l:'Pendente',v:s.pendente_pvs,f:s.fat_pendente,c:C.red}
+    ].map(x => `<div class="legend-item"><div class="legend-dot" style="background:${x.c}"></div><div class="legend-label">${x.l}</div><div class="legend-val">${x.v} PVs</div><div class="legend-pct">${pct(total > 0 ? x.v / total * 100 : 0)} · ${fmtS(x.f)}</div></div>`).join('');
+
+    const mentEnt = s.mensal_ent || {};
+    const mKeys = Object.keys(mentEnt).sort();
+    const mLabels = mKeys.map(k => mentEnt[k].label);
+    const mFat = mKeys.map(k => mentEnt[k].fat);
+    const mPVs = mKeys.map(k => mentEnt[k].pvs);
+
+    document.getElementById('tagStatusMensal').textContent = '📌 Entregas por mês · ' + lbl;
+    document.getElementById('subtitleStatusMensal').textContent = 'Faturamento entregue por mês · ' + lbl;
+
+    killChart('chartStatusMensal');
+    charts.chartStatusMensal = new Chart(document.getElementById('chartStatusMensal'), {
+      type:'bar',
+      data:{labels:mLabels,datasets:[
+        {label:'Fat. Entregue',data:mFat.map(v => v / 1000),backgroundColor:C.green + 'bb',borderRadius:4,yAxisID:'y'},
+        {label:'PVs Entregues',data:mPVs,type:'line',borderColor:C.gold,backgroundColor:C.gold + '33',pointBackgroundColor:C.gold,tension:.3,yAxisID:'y1'}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{family:'DM Sans',size:11},boxWidth:10}},tooltip:{callbacks:{label:ctx => ctx.dataset.label + ': ' + (ctx.dataset.yAxisID === 'y' ? 'R$ ' + ctx.raw.toFixed(0) + 'k' : ctx.raw + ' PVs')}}},scales:{y:{grid:{color:'#f0f2f5'},ticks:{callback:v => 'R$' + v + 'k',font:{size:10}},position:'left'},y1:{grid:{display:false},ticks:{callback:v => v + ' PVs',font:{size:10}},position:'right'},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+    });
+
+    const emp = D.empresas[ano];
+    document.getElementById('tagEmpresas').textContent = '📌 ' + lbl;
+    document.getElementById('subtitleEmpresas').textContent = 'Faturamento e MC · ' + lbl;
+    killChart('chartEmpresas');
+    charts.chartEmpresas = new Chart(document.getElementById('chartEmpresas'), {
+      type:'bar',
+      data:{labels:emp.nomes,datasets:[
+        {label:'Faturamento',data:emp.faturamento,backgroundColor:C.navy + 'cc',borderRadius:6},
+        {label:'MC',data:emp.mc,backgroundColor:C.gold + 'cc',borderRadius:6}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{family:'DM Sans',size:11},boxWidth:10}},tooltip:{callbacks:{label:ctx => ctx.dataset.label + ': ' + fmtS(ctx.raw)}}},scales:{y:{grid:{color:'#f0f2f5'},ticks:{callback:v => fmtS(v),font:{size:10}}},x:{grid:{display:false}}}}
+    });
+
+    pendentesData = [...(D.pendentes_list || [])];
+    pendentesSort = {col:'dias', asc:false};
+    renderPendentesTableRestored(pendentesData);
+  }
+
+  function filterArr(arr, q){
+    if(!q) return arr;
+    const ql = q.toLowerCase();
+    return arr.filter(r => r.cliente.toLowerCase().includes(ql) || String(r.empenho).toLowerCase().includes(ql) || String(r.pv).toLowerCase().includes(ql) || String(r.uasg).toLowerCase().includes(ql));
+  }
+
+  function renderPendentesTableRestored(data, keepSort){
+    if(!keepSort) pendentesSort = {col:'dias', asc:false};
+    const {col, asc} = pendentesSort;
+    const sorted = [...data].sort((a, b) => {
+      const va = a[col] || '';
+      const vb = b[col] || '';
+      return typeof va === 'string' ? (asc ? va.localeCompare(vb) : vb.localeCompare(va)) : (asc ? va - vb : vb - va);
+    });
+    const tbody = document.getElementById('pendentesTbody');
+    if(!tbody) return;
+    const count = document.getElementById('pendentesCount');
+    if(count) count.textContent = sorted.length + ' pedido' + (sorted.length !== 1 ? 's' : '');
+    tbody.innerHTML = sorted.map(r => {
+      const risco = r.dias > 300 ? '<span class="badge badge-red">Altíssimo</span>' : r.dias > 200 ? '<span class="badge badge-red">Alto</span>' : r.dias > 90 ? '<span class="badge badge-orange">Médio</span>' : '<span class="badge badge-navy">Normal</span>';
+      const db = r.dias > 200 ? 'badge-red' : r.dias > 90 ? 'badge-orange' : 'badge-navy';
+      const itensLabel = r.n_itens > 1 ? ` <span style="font-size:10px;color:var(--gray-400)">(${r.n_itens}it)</span>` : '';
+      return `<tr><td><strong>${r.pv}</strong>${itensLabel}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.cliente}">${r.cliente}</td><td style="font-size:11px;color:var(--gray-600)">${r.empenho}</td><td style="font-size:11px;color:var(--gray-600)">${r.uasg || '—'}</td><td style="text-align:right"><strong>${fmt(r.valor)}</strong></td><td style="text-align:center"><span class="badge ${db}">${r.dias}d</span></td><td style="font-size:11px">${r.prev_ent || '—'}</td><td>${risco}</td></tr>`;
+    }).join('');
+  }
+
+  function sortPendentesRestored(col){
+    if(pendentesSort.col === col) pendentesSort.asc = !pendentesSort.asc;
+    else{
+      pendentesSort.col = col;
+      pendentesSort.asc = (col === 'cliente' || col === 'pv');
+    }
+    renderPendentesTableRestored(filterArr(pendentesData, document.getElementById('searchPendentes').value), true);
+  }
+
+  function filterPendentesRestored(q){
+    renderPendentesTableRestored(filterArr(pendentesData, q), true);
+  }
+
+  function setClientesAnoRestored(ano, el){
+    clientesAno = ano;
+    document.querySelectorAll('#pillsClientes .pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    renderClientesRestored();
+  }
+
+  function renderClientesRestored(){
+    const ano = clientesAno;
+    const lbl = LABEL[ano];
+    const tc = D.clientes[ano];
+    const vd = D.vendedores[ano];
+    const totalFat = tc.faturamento.reduce((a, b) => a + b, 0);
+
+    ['Clientes','Vendedores','ClientesTabela'].forEach(id => {
+      const el = document.getElementById('subtitle' + id);
+      if(el) el.textContent = lbl;
+      const tg = document.getElementById('tag' + id);
+      if(tg) tg.textContent = '📌 ' + lbl;
+    });
+
+    killChart('chartClientes');
+    charts.chartClientes = new Chart(document.getElementById('chartClientes'), {
+      type:'bar',
+      data:{labels:tc.nomes.map(n => n.length > 28 ? n.substring(0, 28) + '…' : n),datasets:[
+        {label:'Faturamento',data:tc.faturamento,backgroundColor:C.navy + 'cc',borderRadius:4},
+        {label:'MC',data:tc.mc,backgroundColor:C.gold + 'cc',borderRadius:4}
+      ]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{family:'DM Sans',size:11},boxWidth:10}},tooltip:{callbacks:{label:ctx => ctx.dataset.label + ': ' + fmtS(ctx.raw)}}},scales:{x:{grid:{color:'#f0f2f5'},ticks:{callback:v => fmtS(v),font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}
+    });
+
+    document.getElementById('clientesTbody').innerHTML = tc.nomes.map((nome, i) => {
+      const mcP = tc.faturamento[i] > 0 ? (tc.mc[i] / tc.faturamento[i] * 100).toFixed(1) : '0.0';
+      const part = (tc.faturamento[i] / totalFat * 100).toFixed(1);
+      return `<tr><td><strong>${i + 1}</strong></td><td>${nome}</td><td><strong>${fmtS(tc.faturamento[i])}</strong></td><td>${fmtS(tc.mc[i])}</td><td><span class="badge ${parseFloat(mcP) >= 20 ? 'badge-green' : 'badge-orange'}">${mcP}%</span></td><td><div style="display:flex;align-items:center;gap:7px"><div class="progress-bar-bg" style="width:60px"><div class="progress-bar-fill" style="width:${part}%;background:${C.navy}"></div></div><span style="font-size:11px;color:var(--gray-600)">${part}%</span></div></td></tr>`;
+    }).join('');
+
+    const maxVF = Math.max(...vd.faturamento, 1);
+    const pal = [C.navy, C.gold, C.teal, C.orange, C.green];
+    document.getElementById('vendedoresPanel').innerHTML = vd.nomes.map((nome, i) => {
+      const mcP = vd.faturamento[i] > 0 ? (vd.mc[i] / vd.faturamento[i] * 100).toFixed(1) : '0.0';
+      const barW = Math.max(0, (vd.faturamento[i] / maxVF * 100)).toFixed(0);
+      return `<div class="progress-item"><div class="progress-header"><div class="progress-name">${nome}</div><div class="progress-val">${fmtS(vd.faturamento[i])}</div></div><div style="display:flex;gap:8px;align-items:center;margin-bottom:4px"><div class="progress-bar-bg" style="flex:1"><div class="progress-bar-fill" style="width:${barW}%;background:${pal[i] || C.navy}"></div></div><span class="badge ${parseFloat(mcP) >= 15 ? 'badge-green' : 'badge-orange'}">${mcP}% MC</span></div><div style="font-size:11px;color:var(--gray-400)">MC: ${fmtS(vd.mc[i])}</div></div>`;
+    }).join('');
+  }
+
+  function renderGargalosRestored(){
+    const k = D.kpis.total;
+    const env = D.envelhecimento;
+    const prop = k.total_carteira > 0 ? k.valor_a_executar / k.total_carteira : 0;
+    const totalPVs = env.reduce((a, e) => a + e.qtd, 0);
+
+    document.getElementById('kpiRisco').innerHTML =
+      kpiCard('red','⚠️','Valor em Risco',fmtS(k.valor_a_executar),`${totalPVs} PVs sem entrega`,'badge-danger',totalPVs + ' PVs') +
+      kpiCard('navy','🚨','Críticos +180d',env[4].qtd + ' PVs',fmtS(env[4].valor),'badge-danger','Urgente') +
+      kpiCard('gold','💰','MC em Risco',fmtS(k.mc_total * prop),'Proporcional ao pendente') +
+      kpiCard('teal','🎯','MC Realizada Total',pct(k.mc_pct),'Carteira total','badge-pos','Meta');
+
+    const crit180 = (D.criticos || []).filter(c => c.dias >= 180 && c.valor > 0);
+    document.getElementById('riscoPanel').innerHTML =
+      `<div style="margin-bottom:10px;font-size:12px;color:var(--gray-600)">Empenhos +180 dias · risco de perda contratual</div>` +
+      (crit180.length ? crit180.map(c => `<div class="aging-row danger" style="margin-bottom:6px"><div><div class="aging-label">PV ${c.pv} — ${c.cliente.substring(0,30)}</div><div class="aging-count">${c.empenho}</div></div><div class="aging-value"><div class="val" style="font-size:13px;color:var(--red)">${c.dias}d</div><div class="sub">${fmt(c.valor)}</div></div></div>`).join('') : '<div style="color:var(--gray-400);font-size:13px;text-align:center;padding:16px">Nenhum empenho crítico com valor</div>');
+
+    document.getElementById('decisoesPanel').innerHTML = [
+      {n:'01',t:'Priorizar entregas críticas',d:`${env[4].qtd} empenhos +180 dias — definir plano imediato`,cor:C.red},
+      {n:'02',t:'Negociar fornecedores',d:'Verificar abastecimento para entregas próximas',cor:C.gold},
+      {n:'03',t:'Tratativa com órgãos',d:'Contato sobre documentação pendente que trava entrega',cor:C.navy}
+    ].map(dec => `<div style="display:flex;gap:11px;align-items:flex-start;padding:12px;background:var(--gray-50);border-radius:var(--radius-sm);border-left:4px solid ${dec.cor};margin-bottom:9px"><div style="font-family:'DM Serif Display',serif;font-size:19px;color:${dec.cor};min-width:26px;line-height:1">${dec.n}</div><div><div style="font-size:13px;font-weight:700;color:var(--navy)">${dec.t}</div><div style="font-size:12px;color:var(--gray-600);margin-top:2px">${dec.d}</div></div></div>`).join('');
+  }
+
+  function renderAllRestored(){
+    document.getElementById('lastUpdateTime').textContent = new Date().toLocaleString('pt-BR');
+    renderPanoramaRestored();
+    renderEnvelhecimentoRestored();
+    renderStatusRestored();
+    renderClientesRestored();
+    renderGargalosRestored();
+  }
+
+  window.setPanoramaAno = setPanoramaAnoRestored;
+  window.renderPanorama = renderPanoramaRestored;
+  window.renderEnvelhecimento = renderEnvelhecimentoRestored;
+  window.setStatusAno = setStatusAnoRestored;
+  window.renderStatus = renderStatusRestored;
+  window.sortPendentes = sortPendentesRestored;
+  window.filterPendentes = filterPendentesRestored;
+  window.setClientesAno = setClientesAnoRestored;
+  window.renderClientes = renderClientesRestored;
+  window.renderGargalos = renderGargalosRestored;
+  window.renderAll = renderAllRestored;
+})();
+
 // INIT
 document.addEventListener('DOMContentLoaded', async()=>{
   Chart.defaults.font.family = 'DM Sans';
