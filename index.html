@@ -220,14 +220,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 
 <div class="first-run" id="firstRun">
   <div class="first-run-box">
-    <div class="first-run-icon">📊</div>
-    <h2>Vincular Planilha</h2>
-    <p>Selecione o <b>Controle_Geral.xlsx</b> uma única vez.<br>O dashboard vai lembrar para as próximas atualizações.</p>
-    <div class="hint"><b>Pelo SharePoint:</b><br>1. Abra a pasta no SharePoint<br>2. Baixe ou abra o arquivo localmente<br>3. Selecione-o abaixo</div>
+    <div class="first-run-icon">🔐</div>
+    <h2>Dashboard Pós-Vendas</h2>
+    <p>Faça login com sua conta Microsoft corporativa<br>para acessar os dados em tempo real do SharePoint.</p>
     <div class="first-run-actions">
-      <button class="btn btn-primary" style="justify-content:center;font-size:14px;padding:12px" onclick="pickFile()">📂 Selecionar Controle_Geral.xlsx</button>
-      <button class="btn" style="justify-content:center;background:var(--gray-100);color:var(--gray-600);font-size:12px" onclick="usePreloaded()">Continuar com dados pré-carregados</button>
+      <button class="btn btn-primary" style="justify-content:center;font-size:14px;padding:13px;gap:10px" onclick="msalLogin()">
+        <svg width="18" height="18" viewBox="0 0 21 21" fill="none"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+        Entrar com Microsoft
+      </button>
+      <button class="btn" style="justify-content:center;background:var(--gray-100);color:var(--gray-600);font-size:12px" onclick="usePreloaded()">Usar dados pré-carregados</button>
     </div>
+    <div id="loginError" style="margin-top:14px;font-size:12px;color:var(--red);display:none"></div>
   </div>
 </div>
 
@@ -245,8 +248,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   </div>
   <div class="header-right">
     <div class="last-update">Atualizado em <span id="lastUpdateTime">—</span></div>
-    <button class="btn btn-success" id="btnRefresh" onclick="refresh()" disabled>🔄 Atualizar</button>
-    <button class="btn btn-ghost" onclick="pickFile()">📂 Trocar arquivo</button>
+    <button class="btn btn-success" id="btnRefresh" onclick="refreshFromSharePoint()" disabled>🔄 Atualizar</button>
+    <button class="btn btn-ghost" id="btnLogout" onclick="msalLogout()" style="display:none">Sair</button>
     <button class="btn btn-primary" onclick="printAll()">⬇ PDF</button>
   </div>
 </header>
@@ -254,9 +257,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 <div class="status-bar">
   <div class="file-status">
     <div class="file-dot none" id="fileDot"></div>
-    <div id="fileStatusText">Nenhum arquivo vinculado</div>
+    <div id="fileStatusText">Aguardando login…</div>
   </div>
-  <div class="status-hint" id="statusHint">Selecione o arquivo para ativar a atualização automática</div>
+  <div class="status-hint" id="statusHint">Faça login com Microsoft para carregar os dados do SharePoint</div>
 </div>
 
 <div class="tabs-wrapper">
@@ -548,7 +551,23 @@ const DEFAULT_DATA = {
 // ═══════════════════════════════════════════════════════
 let D = JSON.parse(JSON.stringify(DEFAULT_DATA));
 let charts = {};
-let fileHandle = null;
+// ═══════════════════════════════════════════════════════
+// MICROSOFT AUTH CONFIG
+// ═══════════════════════════════════════════════════════
+const MSAL_CONFIG = {
+  clientId: '118173b2-0b54-473a-9f1e-6d7dbee10522',
+  tenantId: 'a1847b36-b768-4044-b5eb-240a381d0724',
+  redirectUri: 'https://contagrattano0047-design.github.io/dash-pos-vendas/',
+  scopes: ['Files.Read','Sites.Read.All','User.Read'],
+  // SharePoint file identifiers
+  spHost: 'grattanomarck.sharepoint.com',
+  spSite: 'SistemadeArquivosGrattanoMarck',
+  spFileId: 'IQDOUFT6aPpnSao_qNNOh008AeAyg0tqNPcoI8_c_6pNrQ4', // from share link
+};
+
+let _msalToken = null;
+let _msalAccount = null;
+let fileHandle = null; // kept for fallback
 let _panoramaAno = '2026';
 let _statusAno   = '2026';
 let _clientesAno = '2026';
@@ -898,50 +917,128 @@ function renderGargalos(){
 // ════════════════════════════════════════════
 // FILE SYSTEM ACCESS API
 // ════════════════════════════════════════════
-async function pickFile(){
-  if(!window.showOpenFilePicker){alert('Use Chrome ou Edge atualizados.');return;}
-  try{
-    const[handle]=await window.showOpenFilePicker({types:[{description:'Excel',accept:{'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':['.xlsx','.xls']}}],multiple:false});
-    fileHandle=handle;
-    try{localStorage.setItem('dashLastFile',handle.name);}catch(e){}
-    await readAndRender();
-    document.getElementById('firstRun').classList.add('hidden');
-  }catch(e){if(e.name!=='AbortError') alert('Erro: '+e.message);}
+// ── MSAL LOGIN ──
+async function msalLogin(){
+  const loginUrl='https://login.microsoftonline.com/'+MSAL_CONFIG.tenantId+'/oauth2/v2.0/authorize'
+    +'?client_id='+MSAL_CONFIG.clientId
+    +'&response_type=token'
+    +'&redirect_uri='+encodeURIComponent(MSAL_CONFIG.redirectUri)
+    +'&scope='+encodeURIComponent(MSAL_CONFIG.scopes.join(' '))
+    +'&response_mode=fragment'
+    +'&nonce='+Math.random().toString(36).substring(2)
+    +'&prompt=select_account';
+  window.location.href = loginUrl;
 }
 
-async function refresh(){
-  if(!fileHandle){pickFile();return;}
-  const perm=await fileHandle.queryPermission({mode:'read'});
-  if(perm!=='granted'){const r=await fileHandle.requestPermission({mode:'read'});if(r!=='granted'){alert('Permissão negada.');return;}}
-  await readAndRender();
+function msalLogout(){
+  _msalToken=null; _msalAccount=null;
+  try{localStorage.removeItem('dashToken');localStorage.removeItem('dashTokenExp');}catch(e){}
+  document.getElementById('btnLogout').style.display='none';
+  document.getElementById('btnRefresh').disabled=true;
+  document.getElementById('firstRun').classList.remove('hidden');
+  document.getElementById('fileDot').className='file-dot none';
+  document.getElementById('fileStatusText').innerHTML='Sessão encerrada';
 }
 
-async function readAndRender(){
-  setLoading(true,'Lendo planilha…');
+function parseTokenFromHash(){
+  const hash=window.location.hash.substring(1);
+  const params=new URLSearchParams(hash);
+  const token=params.get('access_token');
+  const expiresIn=parseInt(params.get('expires_in')||'3600');
+  if(token){
+    _msalToken=token;
+    const exp=Date.now()+expiresIn*1000;
+    try{localStorage.setItem('dashToken',token);localStorage.setItem('dashTokenExp',exp);}catch(e){}
+    window.history.replaceState(null,'',window.location.pathname);
+    return true;
+  }
+  return false;
+}
+
+function loadCachedToken(){
   try{
-    const file=await fileHandle.getFile();
-    const buf=await file.arrayBuffer();
+    const token=localStorage.getItem('dashToken');
+    const exp=parseInt(localStorage.getItem('dashTokenExp')||'0');
+    if(token && Date.now()<exp-60000){_msalToken=token;return true;}
+  }catch(e){}
+  return false;
+}
+
+async function refreshFromSharePoint(){
+  if(!_msalToken){msalLogin();return;}
+  await readFromSharePoint();
+}
+
+async function readFromSharePoint(){
+  setLoading(true,'Conectando ao SharePoint…');
+  try{
+    // Resolve file via share link → get download URL
+    const encShare=btoa('u!'+MSAL_CONFIG.spFileId).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+    // Use Graph shares endpoint for the share link
+    const shareUrl='https://grattanomarck.sharepoint.com/:x:/s/SistemadeArquivosGrattanoMarck/IQDOUFT6aPpnSao_qNNOh008AeAyg0tqNPcoI8_c_6pNrQ4?e=DO0hdT';
+    const encodedShare='u!'+btoa(shareUrl).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_');
+
+    setLoading(true,'Buscando arquivo…');
+    // Get file metadata via Graph
+    const metaResp=await fetch('https://graph.microsoft.com/v1.0/shares/'+encodedShare+'/driveItem',{
+      headers:{Authorization:'Bearer '+_msalToken}
+    });
+    if(!metaResp.ok){
+      const err=await metaResp.json().catch(()=>({}));
+      throw new Error('Erro ao acessar arquivo: '+(err.error?.message||metaResp.status));
+    }
+    const meta=await metaResp.json();
+
+    setLoading(true,'Baixando planilha…');
+    const dlResp=await fetch('https://graph.microsoft.com/v1.0/shares/'+encodedShare+'/driveItem/content',{
+      headers:{Authorization:'Bearer '+_msalToken}
+    });
+    if(!dlResp.ok) throw new Error('Erro ao baixar arquivo: '+dlResp.status);
+
+    const buf=await dlResp.arrayBuffer();
+    setLoading(true,'Processando dados…');
     const wb=XLSX.read(buf,{type:'array',cellDates:true,cellNF:false});
     const sn=wb.SheetNames.find(n=>/resultado\s*vend/i.test(n))||wb.SheetNames[0];
     const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{defval:null,raw:true});
-    if(!rows.length) throw new Error('Aba "Resultado Vendas" não encontrada ou vazia.');
+    if(!rows.length) throw new Error('Aba "Resultado Vendas" não encontrada.');
+
     setLoading(true,'Calculando indicadores…');
     D=parseSheet(rows);
     renderAll();
-    setLinked(fileHandle.name);
+
+    const fileName=meta.name||'Controle Geral.xlsx';
+    document.getElementById('fileDot').className='file-dot linked';
+    document.getElementById('fileStatusText').innerHTML='Conectado: <b>'+fileName+'</b> · SharePoint';
+    document.getElementById('statusHint').textContent='Clique em Atualizar para reler do SharePoint';
+    document.getElementById('btnRefresh').disabled=false;
+    document.getElementById('btnLogout').style.display='inline-flex';
     document.getElementById('firstRun').classList.add('hidden');
-  }catch(e){setError(e.message);alert('Erro:\n'+e.message);}
-  finally{setLoading(false);}
+    document.getElementById('lastUpdateTime').textContent=new Date().toLocaleString('pt-BR');
+  }catch(e){
+    setError(e.message);
+    const errEl=document.getElementById('loginError');
+    if(errEl){errEl.textContent='Erro: '+e.message;errEl.style.display='block';}
+    document.getElementById('firstRun').classList.remove('hidden');
+    // If token expired, force re-login
+    if(e.message.includes('401')||e.message.includes('token')){
+      _msalToken=null;
+      try{localStorage.removeItem('dashToken');}catch(ex){}
+    }
+  }finally{setLoading(false);}
 }
 
 function usePreloaded(){
   D=JSON.parse(JSON.stringify(DEFAULT_DATA));renderAll();
   document.getElementById('firstRun').classList.add('hidden');
   document.getElementById('fileDot').className='file-dot none';
-  document.getElementById('fileStatusText').innerHTML='Dados pré-carregados';
-  document.getElementById('statusHint').textContent='Clique em "Trocar arquivo" para vincular o Excel';
+  document.getElementById('fileStatusText').innerHTML='Dados pré-carregados (sem login)';
+  document.getElementById('statusHint').textContent='Clique em "Entrar com Microsoft" para conectar ao SharePoint';
   document.getElementById('btnRefresh').disabled=true;
 }
+
+// Kept for legacy fallback
+async function pickFile(){ msalLogin(); }
+async function refresh(){ refreshFromSharePoint(); }
 
 function setLoading(on,msg=''){const el=document.getElementById('loadingOverlay');if(on){document.getElementById('loadingMsg').textContent=msg;el.classList.add('show');}else{el.classList.remove('show');}}
 function setLinked(name){
@@ -1073,14 +1170,29 @@ function parseSheet(rows){
 }
 
 // INIT
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded',async()=>{
   Chart.defaults.font.family='DM Sans';
+  // Render default data immediately so layout is visible
   renderAll();
-  if(!window.showOpenFilePicker){
-    document.querySelector('.first-run-box p').innerHTML+='<br><br><span style="color:var(--red);font-size:12px">⚠ Use Chrome ou Edge para ativar o botão Atualizar.</span>';
+
+  // 1. Check if returning from Microsoft login (token in URL hash)
+  if(window.location.hash.includes('access_token')){
+    if(parseTokenFromHash()){
+      document.getElementById('firstRun').classList.add('hidden');
+      await readFromSharePoint();
+      return;
+    }
   }
-  const ln=localStorage.getItem('dashLastFile');
-  if(ln) document.querySelector('.first-run-box p').innerHTML+=`<br><br>Último arquivo: <b>${ln}</b>`;
+
+  // 2. Check cached token (still valid)
+  if(loadCachedToken()){
+    document.getElementById('firstRun').classList.add('hidden');
+    await readFromSharePoint();
+    return;
+  }
+
+  // 3. No token — show login screen
+  document.getElementById('firstRun').classList.remove('hidden');
 });
 </script>
 </body>
