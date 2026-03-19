@@ -796,6 +796,16 @@ function setLinked(name){
   document.getElementById('btnRefresh').disabled=false;
   document.getElementById('lastUpdateTime').textContent=new Date().toLocaleString('pt-BR');
 }
+function setLoading(show,msg=''){
+  const overlay = document.getElementById('loadingOverlay');
+  const msgEl = document.getElementById('loadingMsg');
+  if(msgEl && msg){
+    msgEl.textContent = msg;
+  }
+  if(overlay){
+    overlay.classList.toggle('show', !!show);
+  }
+}
 function setError(msg){document.getElementById('fileDot').className='file-dot error';document.getElementById('fileStatusText').innerHTML='Erro ao ler arquivo';document.getElementById('statusHint').textContent=msg;}
 function switchTab(view,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));el.classList.add('active');document.getElementById('view-'+view).classList.add('active');}
 function printAll(){document.querySelectorAll('.view').forEach(v=>v.style.display='block');window.print();setTimeout(()=>{document.querySelectorAll('.view').forEach(v=>v.style.display='');document.querySelectorAll('.view.active').forEach(v=>v.style.display='block');},500);}
