@@ -221,13 +221,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 
 <div class="first-run" id="firstRun">
   <div class="first-run-box">
-    <div class="first-run-icon">📊</div>
-    <h2>Vincular Planilha</h2>
-    <p>Selecione o <b>Controle_Geral.xlsx</b> uma única vez.<br>O dashboard vai lembrar para as próximas atualizações.</p>
-    <div class="hint"><b>Pelo SharePoint:</b><br>1. Abra a pasta no SharePoint<br>2. Baixe ou abra o arquivo localmente<br>3. Selecione-o abaixo</div>
+    <div class="first-run-icon">🔐</div>
+    <h2>Dashboard Pós-Vendas</h2>
+    <p>Faça login com sua conta Microsoft corporativa<br>para acessar os dados em tempo real do SharePoint.</p>
     <div class="first-run-actions">
-      <button class="btn btn-primary" style="justify-content:center;font-size:14px;padding:12px" onclick="pickFile()">📂 Selecionar Controle_Geral.xlsx</button>
-      <button class="btn" style="justify-content:center;background:var(--gray-100);color:var(--gray-600);font-size:12px" onclick="usePreloaded()">Continuar com dados pré-carregados</button>
+      <button class="btn btn-primary" style="justify-content:center;font-size:14px;padding:13px;gap:10px" onclick="pickFile()">
+        <svg width="18" height="18" viewBox="0 0 21 21" fill="none"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+        Entrar com Microsoft
+      </button>
+      <button class="btn" style="justify-content:center;background:var(--gray-100);color:var(--gray-600);font-size:12px" onclick="usePreloaded()">Usar dados pré-carregados</button>
     </div>
   </div>
 </div>
@@ -247,7 +249,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   <div class="header-right">
     <div class="last-update">Atualizado em <span id="lastUpdateTime">—</span></div>
     <button class="btn btn-success" id="btnRefresh" onclick="refresh()" disabled>🔄 Atualizar</button>
-    <button class="btn btn-ghost" onclick="pickFile()">📂 Trocar arquivo</button>
+    <button class="btn btn-ghost" onclick="pickFile()">🔑 Reconectar</button>
     <button class="btn btn-primary" onclick="printAll()">⬇ PDF</button>
   </div>
 </header>
@@ -1172,7 +1174,7 @@ function usePreloaded(){
   document.getElementById('firstRun').classList.add('hidden');
   document.getElementById('fileDot').className='file-dot none';
   document.getElementById('fileStatusText').innerHTML='Dados prÃ©-carregados';
-  document.getElementById('statusHint').textContent='Clique em "Trocar arquivo" para vincular o Excel';
+  document.getElementById('statusHint').textContent='Clique em "Reconectar" para acessar os dados do SharePoint';
   document.getElementById('btnRefresh').disabled=true;
 }
 
