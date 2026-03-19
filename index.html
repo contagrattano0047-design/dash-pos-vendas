@@ -1204,8 +1204,18 @@ function syncChartsForPrint(){
 }
 
 function rerenderChartsForPrint(){
+  // Disable animation for instant draw
+  Object.values(charts).forEach(c => {
+    if(c && c.options) {
+      c.options.animation = false;
+      c.options.animations = false;
+    }
+  });
   renderAll();
-  syncChartsForPrint();
+  // Force immediate update with no animation
+  Object.values(charts).forEach(c => {
+    if(c) try{ c.update('none'); }catch(e){}
+  });
 }
 
 function prepareChartSnapshots(){
@@ -1215,23 +1225,29 @@ function prepareChartSnapshots(){
     if(!parent) return;
 
     let key = canvas.dataset.printKey;
-    if(!key){
-      key = 'chart-' + index;
-      canvas.dataset.printKey = key;
-    }
+    if(!key){ key = 'chart-' + index; canvas.dataset.printKey = key; }
 
     let img = parent.querySelector(`.print-chart-img[data-print-key="${key}"]`);
     if(!img){
       img = document.createElement('img');
       img.className = 'print-chart-img';
       img.setAttribute('data-print-key', key);
-      img.alt = 'Grafico para impressao';
+      img.alt = 'Grafico';
       parent.appendChild(img);
     }
 
     try{
-      img.src = canvas.toDataURL('image/png', 1.0);
-    }catch(e){}
+      // Only snapshot if canvas has content (width > 0)
+      if(canvas.width > 0 && canvas.height > 0){
+        const dataUrl = canvas.toDataURL('image/png', 1.0);
+        // Verify it's not a blank canvas (blank = all white/transparent)
+        if(dataUrl && dataUrl.length > 100){
+          img.src = dataUrl;
+          img.style.width = canvas.offsetWidth + 'px';
+          img.style.height = canvas.offsetHeight + 'px';
+        }
+      }
+    }catch(e){ console.warn('Snapshot failed for chart', key, e); }
   });
 }
 
@@ -1252,18 +1268,33 @@ window.addEventListener('beforeprint', ()=>{
 
 window.addEventListener('afterprint', restoreAfterPrint);
 
-function printAll(){
+async function printAll(){
   _printingAll = true;
-  document.querySelectorAll('.view').forEach(v=>v.style.display='block');
+
+  // 1. Mostrar todas as abas
+  document.querySelectorAll('.view').forEach(v => v.style.display = 'block');
+
+  // 2. Re-renderizar todos os gráficos (abas ocultas não renderizam)
   rerenderChartsForPrint();
-  requestAnimationFrame(()=>{
-    requestAnimationFrame(()=>{
-      rerenderChartsForPrint();
-      prepareChartSnapshots();
-      window.print();
-      restoreAfterPrint();
-    });
-  });
+
+  // 3. Aguardar Chart.js terminar a animação
+  await new Promise(resolve => setTimeout(resolve, 700));
+
+  // 4. Segunda passada para garantir
+  rerenderChartsForPrint();
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  // 5. Tirar snapshot PNG de cada canvas e injetar como <img>
+  prepareChartSnapshots();
+
+  // 6. Aguardar imagens serem atribuídas
+  await new Promise(resolve => setTimeout(resolve, 200));
+
+  // 7. Imprimir
+  window.print();
+
+  // 8. Restaurar após fechar diálogo
+  restoreAfterPrint();
 }
 
 // PARSE SHEET
