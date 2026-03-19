@@ -256,10 +256,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 
 <div class="first-run" id="firstRun">
   <div class="first-run-box">
-    <div class="first-run-icon">SP</div>
-    <h2>Conectar SharePoint</h2>
-    <p>Faca login com sua conta Microsoft corporativa para ler o <b>Controle Geral.xlsx</b> em tempo real.</p>
-    <div class="hint"><b>Pelo SharePoint:</b><br>1. O login abre sua conta corporativa<br>2. O dashboard localiza o arquivo automaticamente<br>3. O botao Atualizar rele a planilha sempre que precisar</div>
+    <div class="first-run-icon">PV</div>
+    <h2>Vincular Planilha</h2>
+    <p>Faca login com sua conta Microsoft corporativa para ler o <b>Controle_Geral.xlsx</b> no SharePoint.</p>
+    <div class="hint"><b>Pelo SharePoint:</b><br>1. Faça login com Microsoft<br>2. O dashboard localiza o arquivo automaticamente<br>3. O botao Atualizar rele a mesma planilha</div>
     <div class="first-run-actions">
       <button class="btn btn-primary" id="btnLoginMicrosoft" style="justify-content:center;font-size:14px;padding:12px" onclick="msalLogin()">Entrar com Microsoft</button>
       <button class="btn" style="justify-content:center;background:var(--gray-100);color:var(--gray-600);font-size:12px" onclick="usePreloaded()">Continuar com dados pre-carregados</button>
@@ -291,9 +291,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 <div class="status-bar">
   <div class="file-status">
     <div class="file-dot none" id="fileDot"></div>
-    <div id="fileStatusText">Aguardando login...</div>
+    <div id="fileStatusText">Nenhum arquivo vinculado</div>
   </div>
-  <div class="status-hint" id="statusHint">Faça login com Microsoft para carregar os dados do SharePoint</div>
+  <div class="status-hint" id="statusHint">Faça login para vincular o arquivo do SharePoint</div>
 </div>
 
 <div class="tabs-wrapper">
@@ -1230,14 +1230,12 @@ async function readFromSharePoint(){
     const buf = await dlResp.arrayBuffer();
     setLoading(true,'Processando dados...');
     const wb = XLSX.read(buf, {type:'array', cellDates:true, cellNF:false});
-    const sn = wb.SheetNames.find(n => /resultado\s*vend/i.test(n)) || wb.SheetNames[0];
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], {defval:null, raw:true});
-    if(!rows.length) throw new Error('Aba "Resultado Vendas" não encontrada.');
 
     setLoading(true,'Calculando indicadores...');
-    D = parseSheet(rows);
+    const workbookData = readWorkbookData(wb);
+    D = workbookData.data;
     renderAll();
-    setLinked(fileName);
+    setLinked(fileName + ' · ' + workbookData.sheetName);
     document.getElementById('btnLogout').style.display = 'inline-flex';
     document.getElementById('firstRun').classList.add('hidden');
     return true;
@@ -1272,8 +1270,29 @@ async function pickFile(){
   await msalLogin();
 }
 
+function readWorkbookData(wb){
+  const preferredSheets = wb.SheetNames.filter(name => /resultado\s*vend/i.test(name));
+  const fallbackSheets = wb.SheetNames.filter(name => !preferredSheets.includes(name));
+  const attempts = [];
+
+  for(const sheetName of [...preferredSheets, ...fallbackSheets]){
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {defval:null, raw:true});
+    if(!rows.length){
+      attempts.push(sheetName + ': vazia');
+      continue;
+    }
+    try{
+      return {data: parseSheet(rows), sheetName, rowCount: rows.length};
+    }catch(error){
+      attempts.push(sheetName + ': ' + error.message);
+    }
+  }
+
+  throw new Error('Nao foi possivel localizar uma aba valida. Tentativas: ' + attempts.join(' | '));
+}
+
 function setLoading(on,msg=''){const el=document.getElementById('loadingOverlay');if(on){document.getElementById('loadingMsg').textContent=msg;el.classList.add('show');}else{el.classList.remove('show');}}
-function setLinked(name){document.getElementById('fileDot').className='file-dot linked';document.getElementById('fileStatusText').innerHTML=`Conectado: <b>${name}</b> · SharePoint`;document.getElementById('statusHint').textContent='Clique em Atualizar para reler do SharePoint';document.getElementById('btnRefresh').disabled=false;document.getElementById('lastUpdateTime').textContent=new Date().toLocaleString('pt-BR');}
+function setLinked(name){document.getElementById('fileDot').className='file-dot linked';document.getElementById('fileStatusText').innerHTML=`Vinculado: <b>${name}</b> · SharePoint`;document.getElementById('statusHint').textContent='Clique em Atualizar para reler';document.getElementById('btnRefresh').disabled=false;document.getElementById('lastUpdateTime').textContent=new Date().toLocaleString('pt-BR');}
 function setError(msg){document.getElementById('fileDot').className='file-dot error';document.getElementById('fileStatusText').innerHTML='Erro ao ler arquivo';document.getElementById('statusHint').textContent=msg;}
 function switchTab(view,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));el.classList.add('active');document.getElementById('view-'+view).classList.add('active');}
 function printAll(){document.querySelectorAll('.view').forEach(v=>v.style.display='block');window.print();setTimeout(()=>{document.querySelectorAll('.view').forEach(v=>v.style.display='');document.querySelectorAll('.view.active').forEach(v=>v.style.display='block');},500);}
@@ -1281,6 +1300,7 @@ function printAll(){document.querySelectorAll('.view').forEach(v=>v.style.displa
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function parseSheet(rows){
   const today=new Date();
+  const normalizeText=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
   const toN=v=>{
     if(v===null||v===undefined||v==='') return 0;
     if(typeof v==='number') return isNaN(v)?0:v;
@@ -1297,22 +1317,24 @@ function parseSheet(rows){
   };
   const days=d=>d?Math.floor((today-d)/86400000):0;
   const fmtD=d=>{if(!d)return 'â€”';try{return d.toLocaleDateString('pt-BR');}catch{return 'â€”';}};
+  const departamento=r=>normalizeText(r['Departamento']);
+  const statusEnt=r=>normalizeText(r['Status Ent']);
 
   // Filtro principal: LicitaÃ§Ãµes, valor > 0
-  const all=rows.filter(r=>String(r['Departamento']||'').trim()==='LicitaÃ§Ãµes'&&toN(r['Total LÃ­q.']||0)>0);
+  const all=rows.filter(r=>departamento(r).includes('licit')&&toN(r['Total LÃ­q.']||0)>0);
   if(!all.length) throw new Error('Nenhuma linha LicitaÃ§Ãµes com valor > 0.');
 
   const getAno=r=>{const a=toN(r['Ano']||0);return a>0?a:0;};
   const getMes=r=>{const m=toN(r['MÃªs']||0);return m>0?m:0;};
 
-  const ent=all.filter(r=>String(r['Status Ent']||'').trim()==='Entregue');
-  const pen=all.filter(r=>String(r['Status Ent']||'').trim()==='Pendente');
+  const ent=all.filter(r=>statusEnt(r)==='entregue');
+  const pen=all.filter(r=>statusEnt(r)==='pendente');
   const sumF=(arr,col)=>arr.reduce((a,r)=>a+toN(r[col]||0),0);
 
   // KPIs por ano
   function kpisAno(subset){
-    const e=subset.filter(r=>String(r['Status Ent']||'').trim()==='Entregue');
-    const p=subset.filter(r=>String(r['Status Ent']||'').trim()==='Pendente');
+    const e=subset.filter(r=>statusEnt(r)==='entregue');
+    const p=subset.filter(r=>statusEnt(r)==='pendente');
     const fat=sumF(subset,'Total LÃ­q.'); const mc=sumF(subset,'MC ($)');
     return {total_carteira:round(fat),valor_executado:round(sumF(e,'Total LÃ­q.')),valor_a_executar:round(sumF(p,'Total LÃ­q.')),mc_total:round(mc),mc_pct:fat>0?round(mc/fat*100,1):0,total_empenhos:pvUniq(subset),pendentes:pvUniq(p),executados:pvUniq(e)};
   }
@@ -1335,8 +1357,8 @@ function parseSheet(rows){
 
   // Status por recorte
   function statusAno(subset){
-    const e=subset.filter(r=>String(r['Status Ent']||'').trim()==='Entregue');
-    const p=subset.filter(r=>String(r['Status Ent']||'').trim()==='Pendente');
+    const e=subset.filter(r=>statusEnt(r)==='entregue');
+    const p=subset.filter(r=>statusEnt(r)==='pendente');
     // Mensal por data de entrega
     const mentEnt={};
     e.forEach(r=>{
