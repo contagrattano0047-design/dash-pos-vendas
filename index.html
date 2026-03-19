@@ -572,6 +572,7 @@ const GRAPH_SCOPES = ['Files.Read', 'Sites.Read.All'];
 const SHARE_URL = 'https://grattanomarck.sharepoint.com/:x:/s/SistemadeArquivosGrattanoMarck/IQDOUFT6aPpnSao_qNNOh008AeAyg0tqNPcoI8_c_6pNrQ4?e=DO0hdT';
 
 let msalInstance = null;
+let msalBootstrapPromise = null;
 let _msalToken = null;
 let fileHandle = null;
 
@@ -585,13 +586,41 @@ async function initMsal(){
   return msalInstance;
 }
 
+function getActiveMsalAccount(app){
+  if(!app) return null;
+  return app.getActiveAccount() || app.getAllAccounts()[0] || null;
+}
+
+async function bootstrapMsal(){
+  const app = await initMsal();
+  if(!msalBootstrapPromise){
+    msalBootstrapPromise = app.handleRedirectPromise().then(resp => {
+      const account = resp?.account || getActiveMsalAccount(app);
+      if(account){
+        app.setActiveAccount(account);
+      }
+      if(resp?.accessToken){
+        _msalToken = resp.accessToken;
+      }
+      return {app, resp, account};
+    }).catch(err => {
+      msalBootstrapPromise = null;
+      throw err;
+    });
+  }
+  return msalBootstrapPromise;
+}
+
 async function msalLogin(){
   try{
-    const app = await initMsal();
+    const errEl = document.getElementById('loginError');
+    if(errEl){
+      errEl.textContent = '';
+      errEl.style.display='none';
+    }
+    const {app, account} = await bootstrapMsal();
     // Handle redirect response first (in case we just came back from login)
-    const resp = await app.handleRedirectPromise();
-    if(resp && resp.accessToken){
-      _msalToken = resp.accessToken;
+    if(account){
       await onLoginSuccess();
       return;
     }
@@ -608,30 +637,36 @@ async function msalLogin(){
 }
 
 async function getToken(){
-  const app = await initMsal();
-  const accounts = app.getAllAccounts();
-  if(!accounts.length) throw new Error('Nenhuma conta autenticada.');
+  const {app} = await bootstrapMsal();
+  const account = getActiveMsalAccount(app);
+  if(!account) throw new Error('Nenhuma conta autenticada.');
   try{
-    const resp = await app.acquireTokenSilent({scopes: GRAPH_SCOPES, account: accounts[0]});
+    const resp = await app.acquireTokenSilent({scopes: GRAPH_SCOPES, account});
+    if(resp?.account){
+      app.setActiveAccount(resp.account);
+    }
     return resp.accessToken;
   }catch(e){
     // Silent failed — interactive fallback
-    await app.acquireTokenRedirect({scopes: GRAPH_SCOPES, account: accounts[0]});
+    if(typeof msal !== 'undefined' && e instanceof msal.InteractionRequiredAuthError){
+      await app.acquireTokenRedirect({scopes: GRAPH_SCOPES, account, prompt: 'select_account'});
+      return null;
+    }
     throw e;
   }
 }
 
 async function msalLogout(){
-  const app = await initMsal();
+  const {app} = await bootstrapMsal();
   _msalToken = null;
   document.getElementById('btnLogout').style.display='none';
   document.getElementById('btnRefresh').disabled=true;
   document.getElementById('firstRun').classList.remove('hidden');
   document.getElementById('fileDot').className='file-dot none';
   document.getElementById('fileStatusText').innerHTML='Sessão encerrada';
-  const accounts = app.getAllAccounts();
-  if(accounts.length){
-    await app.logoutRedirect({account: accounts[0], postLogoutRedirectUri: msalConfig.auth.redirectUri});
+  const account = getActiveMsalAccount(app);
+  if(account){
+    await app.logoutRedirect({account, postLogoutRedirectUri: msalConfig.auth.redirectUri});
   }
 }
 
@@ -648,6 +683,9 @@ async function readFromSharePoint(){
   setLoading(true,'Obtendo token…');
   try{
     _msalToken = await getToken();
+    if(!_msalToken){
+      return;
+    }
 
     // Encode share URL for Graph API
     const encodedShare = 'u!' + btoa(SHARE_URL).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
@@ -846,17 +884,8 @@ document.addEventListener('DOMContentLoaded', async()=>{
   renderAll();
 
   try{
-    const app = await initMsal();
-    // Handle redirect (coming back from Microsoft login)
-    const resp = await app.handleRedirectPromise();
-    if(resp && resp.accessToken){
-      _msalToken = resp.accessToken;
-      await onLoginSuccess();
-      return;
-    }
-    // Check if already logged in (silent)
-    const accounts = app.getAllAccounts();
-    if(accounts.length > 0){
+    const {account} = await bootstrapMsal();
+    if(account){
       document.getElementById('firstRun').classList.add('hidden');
       await readFromSharePoint();
       return;
