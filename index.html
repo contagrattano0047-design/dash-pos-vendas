@@ -927,6 +927,508 @@ function parseSheet(rows){
   };
 }
 
+let currentPanoramaAno = '2026';
+let currentStatusAno = '2026';
+let currentClientesAno = '2026';
+let pendentesSortKey = 'dias';
+let pendentesSortDir = 'desc';
+let pendentesSearch = '';
+
+function fmtBRL(v){
+  return Number(v || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+}
+
+function fmtPct(v){
+  return Number(v || 0).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + '%';
+}
+
+function fmtShortBRL(v){
+  const n = Number(v || 0);
+  if(Math.abs(n) >= 1000000) return 'R$ ' + (n / 1000000).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' mi';
+  if(Math.abs(n) >= 1000) return 'R$ ' + (n / 1000).toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0}) + ' mil';
+  return fmtBRL(n);
+}
+
+function esc(v){
+  return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function yearLabel(ano){
+  if(ano === 'total') return 'Toda a carteira';
+  return ano;
+}
+
+function riskMeta(dias){
+  if(dias >= 181) return {label:'Critico', cls:'badge-red'};
+  if(dias >= 91) return {label:'Alto', cls:'badge-orange'};
+  if(dias >= 31) return {label:'Atencao', cls:'badge-navy'};
+  return {label:'Controlado', cls:'badge-green'};
+}
+
+function setPillGroupActive(groupId, el){
+  const group = document.getElementById(groupId);
+  if(!group) return;
+  group.querySelectorAll('.pill').forEach(btn => btn.classList.remove('active'));
+  if(el) el.classList.add('active');
+}
+
+function resetChart(key){
+  if(charts[key]){
+    charts[key].destroy();
+    delete charts[key];
+  }
+}
+
+function upsertChart(key, canvasId, config){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas || typeof Chart === 'undefined') return null;
+  resetChart(key);
+  charts[key] = new Chart(canvas, config);
+  return charts[key];
+}
+
+function setPanoramaAno(ano, el){
+  currentPanoramaAno = ano;
+  setPillGroupActive('pillsPanorama', el);
+  renderPanorama();
+}
+
+function setStatusAno(ano, el){
+  currentStatusAno = ano;
+  setPillGroupActive('pillsStatus', el);
+  renderStatus();
+}
+
+function setClientesAno(ano, el){
+  currentClientesAno = ano;
+  setPillGroupActive('pillsClientes', el);
+  renderClientes();
+}
+
+function getSortedPendentes(){
+  const source = Array.isArray(D?.pendentes_list) ? [...D.pendentes_list] : [];
+  const term = pendentesSearch.trim().toLowerCase();
+  let rows = source.filter(r => {
+    if(!term) return true;
+    return [r.pv, r.cliente, r.empenho, r.uasg, r.prev_ent].some(v => String(v ?? '').toLowerCase().includes(term));
+  });
+
+  rows.sort((a, b) => {
+    let av = a[pendentesSortKey];
+    let bv = b[pendentesSortKey];
+    if(pendentesSortKey === 'cliente' || pendentesSortKey === 'pv'){
+      av = String(av ?? '').toLowerCase();
+      bv = String(bv ?? '').toLowerCase();
+      if(av < bv) return pendentesSortDir === 'asc' ? -1 : 1;
+      if(av > bv) return pendentesSortDir === 'asc' ? 1 : -1;
+      return 0;
+    }
+    av = Number(av || 0);
+    bv = Number(bv || 0);
+    return pendentesSortDir === 'asc' ? av - bv : bv - av;
+  });
+  return rows;
+}
+
+function sortPendentes(key){
+  if(pendentesSortKey === key){
+    pendentesSortDir = pendentesSortDir === 'asc' ? 'desc' : 'asc';
+  }else{
+    pendentesSortKey = key;
+    pendentesSortDir = key === 'cliente' || key === 'pv' ? 'asc' : 'desc';
+  }
+  renderPendentesTable();
+}
+
+function filterPendentes(value){
+  pendentesSearch = value || '';
+  renderPendentesTable();
+}
+
+function renderKpiCards(targetId, cards){
+  const el = document.getElementById(targetId);
+  if(!el) return;
+  el.innerHTML = cards.map(card => `
+    <div class="kpi-card ${esc(card.tone || 'gold')}">
+      <span class="kpi-icon">${esc(card.icon || '')}</span>
+      <div class="kpi-label">${esc(card.label)}</div>
+      <div class="kpi-value ${esc(card.small ? 'sm' : '')}">${esc(card.value)}</div>
+      <div class="kpi-sub">${esc(card.sub || '')}</div>
+    </div>
+  `).join('');
+}
+
+function renderPanorama(){
+  const ano = currentPanoramaAno;
+  const k = D?.kpis?.[ano] || D?.kpis?.total || {};
+  const s = D?.status?.[ano] || {};
+  const mensal25 = D?.mensal?.['2025'] || {meses:[], faturamento:[]};
+  const mensal26 = D?.mensal?.['2026'] || {meses:[], faturamento:[]};
+
+  const recorte = document.getElementById('recorteTagPanorama');
+  if(recorte){
+    recorte.innerHTML = `<div class="recorte-tag">Recorte: ${esc(yearLabel(ano))}</div>`;
+  }
+
+  renderKpiCards('kpiPanorama', [
+    {tone:'gold', icon:'1', label:'Total de Empenhos', value:String(k.total_empenhos || 0), sub:'PVs unicos com valor > 0'},
+    {tone:'navy', icon:'2', label:'Valor da Carteira', value:fmtShortBRL(k.total_carteira), sub:fmtBRL(k.total_carteira)},
+    {tone:'green', icon:'3', label:'Valor Executado', value:fmtShortBRL(k.valor_executado), sub:fmtBRL(k.valor_executado)},
+    {tone:'red', icon:'4', label:'Saldo em Aberto', value:fmtShortBRL(k.valor_a_executar), sub:fmtBRL(k.valor_a_executar)},
+    {tone:'teal', icon:'5', label:'Margem Total', value:fmtShortBRL(k.mc_total), sub:fmtBRL(k.mc_total)},
+    {tone:'gold', icon:'6', label:'MC Percentual', value:fmtPct(k.mc_pct || 0), sub:'Margem sobre a carteira'}
+  ]);
+
+  document.getElementById('subtitleExec').textContent = `Entregue ${s.entregue_pvs || 0} PVs | Pendente ${s.pendente_pvs || 0} PVs`;
+  document.getElementById('tagExec').textContent = yearLabel(ano);
+  document.getElementById('subtitleMC').textContent = `Margem consolidada de ${yearLabel(ano)}`;
+  document.getElementById('tagMC').textContent = yearLabel(ano);
+
+  upsertChart('chartMensal', 'chartMensal', {
+    type:'bar',
+    data:{
+      labels:['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
+      datasets:[
+        {label:'2025', data:['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].map((m, i) => mensal25.faturamento?.[i] || 0), backgroundColor:'#132240'},
+        {label:'2026', data:['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].map((m, i) => mensal26.faturamento?.[i] || 0), backgroundColor:'#c9a84c'}
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{position:'top'}},
+      scales:{y:{ticks:{callback:v => fmtShortBRL(v)}}}
+    }
+  });
+
+  upsertChart('chartExecucao', 'chartExecucao', {
+    type:'doughnut',
+    data:{
+      labels:['Entregue', 'Pendente'],
+      datasets:[{data:[s.fat_entregue || 0, s.fat_pendente || 0], backgroundColor:['#40916c', '#e63946'], borderWidth:0}]
+    },
+    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, cutout:'68%'}
+  });
+
+  const totalExec = (s.fat_entregue || 0) + (s.fat_pendente || 0);
+  const execLegend = document.getElementById('execLegend');
+  if(execLegend){
+    execLegend.innerHTML = [
+      {label:'Entregue', value:s.fat_entregue || 0, color:'#40916c'},
+      {label:'Pendente', value:s.fat_pendente || 0, color:'#e63946'}
+    ].map(item => `
+      <div class="legend-item">
+        <span class="legend-dot" style="background:${item.color}"></span>
+        <span class="legend-label">${esc(item.label)}</span>
+        <span class="legend-val">${esc(fmtShortBRL(item.value))}</span>
+        <span class="legend-pct">${esc(totalExec ? fmtPct(item.value / totalExec * 100) : '0,0%')}</span>
+      </div>
+    `).join('');
+  }
+
+  const mcPanel = document.getElementById('mcPanel');
+  if(mcPanel){
+    mcPanel.innerHTML = `
+      <div class="stat-row">
+        <div class="stat-item">
+          <div class="stat-label">MC Total</div>
+          <div class="stat-val gold">${esc(fmtShortBRL(k.mc_total || 0))}</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">MC %</div>
+          <div class="stat-val green">${esc(fmtPct(k.mc_pct || 0))}</div>
+        </div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-item">
+          <div class="compare-label">Executado</div>
+          <div class="compare-val up">${esc(fmtShortBRL(k.valor_executado || 0))}</div>
+        </div>
+        <div class="compare-item">
+          <div class="compare-label">A Executar</div>
+          <div class="compare-val down">${esc(fmtShortBRL(k.valor_a_executar || 0))}</div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function renderEnvelhecimento(){
+  const aging = Array.isArray(D?.envelhecimento) ? D.envelhecimento : [];
+  const criticos = Array.isArray(D?.criticos) ? D.criticos : [];
+  const totalQtd = aging.reduce((acc, item) => acc + Number(item.qtd || 0), 0);
+  const totalValor = aging.reduce((acc, item) => acc + Number(item.valor || 0), 0);
+  const acima90 = aging.filter(item => /\+|91/.test(String(item.faixa || ''))).reduce((acc, item) => acc + Number(item.valor || 0), 0);
+
+  renderKpiCards('kpiAging', [
+    {tone:'navy', icon:'1', label:'PVs Pendentes', value:String(totalQtd), sub:'Carteira pendente consolidada'},
+    {tone:'red', icon:'2', label:'Valor Pendente', value:fmtShortBRL(totalValor), sub:fmtBRL(totalValor)},
+    {tone:'gold', icon:'3', label:'Ticket Medio', value:fmtShortBRL(totalQtd ? totalValor / totalQtd : 0), sub:'Valor medio por PV'},
+    {tone:'red', icon:'4', label:'Exposicao > 90 Dias', value:fmtShortBRL(acima90), sub:'Faixas mais antigas'}
+  ]);
+
+  upsertChart('chartAging', 'chartAging', {
+    type:'bar',
+    data:{
+      labels:aging.map(item => item.faixa),
+      datasets:[{label:'Valor', data:aging.map(item => item.valor || 0), backgroundColor:['#40916c','#f4a261','#f4a261','#e76f51','#e63946']}]
+    },
+    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:v => fmtShortBRL(v)}}}}
+  });
+
+  const agingRows = document.getElementById('agingRows');
+  if(agingRows){
+    agingRows.innerHTML = aging.map(item => {
+      const tone = String(item.faixa).includes('+') || String(item.faixa).startsWith('91') ? 'danger' : (String(item.faixa).startsWith('31') || String(item.faixa).startsWith('61') ? 'warn' : 'ok');
+      return `
+        <div class="aging-row ${tone}">
+          <div>
+            <div class="aging-label">${esc(item.faixa)}</div>
+            <div class="aging-count">${esc(String(item.qtd || 0))} PVs</div>
+          </div>
+          <div class="aging-value">
+            <div class="val">${esc(fmtShortBRL(item.valor || 0))}</div>
+            <div class="sub">${esc(fmtBRL(item.valor || 0))}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  const criticosTbody = document.getElementById('criticosTbody');
+  if(criticosTbody){
+    criticosTbody.innerHTML = criticos.length ? criticos.map(item => {
+      const risk = riskMeta(item.dias || 0);
+      return `
+        <tr>
+          <td>${esc(item.pv)}</td>
+          <td>${esc(item.cliente)}</td>
+          <td>${esc(item.empenho || '-')}</td>
+          <td>${esc(item.uasg || '-')}</td>
+          <td>${esc(fmtBRL(item.valor || 0))}</td>
+          <td>${esc(String(item.dias || 0))}</td>
+          <td>${esc(item.prev_ent || '-')}</td>
+          <td><span class="badge ${risk.cls}">${esc(risk.label)}</span></td>
+        </tr>
+      `;
+    }).join('') : `<tr><td colspan="8" style="text-align:center;color:#5c6578">Sem empenhos criticos no recorte atual.</td></tr>`;
+  }
+}
+
+function renderPendentesTable(){
+  const rows = getSortedPendentes();
+  const tbody = document.getElementById('pendentesTbody');
+  const count = document.getElementById('pendentesCount');
+  if(count){
+    count.textContent = `${rows.length} registros`;
+  }
+  if(!tbody) return;
+  tbody.innerHTML = rows.length ? rows.map(item => {
+    const risk = riskMeta(item.dias || 0);
+    return `
+      <tr>
+        <td>${esc(item.pv)}</td>
+        <td>${esc(item.cliente)}</td>
+        <td>${esc(item.empenho || '-')}</td>
+        <td>${esc(item.uasg || '-')}</td>
+        <td style="text-align:right">${esc(fmtBRL(item.valor || 0))}</td>
+        <td style="text-align:center">${esc(String(item.dias || 0))}</td>
+        <td>${esc(item.prev_ent || '-')}</td>
+        <td><span class="badge ${risk.cls}">${esc(risk.label)}</span></td>
+      </tr>
+    `;
+  }).join('') : `<tr><td colspan="8" style="text-align:center;color:#5c6578">Nenhum pendente encontrado.</td></tr>`;
+}
+
+function renderStatus(){
+  const ano = currentStatusAno;
+  const s = D?.status?.[ano] || {};
+  const empresas = D?.empresas?.[ano] || {nomes:[], faturamento:[], mc:[]};
+  const totalPvs = Number(s.entregue_pvs || 0) + Number(s.pendente_pvs || 0);
+
+  document.getElementById('tagStatusDonut').textContent = yearLabel(ano);
+  document.getElementById('tagStatusMensal').textContent = yearLabel(ano);
+  document.getElementById('tagEmpresas').textContent = yearLabel(ano);
+  document.getElementById('subtitleStatusDonut').textContent = `PVs unicos | ${yearLabel(ano)}`;
+  document.getElementById('subtitleStatusMensal').textContent = `Faturamento entregue por mes | ${yearLabel(ano)}`;
+  document.getElementById('subtitleEmpresas').textContent = `Faturamento e MC por empresa | ${yearLabel(ano)}`;
+
+  upsertChart('chartStatus', 'chartStatus', {
+    type:'doughnut',
+    data:{
+      labels:['Entregue', 'Pendente'],
+      datasets:[{data:[s.entregue_pvs || 0, s.pendente_pvs || 0], backgroundColor:['#2d6a4f','#e63946'], borderWidth:0}]
+    },
+    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, cutout:'70%'}
+  });
+
+  const statusLegend = document.getElementById('statusLegend');
+  if(statusLegend){
+    statusLegend.innerHTML = [
+      {label:'Entregue', value:s.entregue_pvs || 0, color:'#2d6a4f'},
+      {label:'Pendente', value:s.pendente_pvs || 0, color:'#e63946'}
+    ].map(item => `
+      <div class="legend-item">
+        <span class="legend-dot" style="background:${item.color}"></span>
+        <span class="legend-label">${esc(item.label)}</span>
+        <span class="legend-val">${esc(String(item.value))}</span>
+        <span class="legend-pct">${esc(totalPvs ? fmtPct(item.value / totalPvs * 100) : '0,0%')}</span>
+      </div>
+    `).join('');
+  }
+
+  const mensalEnt = Object.values(s.mensal_ent || {});
+  upsertChart('chartStatusMensal', 'chartStatusMensal', {
+    type:'bar',
+    data:{
+      labels:mensalEnt.map(item => item.label),
+      datasets:[{label:'Entregue', data:mensalEnt.map(item => item.fat || 0), backgroundColor:'#1e3a5f'}]
+    },
+    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:v => fmtShortBRL(v)}}}}
+  });
+
+  upsertChart('chartEmpresas', 'chartEmpresas', {
+    type:'bar',
+    data:{
+      labels:empresas.nomes || [],
+      datasets:[
+        {label:'Faturamento', data:empresas.faturamento || [], backgroundColor:'#132240'},
+        {label:'MC', data:empresas.mc || [], backgroundColor:'#c9a84c'}
+      ]
+    },
+    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}}, scales:{y:{ticks:{callback:v => fmtShortBRL(v)}}}}
+  });
+
+  renderPendentesTable();
+}
+
+function renderClientes(){
+  const ano = currentClientesAno;
+  const clientes = D?.clientes?.[ano] || {nomes:[], faturamento:[], mc:[]};
+  const vendedores = D?.vendedores?.[ano] || {nomes:[], faturamento:[], mc:[]};
+
+  document.getElementById('tagClientes').textContent = yearLabel(ano);
+  document.getElementById('tagVendedores').textContent = yearLabel(ano);
+  document.getElementById('subtitleClientes').textContent = `Top clientes | ${yearLabel(ano)}`;
+  document.getElementById('subtitleVendedores').textContent = `Ranking por faturamento | ${yearLabel(ano)}`;
+  document.getElementById('subtitleClientesTabela').textContent = `Detalhamento do recorte ${yearLabel(ano)}`;
+
+  upsertChart('chartClientes', 'chartClientes', {
+    type:'bar',
+    data:{
+      labels:clientes.nomes || [],
+      datasets:[{label:'Faturamento', data:clientes.faturamento || [], backgroundColor:'#c9a84c'}]
+    },
+    options:{
+      indexAxis:'y',
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{ticks:{callback:v => fmtShortBRL(v)}}}
+    }
+  });
+
+  const vendedoresPanel = document.getElementById('vendedoresPanel');
+  if(vendedoresPanel){
+    const maxFat = Math.max(...(vendedores.faturamento || [0]), 1);
+    vendedoresPanel.innerHTML = (vendedores.nomes || []).map((nome, idx) => `
+      <div class="progress-item">
+        <div class="progress-header">
+          <span class="progress-name">${esc(nome)}</span>
+          <span class="progress-val">${esc(fmtShortBRL((vendedores.faturamento || [])[idx] || 0))}</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" style="width:${(((vendedores.faturamento || [])[idx] || 0) / maxFat * 100).toFixed(1)}%;background:#1e3a5f"></div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  const totalFat = (clientes.faturamento || []).reduce((acc, n) => acc + Number(n || 0), 0);
+  const tbody = document.getElementById('clientesTbody');
+  if(tbody){
+    tbody.innerHTML = (clientes.nomes || []).map((nome, idx) => {
+      const fat = Number((clientes.faturamento || [])[idx] || 0);
+      const mc = Number((clientes.mc || [])[idx] || 0);
+      const part = totalFat ? (fat / totalFat * 100) : 0;
+      const mcPct = fat ? (mc / fat * 100) : 0;
+      return `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${esc(nome)}</td>
+          <td>${esc(fmtBRL(fat))}</td>
+          <td>${esc(fmtBRL(mc))}</td>
+          <td>${esc(fmtPct(mcPct))}</td>
+          <td>${esc(fmtPct(part))}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+}
+
+function renderGargalos(){
+  const aging = Array.isArray(D?.envelhecimento) ? D.envelhecimento : [];
+  const criticos = Array.isArray(D?.criticos) ? D.criticos : [];
+  const pendentes = Array.isArray(D?.pendentes_list) ? D.pendentes_list : [];
+  const riscoTotal = criticos.reduce((acc, item) => acc + Number(item.valor || 0), 0);
+  const acima180 = aging.find(item => String(item.faixa || '').includes('+180'));
+  const altoRisco = pendentes.filter(item => Number(item.dias || 0) >= 91).length;
+
+  renderKpiCards('kpiRisco', [
+    {tone:'red', icon:'1', label:'PVs Criticos', value:String(criticos.length), sub:'Empenhos mais antigos'},
+    {tone:'red', icon:'2', label:'Valor em Risco', value:fmtShortBRL(riscoTotal), sub:fmtBRL(riscoTotal)},
+    {tone:'orange', icon:'3', label:'Faixa +180 Dias', value:String(acima180?.qtd || 0), sub:fmtShortBRL(acima180?.valor || 0)},
+    {tone:'navy', icon:'4', label:'Pendencias Graves', value:String(altoRisco), sub:'PVs com mais de 90 dias'}
+  ]);
+
+  const riscoPanel = document.getElementById('riscoPanel');
+  if(riscoPanel){
+    riscoPanel.innerHTML = criticos.length ? criticos.slice(0, 4).map(item => {
+      const risk = riskMeta(item.dias || 0);
+      return `
+        <div class="aging-row ${risk.cls === 'badge-red' ? 'danger' : (risk.cls === 'badge-orange' ? 'warn' : 'ok')}">
+          <div>
+            <div class="aging-label">${esc(item.cliente)}</div>
+            <div class="aging-count">PV ${esc(item.pv)} | ${esc(String(item.dias || 0))} dias</div>
+          </div>
+          <div class="aging-value">
+            <div class="val">${esc(fmtShortBRL(item.valor || 0))}</div>
+            <div class="sub">${esc(risk.label)}</div>
+          </div>
+        </div>
+      `;
+    }).join('') : '<div style="color:var(--gray-600)">Nenhuma exposicao critica encontrada.</div>';
+  }
+
+  const decisoes = [];
+  if(criticos.length){
+    decisoes.push(`Priorizar tratativa dos ${criticos.length} empenhos mais antigos.`);
+  }
+  if((acima180?.qtd || 0) > 0){
+    decisoes.push(`Atacar imediatamente a faixa +180 dias (${acima180.qtd} PVs).`);
+  }
+  if(pendentes.length){
+    decisoes.push('Revisar agenda de entrega e dependencia operacional da carteira pendente.');
+  }
+
+  const decisoesPanel = document.getElementById('decisoesPanel');
+  if(decisoesPanel){
+    decisoesPanel.innerHTML = decisoes.slice(0, 3).map(item => `
+      <div class="progress-item">
+        <div class="progress-name" style="max-width:100%;white-space:normal">${esc(item)}</div>
+      </div>
+    `).join('') || '<div style="color:var(--gray-600)">Sem decisoes pendentes.</div>';
+  }
+}
+
+function renderAll(){
+  renderPanorama();
+  renderEnvelhecimento();
+  renderStatus();
+  renderClientes();
+  renderGargalos();
+}
+
 // INIT
 document.addEventListener('DOMContentLoaded', async()=>{
   Chart.defaults.font.family = 'DM Sans';
