@@ -625,10 +625,31 @@ async function msalLogin(){
       return;
     }
     // No response — start login
-    await app.loginRedirect({
-      scopes: GRAPH_SCOPES,
-      prompt: 'select_account',
-    });
+    let resp;
+    try{
+      resp = await app.loginPopup({
+        scopes: GRAPH_SCOPES,
+        prompt: 'select_account',
+      });
+    }catch(loginErr){
+      if(typeof msal !== 'undefined' && loginErr instanceof msal.BrowserAuthError && loginErr.errorCode === 'popup_window_error'){
+        await app.loginRedirect({
+          scopes: GRAPH_SCOPES,
+          prompt: 'select_account',
+        });
+        return;
+      }
+      throw loginErr;
+    }
+    if(resp?.account){
+      app.setActiveAccount(resp.account);
+    }
+    if(resp?.accessToken){
+      _msalToken = resp.accessToken;
+    }else{
+      _msalToken = await getToken(true);
+    }
+    await onLoginSuccess();
   }catch(e){
     const errEl = document.getElementById('loginError');
     if(errEl){ errEl.textContent = 'Erro no login: ' + e.message; errEl.style.display='block'; }
@@ -636,7 +657,7 @@ async function msalLogin(){
   }
 }
 
-async function getToken(){
+async function getToken(interactive = false){
   const {app} = await bootstrapMsal();
   const account = getActiveMsalAccount(app);
   if(!account) throw new Error('Nenhuma conta autenticada.');
@@ -649,8 +670,14 @@ async function getToken(){
   }catch(e){
     // Silent failed — interactive fallback
     if(typeof msal !== 'undefined' && e instanceof msal.InteractionRequiredAuthError){
-      await app.acquireTokenRedirect({scopes: GRAPH_SCOPES, account, prompt: 'select_account'});
-      return null;
+      if(interactive){
+        const resp = await app.acquireTokenPopup({scopes: GRAPH_SCOPES, account, prompt: 'select_account'});
+        if(resp?.account){
+          app.setActiveAccount(resp.account);
+        }
+        return resp.accessToken;
+      }
+      throw new Error('Sua sessão expirou ou precisa de confirmação. Clique em "Entrar com Microsoft" para continuar.');
     }
     throw e;
   }
@@ -671,8 +698,15 @@ async function msalLogout(){
 }
 
 async function onLoginSuccess(){
-  document.getElementById('firstRun').classList.add('hidden');
-  await readFromSharePoint();
+  const ok = await readFromSharePoint();
+  if(ok){
+    const errEl = document.getElementById('loginError');
+    if(errEl){
+      errEl.textContent = '';
+      errEl.style.display='none';
+    }
+    document.getElementById('firstRun').classList.add('hidden');
+  }
 }
 
 async function refreshFromSharePoint(){
@@ -684,7 +718,7 @@ async function readFromSharePoint(){
   try{
     _msalToken = await getToken();
     if(!_msalToken){
-      return;
+      throw new Error('Não foi possível obter o token de acesso.');
     }
 
     // Encode share URL for Graph API
@@ -730,11 +764,16 @@ async function readFromSharePoint(){
     document.getElementById('btnLogout').style.display = 'inline-flex';
     document.getElementById('firstRun').classList.add('hidden');
     document.getElementById('lastUpdateTime').textContent = new Date().toLocaleString('pt-BR');
+    return true;
 
   }catch(e){
     setError(e.message);
     document.getElementById('statusHint').textContent = 'Erro: ' + e.message;
+    document.getElementById('firstRun').classList.remove('hidden');
+    const errEl = document.getElementById('loginError');
+    if(errEl){ errEl.textContent = e.message; errEl.style.display='block'; }
     console.error('SharePoint error:', e);
+    return false;
   }finally{
     setLoading(false);
   }
@@ -886,9 +925,10 @@ document.addEventListener('DOMContentLoaded', async()=>{
   try{
     const {account} = await bootstrapMsal();
     if(account){
-      document.getElementById('firstRun').classList.add('hidden');
-      await readFromSharePoint();
-      return;
+      document.getElementById('fileStatusText').innerHTML = 'Sessão encontrada. Conectandoâ€¦';
+      document.getElementById('statusHint').textContent = 'Tentando carregar os dados do SharePoint';
+      const ok = await readFromSharePoint();
+      if(ok) return;
     }
   }catch(e){
     console.warn('MSAL init error:', e);
