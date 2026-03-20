@@ -1363,7 +1363,7 @@ function parseSheet(rows){
   const penD=pen.map(r=>({...r,dias:days(toD(r['Data Ped']))}));
   const pvEnvMap={};
   penD.forEach(r=>{const pv=String(r['PV']||'');if(!pvEnvMap[pv])pvEnvMap[pv]={dias:r.dias,valor:0,mc:0};pvEnvMap[pv].valor+=toN(r['Total Líq.']||0);pvEnvMap[pv].mc+=toN(r['MC ($)']||0);});
-  const pvEnvList=Object.values(pvEnvMap);
+  const pvEnvList=Object.values(pvEnvMap).filter(r=>r.valor>0);
   const bins=[[0,30,'0-30 dias'],[31,60,'31-60 dias'],[61,90,'61-90 dias'],[91,180,'91-180 dias'],[181,9999,'+180 dias']];
   const envelhecimento=bins.map(([lo,hi,lbl])=>{const sub=pvEnvList.filter(r=>r.dias>=lo&&r.dias<=hi);return{faixa:lbl,qtd:sub.length,valor:round(sub.reduce((a,r)=>a+r.valor,0)),mc:round(sub.reduce((a,r)=>a+(r.mc||0),0))};});
 
