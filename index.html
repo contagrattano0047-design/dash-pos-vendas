@@ -192,88 +192,31 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 
 /* PRINT */
 @media print{
-  /* ── Cores exatas ── */
-  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box!important}
-
-  /* ── Ocultar UI ── */
-  .tabs-wrapper,.status-bar,.first-run,.loading-overlay,
-  .pill-group,#searchPendentes,#pendentesCount,
-  .btn,.recorte-tag{display:none!important}
-
-  /* ── Página ── */
-  @page{size:A4 landscape;margin:12mm 10mm}
-  html,body{width:100%!important;background:#fff!important;font-size:10px!important}
-
-  /* ── Header ── */
-  .header{position:static!important;padding:8px 14px!important;break-inside:avoid!important}
-  .header-title h1{font-size:13px!important}
-  .header-title p{font-size:9px!important}
-  .logo-mark{width:32px!important;height:32px!important;font-size:14px!important}
-
-  /* ── Main container ── */
-  .main{padding:6px 10px!important;width:100%!important}
-
-  /* ── Cada aba = nova página ── */
-  .view{display:block!important;page-break-before:always!important;break-before:page!important;width:100%!important}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  body{background:#fff!important;font-size:11px}
+  .tabs-wrapper,.status-bar,.first-run,.loading-overlay,.btn,
+  .pill-group,#searchPendentes,#pendentesCount{display:none!important}
+  .header{position:static!important;padding:10px 18px!important}
+  .header-title h1{font-size:14px!important}
+  .main{padding:8px 14px!important}
+  .view{display:block!important;page-break-before:always!important;break-before:page!important}
   .view:first-of-type{page-break-before:avoid!important;break-before:avoid!important}
-
-  /* ── Cards ── */
-  .card{
-    page-break-inside:avoid!important;break-inside:avoid!important;
-    box-shadow:none!important;border:1px solid #ccc!important;
-    margin-bottom:8px!important;overflow:visible!important;
-  }
-  .kpi-card{page-break-inside:avoid!important;break-inside:avoid!important;box-shadow:none!important;padding:12px 14px!important}
-  .aging-row{page-break-inside:avoid!important;break-inside:avoid!important}
-
-  /* ── Grids ── */
-  .grid-2{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;margin-bottom:8px!important}
-  .grid-3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:6px!important;margin-bottom:8px!important}
-  .grid-2-1{display:grid!important;grid-template-columns:1.6fr 1fr!important;gap:8px!important;margin-bottom:8px!important}
-  .grid-1-2{display:grid!important;grid-template-columns:1fr 1.6fr!important;gap:8px!important;margin-bottom:8px!important}
-  .kpi-grid{grid-template-columns:repeat(4,1fr)!important;gap:6px!important;margin-bottom:8px!important}
-
-  /* ── Tabelas ── */
+  .card{page-break-inside:avoid!important;break-inside:avoid!important;box-shadow:none!important;border:1px solid #e0e4ea!important;margin-bottom:10px!important}
+  .kpi-card{page-break-inside:avoid!important;break-inside:avoid!important;box-shadow:none!important}
+  .aging-row{page-break-inside:avoid!important}
+  .grid-2,.grid-3,.grid-2-1,.grid-1-2{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;margin-bottom:10px!important}
+  .kpi-grid{grid-template-columns:repeat(4,1fr)!important;gap:7px!important}
   [style*="max-height"]{max-height:none!important;overflow:visible!important}
-  [style*="overflow-y"]{overflow-y:visible!important}
-  .data-table{font-size:8px!important;width:100%!important}
-  .data-table th{font-size:7px!important;padding:3px 5px!important;background:#f0f2f5!important}
-  .data-table td{padding:3px 5px!important}
+  .data-table{font-size:9px!important}
+  .data-table th{font-size:8px!important;padding:4px 6px!important}
+  .data-table td{padding:4px 6px!important}
   .data-table tr{page-break-inside:avoid!important}
-
-  /* ── Gráficos: OCULTAR canvas, MOSTRAR snapshot img ── */
-  .chart-wrap{
-    page-break-inside:avoid!important;break-inside:avoid!important;
-    padding:8px 12px 12px!important;
-    overflow:visible!important;
-  }
-  /* Remove height fixo do chart-wrap para impressão */
-  .chart-wrap[style*="height"]{height:auto!important}
-  .chart-wrap canvas{display:none!important;visibility:hidden!important}
-  .chart-wrap .print-chart-img{
-    display:block!important;
-    width:100%!important;
-    height:auto!important;
-    max-height:220px!important;
-    object-fit:contain!important;
-    object-position:left center!important;
-  }
-
-  /* ── Tipografia ── */
-  .kpi-value{font-size:15px!important}
-  .kpi-label{font-size:8px!important}
-  .kpi-sub{font-size:8px!important}
-  .section-title{font-size:15px!important}
-  .section-subtitle{font-size:9px!important}
-  .card-title{font-size:11px!important}
-  .card-subtitle{font-size:9px!important}
-  .badge{font-size:8px!important;padding:1px 5px!important}
-  .progress-name{font-size:9px!important}
-  .progress-val{font-size:9px!important}
-  .legend-label,.legend-val,.legend-pct{font-size:9px!important}
-  .aging-label{font-size:10px!important}
-  .aging-count{font-size:8px!important}
-  .aging-value .val{font-size:13px!important}
+  canvas{max-width:100%!important}
+  .chart-wrap{page-break-inside:avoid!important}
+  .chart-wrap canvas{display:none!important}
+  .chart-wrap .print-chart-img{display:block!important}
+  .kpi-value{font-size:17px!important}
+  .section-title{font-size:16px!important}
 }
 </style>
 </head>
@@ -310,10 +253,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
     <div class="last-update">Atualizado em <span id="lastUpdateTime">—</span></div>
     <button class="btn btn-success" id="btnRefresh" onclick="refresh()" disabled>🔄 Atualizar</button>
     <button class="btn btn-ghost" onclick="pickFile()">🔑 Reconectar</button>
-    <div style="display:flex;align-items:center;gap:4px">
-    <button class="btn btn-primary" onclick="printAll()" style="border-radius:var(--radius-sm) 0 0 var(--radius-sm);padding-right:12px">⬇ PDF</button>
-    <button id="btnOrientation" class="btn btn-primary" onclick="toggleOrientation()" title="Alternar orientação" style="border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:9px 10px;border-left:1px solid rgba(0,0,0,0.15)">⇄</button>
-  </div>
+    <button class="btn btn-primary" onclick="printAll()">⬇ PDF</button>
   </div>
 </header>
 
@@ -872,8 +812,15 @@ function renderPendentesTable(data,keepSort){
   if(!keepSort){_pendentesSort={col:'dias',asc:false};}
   const {col,asc}=_pendentesSort;
   const sorted=[...data].sort((a,b)=>{
-    let va=a[col]||'',vb=b[col]||'';
-    return typeof va==='string'?(asc?va.localeCompare(vb):vb.localeCompare(va)):(asc?va-vb:vb-va);
+    let va=a[col], vb=b[col];
+    // Numeric columns
+    if(col==='dias'||col==='valor'){
+      va=parseFloat(va)||0; vb=parseFloat(vb)||0;
+      return asc?va-vb:vb-va;
+    }
+    // String columns — force to string safely
+    va=String(va==null?'':va); vb=String(vb==null?'':vb);
+    return asc?va.localeCompare(vb,'pt-BR'):vb.localeCompare(va,'pt-BR');
   });
   const tbody=document.getElementById('pendentesTbody'); if(!tbody) return;
   const count=document.getElementById('pendentesCount'); if(count) count.textContent=sorted.length+' pedido'+(sorted.length!==1?'s':'');
@@ -1252,7 +1199,6 @@ function setLinked(name){
 function setError(msg){document.getElementById('fileDot').className='file-dot error';document.getElementById('fileStatusText').innerHTML='Erro ao ler arquivo';document.getElementById('statusHint').textContent=msg;}
 function switchTab(view,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));el.classList.add('active');document.getElementById('view-'+view).classList.add('active');}
 let _printingAll = false;
-let _printOrientation = 'landscape'; // 'landscape' | 'portrait'
 
 function syncChartsForPrint(){
   Object.values(charts).forEach(chart => {
@@ -1265,16 +1211,8 @@ function syncChartsForPrint(){
 }
 
 function rerenderChartsForPrint(){
-  // Disable Chart.js animation for instant drawing
-  if(typeof Chart !== 'undefined'){
-    Chart.defaults.animation = false;
-    Chart.defaults.animations = {colors:false, x:false};
-  }
   renderAll();
-  // Force immediate redraw on all existing charts
-  Object.values(charts).forEach(c => {
-    if(c) try{ c.update('none'); }catch(e){}
-  });
+  syncChartsForPrint();
 }
 
 function prepareChartSnapshots(){
@@ -1284,28 +1222,23 @@ function prepareChartSnapshots(){
     if(!parent) return;
 
     let key = canvas.dataset.printKey;
-    if(!key){ key = 'chart-' + index; canvas.dataset.printKey = key; }
+    if(!key){
+      key = 'chart-' + index;
+      canvas.dataset.printKey = key;
+    }
 
     let img = parent.querySelector(`.print-chart-img[data-print-key="${key}"]`);
     if(!img){
       img = document.createElement('img');
       img.className = 'print-chart-img';
       img.setAttribute('data-print-key', key);
-      img.alt = 'Grafico';
+      img.alt = 'Grafico para impressao';
       parent.appendChild(img);
     }
 
     try{
-      if(canvas.width > 10 && canvas.height > 10){
-        const dataUrl = canvas.toDataURL('image/png', 1.0);
-        if(dataUrl && dataUrl.length > 200){
-          img.src = dataUrl;
-          // Store natural dimensions as data attributes for CSS reference
-          img.dataset.w = canvas.width;
-          img.dataset.h = canvas.height;
-        }
-      }
-    }catch(e){ console.warn('Snapshot error:', key, e); }
+      img.src = canvas.toDataURL('image/png', 1.0);
+    }catch(e){}
   });
 }
 
@@ -1326,56 +1259,18 @@ window.addEventListener('beforeprint', ()=>{
 
 window.addEventListener('afterprint', restoreAfterPrint);
 
-function toggleOrientation(){
-  _printOrientation = _printOrientation === 'landscape' ? 'portrait' : 'landscape';
-  const btn = document.getElementById('btnOrientation');
-  if(btn){
-    btn.title = _printOrientation === 'landscape' ? 'Modo: Paisagem (clique para Retrato)' : 'Modo: Retrato (clique para Paisagem)';
-    btn.textContent = _printOrientation === 'landscape' ? '⇄' : '⇅';
-  }
-}
-
-async function printAll(){
+function printAll(){
   _printingAll = true;
-
-  // 1. Mostrar todas as abas
-  document.querySelectorAll('.view').forEach(v => v.style.display = 'block');
-
-  // 2. Expandir chart-wraps com altura mínima antes do snapshot
-  const chartWraps = document.querySelectorAll('.chart-wrap');
-  const origHeights = [];
-  chartWraps.forEach((el, i) => {
-    origHeights[i] = el.style.height;
-    if(el.offsetHeight < 200) el.style.height = '260px';
+  document.querySelectorAll('.view').forEach(v=>v.style.display='block');
+  rerenderChartsForPrint();
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      rerenderChartsForPrint();
+      prepareChartSnapshots();
+      window.print();
+      restoreAfterPrint();
+    });
   });
-
-  // 3. Re-renderizar sem animação e aguardar
-  rerenderChartsForPrint();
-  await new Promise(r => setTimeout(r, 900));
-  rerenderChartsForPrint();
-  await new Promise(r => setTimeout(r, 400));
-
-  // 4. Tirar snapshots PNG de todos os gráficos
-  prepareChartSnapshots();
-  await new Promise(r => setTimeout(r, 200));
-
-  // 5. Restaurar alturas
-  chartWraps.forEach((el, i) => { el.style.height = origHeights[i] || ''; });
-
-  // 6. Injetar orientação dinamicamente
-  let _pageStyleEl = document.getElementById('_printPageStyle');
-  if(!_pageStyleEl){
-    _pageStyleEl = document.createElement('style');
-    _pageStyleEl.id = '_printPageStyle';
-    document.head.appendChild(_pageStyleEl);
-  }
-  _pageStyleEl.textContent = '@page{size:A4 ' + _printOrientation + ';margin:12mm 10mm}';
-
-  // 7. Abrir diálogo de impressão
-  window.print();
-
-  // 8. Restaurar exibição das abas após fechar
-  restoreAfterPrint();
 }
 
 // PARSE SHEET
@@ -1449,7 +1344,7 @@ function parseSheet(rows){
       mentEnt[k].pvs.add(r['PV']);
     });
     const mentOut={};
-    Object.entries(mentEnt).sort(([a],[b])=>a.localeCompare(b)).forEach(([k,v])=>{mentOut[k]={label:v.label,fat:round(v.fat),pvs:v.pvs.size};});
+    Object.entries(mentEnt).sort(([a],[b])=>String(a).localeCompare(String(b))).forEach(([k,v])=>{mentOut[k]={label:v.label,fat:round(v.fat),pvs:v.pvs.size};});
     return {entregue_pvs:pvUniq(e),pendente_pvs:pvUniq(p),fat_entregue:round(sumF(e,'Total Líq.')),fat_pendente:round(sumF(p,'Total Líq.')),mensal_ent:mentOut};
   }
 
