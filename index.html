@@ -878,7 +878,7 @@ function renderClientes(){
   document.getElementById('vendedoresPanel').innerHTML = vd.nomes.map((nome,i)=>{
     const mcP=vd.faturamento[i]>0?(vd.mc[i]/vd.faturamento[i]*100).toFixed(1):'0.0';
     const barW=Math.max(0,(vd.faturamento[i]/maxVF*100)).toFixed(0);
-    return `<div class="progress-item"><div class="progress-header"><div class="progress-name">${nome}</div><div class="progress-val">${fmtS(vd.faturamento[i])}</div></div><div style="display:flex;gap:8px;align-items:center;margin-bottom:4px"><div class="progress-bar-bg" style="flex:1"><div class="progress-bar-fill" style="width:${barW}%;background:${pal[i]||C.navy}"></div></div><span class="badge ${parseFloat(mcP)>=15?'badge-green':'badge-orange'}">${mcP}% MC</span></div><div style="font-size:11px;color:var(--gray-400)">MC: ${fmtS(env[i].mc||0)}</div></div>`;
+    return `<div class="progress-item"><div class="progress-header"><div class="progress-name">${nome}</div><div class="progress-val">${fmtS(vd.faturamento[i])}</div></div><div style="display:flex;gap:8px;align-items:center;margin-bottom:4px"><div class="progress-bar-bg" style="flex:1"><div class="progress-bar-fill" style="width:${barW}%;background:${pal[i]||C.navy}"></div></div><span class="badge ${parseFloat(mcP)>=15?'badge-green':'badge-orange'}">${mcP}% MC</span></div><div style="font-size:11px;color:var(--gray-400)">MC: ${fmtS(vd.mc[i]||0)}</div></div>`;
   }).join('');
 }
 
