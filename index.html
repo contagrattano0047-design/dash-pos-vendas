@@ -502,33 +502,33 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 // ═══════════════════════════════════════════════════════
 const DEFAULT_DATA = {
   kpis:{
-    '2026':{total_carteira:2749884.05,valor_executado:2590674.16,valor_a_executar:159209.89,mc_total:292969.18,mc_pct:10.7,total_empenhos:86,pendentes:23,executados:63},
-    '2025':{total_carteira:15716706.72,valor_executado:15561253.93,valor_a_executar:155452.79,mc_total:3176542.32,mc_pct:20.2,total_empenhos:370,pendentes:5,executados:365},
-    'total':{total_carteira:21674826.42,valor_executado:18160233.53,valor_a_executar:3514592.89,mc_total:4225060.57,mc_pct:19.5,total_empenhos:486,pendentes:56,executados:430},
+    '2026':{total_carteira:2749884.05,valor_executado:2590674.16,valor_a_executar:159209.89,mc_total:292969.18,mc_pct:10.7,total_empenhos:86,pendentes:23,executados:63,mc_pendente:15945.59},
+    '2025':{total_carteira:15716706.72,valor_executado:15561253.93,valor_a_executar:155452.79,mc_total:3176542.32,mc_pct:20.2,total_empenhos:370,pendentes:5,executados:365,mc_pendente:32089.49},
+    'total':{total_carteira:21674826.42,valor_executado:18160233.53,valor_a_executar:3514592.89,mc_total:4225060.57,mc_pct:19.5,total_empenhos:486,pendentes:56,executados:430,mc_pendente:803178.07},
   },
   mensal:{
-    '2025':{meses:['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],faturamento:[324107.60,767168.90,1937186.31,1340750.31,1442137.85,1068356.77,1265950.31,1341177.28,1472877.40,2252660.43,880565.29,1623768.28],mc:[16846.45,127913.45,532979.82,232582.78,375118.63,227982.24,176239.25,288937.08,211477.76,341244.11,222840.32,422322.82]},
+    '2025':{meses:['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],faturamento:[324107.60,767168.90,1937186.31,1340750.31,1442137.85,1068356.77,1265950.31,1341177.28,1472877.40,2252660.43,880565.29,1623768.28],mc:[16846.45,127913.45,532979.82,232582.78,375118.63,227982.24,176239.25,288937.08,211477.76,341244.11,222840.32,422380.42]},
     '2026':{meses:['Jan','Fev','Mar'],faturamento:[1197826.29,816964.52,735093.24],mc:[63247.67,191371.97,38349.55],em_andamento:['Mar']},
   },
   status:{
     '2026':{entregue_pvs:63,pendente_pvs:23,fat_entregue:2590674.16,fat_pendente:159209.89,
-      mensal_ent:{'2026_1':{label:'Jan/2026',fat:557801.70,pvs:20},'2026_2':{label:'Fev/2026',fat:1392364.98,pvs:32},'2026_3':{label:'Mar/2026',fat:722596.40,pvs:20}}},
+      mensal_ent:{'2026_1':{label:'Jan/2026',fat:557801.66,pvs:23},'2026_2':{label:'Fev/2026',fat:1392365.17,pvs:32},'2026_3':{label:'Mar/2026',fat:722596.35,pvs:16}}},
     '2025':{entregue_pvs:365,pendente_pvs:5,fat_entregue:15561253.93,fat_pendente:155452.79,
-      mensal_ent:{'2025_1':{label:'Jan/2025',fat:471352.40,pvs:21},'2025_2':{label:'Fev/2025',fat:839807.90,pvs:40},'2025_3':{label:'Mar/2025',fat:915997.00,pvs:43},'2025_4':{label:'Abr/2025',fat:1574652.00,pvs:56},'2025_5':{label:'Mai/2025',fat:1380038.00,pvs:11},'2025_6':{label:'Jun/2025',fat:1269807.00,pvs:34},'2025_7':{label:'Jul/2025',fat:764493.00,pvs:24},'2025_8':{label:'Ago/2025',fat:1378274.00,pvs:47},'2025_9':{label:'Set/2025',fat:1981984.00,pvs:82},'2025_10':{label:'Out/2025',fat:2399497.00,pvs:112},'2025_11':{label:'Nov/2025',fat:952603.00,pvs:64},'2025_12':{label:'Dez/2025',fat:1485758.00,pvs:65}}},
+      mensal_ent:{'2025_1':{label:'Jan/2025',fat:471352.36,pvs:12},'2025_2':{label:'Fev/2025',fat:839807.88,pvs:21},'2025_3':{label:'Mar/2025',fat:915997.03,pvs:28},'2025_4':{label:'Abr/2025',fat:1574652.31,pvs:34},'2025_5':{label:'Mai/2025',fat:1380037.85,pvs:9},'2025_6':{label:'Jun/2025',fat:1269806.77,pvs:22},'2025_7':{label:'Jul/2025',fat:764493.26,pvs:19},'2025_8':{label:'Ago/2025',fat:1378274.48,pvs:37},'2025_9':{label:'Set/2025',fat:1981984.27,pvs:48},'2025_10':{label:'Out/2025',fat:2399496.70,pvs:56},'2025_11':{label:'Nov/2025',fat:952603.78,pvs:44},'2025_12':{label:'Dez/2025',fat:1485758.21,pvs:34}}},
     'total':{entregue_pvs:430,pendente_pvs:56,fat_entregue:18160233.53,fat_pendente:3514592.89,
-      mensal_ent:{}},
+      mensal_ent:{'2025_1':{label:'Jan/2025',fat:471352.36,pvs:12},'2025_2':{label:'Fev/2025',fat:839807.88,pvs:21},'2025_3':{label:'Mar/2025',fat:915997.03,pvs:28},'2025_4':{label:'Abr/2025',fat:1574652.31,pvs:34},'2025_5':{label:'Mai/2025',fat:1380037.85,pvs:9},'2025_6':{label:'Jun/2025',fat:1269806.77,pvs:22},'2025_7':{label:'Jul/2025',fat:764493.26,pvs:19},'2025_8':{label:'Ago/2025',fat:1378274.48,pvs:37},'2025_9':{label:'Set/2025',fat:1981984.27,pvs:48},'2025_10':{label:'Out/2025',fat:2399496.70,pvs:56},'2025_11':{label:'Nov/2025',fat:952603.78,pvs:44},'2025_12':{label:'Dez/2025',fat:1485758.21,pvs:34},'2026_1':{label:'Jan/2026',fat:557801.66,pvs:23},'2026_2':{label:'Fev/2026',fat:1392365.17,pvs:32},'2026_3':{label:'Mar/2026',fat:722596.35,pvs:16}}},
   },
   empresas:{
-    '2026':{nomes:['Marck','Grattano'],faturamento:[2081002.56,668881.49],mc:[233540.57,59428.61]},
-    '2025':{nomes:['Marck','Grattano'],faturamento:[13978688.98,1738017.74],mc:[3052003.76,124538.56]},
+    '2026':{nomes:['Marck','Grattano'],faturamento:[2047534.56,702348.89],mc:[261582.84,31386.34]},
+    '2025':{nomes:['Marck','Grattano'],faturamento:[14947549.49,769157.23],mc:[3139407.09,37135.23]},
     'total':{nomes:['Marck','Grattano'],faturamento:[20199843.04,1474983.38],mc:[4154479.17,70523.80]},
   },
   envelhecimento:[
-    {faixa:'0-30 dias',qtd:35,valor:2666715.64},
-    {faixa:'31-60 dias',qtd:9,valor:188572.03},
-    {faixa:'61-90 dias',qtd:3,valor:2025.16},
-    {faixa:'91-180 dias',qtd:6,valor:207852.79},
-    {faixa:'+180 dias',qtd:3,valor:449427.27},
+    {faixa:'0-30 dias',qtd:35,valor:2666715.64,mc:612854.78},
+    {faixa:'31-60 dias',qtd:9,valor:188572.03,mc:50751.19},
+    {faixa:'61-90 dias',qtd:3,valor:2025.16,mc:-165.31},
+    {faixa:'91-180 dias',qtd:6,valor:207852.79,mc:47633.33},
+    {faixa:'+180 dias',qtd:3,valor:449427.27,mc:92104.08},
   ],
   criticos:[
     {pv:'5783',cliente:'FUNEAS-PARANA',empenho:'473012025',uasg:'928658',valor:0,dias:325,prev_ent:'10/05/2025'},
@@ -538,13 +538,13 @@ const DEFAULT_DATA = {
   ],
   pendentes_list:[],
   clientes:{
-    '2026':{nomes:['FUNDAÇÃO SAUDE DO ESTADO DO RJ','HOSPITAL FEDERAL DO ANDARAÍ','HOSPITAL PEDRO ERNESTO','SOUZA AGUIAR','RONALDO GAZOLA','FUNDO MUN. DE SAUDE DE MACAE','HOSP. UNIV. ANTONIO PEDRO','INST. DE INFECTOLOGIA E.CHAGAS'],faturamento:[890000,520000,415000,310000,290000,245000,210000,180000],mc:[195000,89000,73000,52000,65000,18000,28000,22000]},
-    '2025':{nomes:['FUNDAÇÃO SAUDE DO ESTADO DO RJ','HOSPITAL FEDERAL DO ANDARAÍ','HOSPITAL PEDRO ERNESTO','FUNDO MUN. DE SAUDE DE MACAE','SOUZA AGUIAR','RONALDO GAZOLA','HOSP. UNIV. ANTONIO PEDRO','INST. DE INFECTOLOGIA E.CHAGAS'],faturamento:[6323771,1555484,1060138,1095409,911393,846456,918016,539888],mc:[1503212,256303,274997,36529,185851,309470,43159,16619]},
-    'total':{nomes:['FUNDAÇÃO SAUDE DO ESTADO DO RJ','HOSPITAL FEDERAL DO ANDARAÍ','HOSPITAL PEDRO ERNESTO','FUNDO MUN. DE SAUDE DE MACAE','SOUZA AGUIAR','RONALDO GAZOLA','HOSP. UNIV. ANTONIO PEDRO','INST. DE INFECTOLOGIA E.CHAGAS'],faturamento:[7213771,2075484,1475138,1340409,1221393,1136456,1128016,719888],mc:[1698212,345303,347997,54529,237851,374470,71159,38619]},
+    '2026':{nomes:['FUNDO MUN. DE SAUDE DE MACAE','COMPLEXO HOSPITALAR DA UFRJ','FUNDAÇÃO SAUDE DO ESTADO DO RJ','SOUZA AGUIAR','HOSP. UNIVERSITARIO ANTONIO PEDRO','INST. DE INFECTOLOGIA E.CHAGAS','CENTRO DE OBTENÇÃO MARINHA RJ','LOURENÇO JORGE'],faturamento:[673493.98,605328.50,400873.20,327605.00,277720.20,195233.77,60918.00,40540.50],mc:[27984.26,49426.42,109145.14,59391.28,6782.57,-2522.18,11716.05,4043.69]},
+    '2025':{nomes:['FUNDAÇÃO SAUDE DO ESTADO DO RJ','HOSPITAL FEDERAL DO ANDARAÍ','HOSPITAL PEDRO ERNESTO','FUNDO MUN. DE SAUDE DE MACAE','SOUZA AGUIAR','RONALDO GAZOLA','HOSP. UNIV. ANTONIO PEDRO','INST. DE INFECTOLOGIA E.CHAGAS'],faturamento:[6813771.40,2075484.48,1475138.86,666915.60,893788.12,1136456.25,850296.75,524654.61],mc:[1588212.44,345303.37,347997.05,26545.14,178460.39,374470.59,64376.44,22576.08]},
+    'total':{nomes:['FUNDAÇÃO SAUDE DO ESTADO DO RJ','HOSPITAL FEDERAL DO ANDARAÍ','HOSPITAL PEDRO ERNESTO','FUNDO MUN. DE SAUDE DE MACAE','SOUZA AGUIAR','RONALDO GAZOLA','HOSP. UNIV. ANTONIO PEDRO','INST. DE INFECTOLOGIA E.CHAGAS'],faturamento:[7213771.40,2075484.48,1475138.86,1340409.58,1221393.12,1136456.25,1128016.95,719888.37],mc:[1698212.44,345303.37,347997.05,54529.40,237851.66,374470.59,71159.01,38619.77]},
   },
   vendedores:{
-    '2026':{nomes:['Marcela Lattari','Amanda Santos','André Lattari'],faturamento:[2497218.32,208412.84,44252.89],mc:[252540.73,24691.51,15736.94]},
-    '2025':{nomes:['Marcela Lattari','Amanda Santos'],faturamento:[15716706.72,0],mc:[3176542.32,0]},
+    '2026':{nomes:['Marcela Lattari'],faturamento:[2749884.05],mc:[292969.18]},
+    '2025':{nomes:['Marcela Lattari','Amanda Santos','André Lattari'],faturamento:[15633439.67,83266.68,0],mc:[3152135.14,24691.51,0]},
     'total':{nomes:['Marcela Lattari','Amanda Santos','André Lattari'],faturamento:[21583026.75,83266.68,8533.00],mc:[4204748.67,24691.51,-4437.21]},
   },
 };
@@ -878,7 +878,7 @@ function renderClientes(){
   document.getElementById('vendedoresPanel').innerHTML = vd.nomes.map((nome,i)=>{
     const mcP=vd.faturamento[i]>0?(vd.mc[i]/vd.faturamento[i]*100).toFixed(1):'0.0';
     const barW=Math.max(0,(vd.faturamento[i]/maxVF*100)).toFixed(0);
-    return `<div class="progress-item"><div class="progress-header"><div class="progress-name">${nome}</div><div class="progress-val">${fmtS(vd.faturamento[i])}</div></div><div style="display:flex;gap:8px;align-items:center;margin-bottom:4px"><div class="progress-bar-bg" style="flex:1"><div class="progress-bar-fill" style="width:${barW}%;background:${pal[i]||C.navy}"></div></div><span class="badge ${parseFloat(mcP)>=15?'badge-green':'badge-orange'}">${mcP}% MC</span></div><div style="font-size:11px;color:var(--gray-400)">MC: ${fmtS(vd.mc[i])}</div></div>`;
+    return `<div class="progress-item"><div class="progress-header"><div class="progress-name">${nome}</div><div class="progress-val">${fmtS(vd.faturamento[i])}</div></div><div style="display:flex;gap:8px;align-items:center;margin-bottom:4px"><div class="progress-bar-bg" style="flex:1"><div class="progress-bar-fill" style="width:${barW}%;background:${pal[i]||C.navy}"></div></div><span class="badge ${parseFloat(mcP)>=15?'badge-green':'badge-orange'}">${mcP}% MC</span></div><div style="font-size:11px;color:var(--gray-400)">MC: ${fmtS(env[i].mc||0)}</div></div>`;
   }).join('');
 }
 
@@ -886,15 +886,17 @@ function renderClientes(){
 // 5. GARGALOS
 // ════════════════════════════════════════════
 function renderGargalos(){
-  const k=D.kpis.total; const env=D.envelhecimento;
-  const prop=k.total_carteira>0?k.valor_a_executar/k.total_carteira:0;
+  // Gargalos sempre usa TODA a carteira (sem filtro de ano)
+  const k=D.kpis['total']; const env=D.envelhecimento;
   const totalPVs=env.reduce((a,e)=>a+e.qtd,0);
+  // MC em risco = soma real da MC dos pedidos pendentes (toda carteira)
+  const mcRisco = k.mc_pendente||0;
 
   document.getElementById('kpiRisco').innerHTML=
-    kpiCard('red','⚠️','Valor em Risco',fmtS(k.valor_a_executar),`${totalPVs} PVs sem entrega`,'badge-danger',totalPVs+' PVs')+
+    kpiCard('red','⚠️','Valor em Risco',fmtS(k.valor_a_executar),`${totalPVs} PVs sem entrega · toda a carteira`,'badge-danger',totalPVs+' PVs')+
     kpiCard('navy','🚨','Críticos +180d',env[4].qtd+' PVs',fmtS(env[4].valor),'badge-danger','Urgente')+
-    kpiCard('gold','💰','MC em Risco',fmtS(k.mc_total*prop),'Proporcional ao pendente')+
-    kpiCard('teal','🎯','MC Realizada Total',pct(k.mc_pct),'Carteira total','badge-pos','Meta');
+    kpiCard('gold','💰','MC em Risco',fmtS(mcRisco),'MC real dos pendentes · toda carteira')+
+    kpiCard('teal','🎯','MC Realizada Total',pct(k.mc_pct),'Carteira total · valor > 0','badge-pos',pct(k.mc_pct));
 
   const crit180=(D.criticos||[]).filter(c=>c.dias>=180&&c.valor>0);
   document.getElementById('riscoPanel').innerHTML=
@@ -1306,11 +1308,12 @@ function parseSheet(rows){
   const sumF=(arr,col)=>arr.reduce((a,r)=>a+toN(r[col]||0),0);
 
   // KPIs por ano
-  function kpisAno(subset){
+  function kpisAno(subset, penSubset){
     const e=subset.filter(r=>String(r['Status Ent']||'').trim()==='Entregue');
-    const p=subset.filter(r=>String(r['Status Ent']||'').trim()==='Pendente');
+    const p=penSubset||subset.filter(r=>String(r['Status Ent']||'').trim()==='Pendente');
     const fat=sumF(subset,'Total Líq.'); const mc=sumF(subset,'MC ($)');
-    return {total_carteira:round(fat),valor_executado:round(sumF(e,'Total Líq.')),valor_a_executar:round(sumF(p,'Total Líq.')),mc_total:round(mc),mc_pct:fat>0?round(mc/fat*100,1):0,total_empenhos:pvUniq(subset),pendentes:pvUniq(p),executados:pvUniq(e)};
+    const mc_pendente=round(sumF(p,'MC ($)'));
+    return {total_carteira:round(fat),valor_executado:round(sumF(e,'Total Líq.')),valor_a_executar:round(sumF(p,'Total Líq.')),mc_total:round(mc),mc_pct:fat>0?round(mc/fat*100,1):0,total_empenhos:pvUniq(subset),pendentes:pvUniq(p),executados:pvUniq(e),mc_pendente};
   }
   const pvUniq=arr=>new Set(arr.map(r=>r['PV'])).size;
   const round=(v,d=2)=>Math.round(v*Math.pow(10,d))/Math.pow(10,d);
@@ -1359,10 +1362,10 @@ function parseSheet(rows){
   // Envelhecimento pendentes
   const penD=pen.map(r=>({...r,dias:days(toD(r['Data Ped']))}));
   const pvEnvMap={};
-  penD.forEach(r=>{const pv=String(r['PV']||'');if(!pvEnvMap[pv])pvEnvMap[pv]={dias:r.dias,valor:0};pvEnvMap[pv].valor+=toN(r['Total Líq.']||0);});
+  penD.forEach(r=>{const pv=String(r['PV']||'');if(!pvEnvMap[pv])pvEnvMap[pv]={dias:r.dias,valor:0,mc:0};pvEnvMap[pv].valor+=toN(r['Total Líq.']||0);pvEnvMap[pv].mc+=toN(r['MC ($)']||0);});
   const pvEnvList=Object.values(pvEnvMap);
   const bins=[[0,30,'0-30 dias'],[31,60,'31-60 dias'],[61,90,'61-90 dias'],[91,180,'91-180 dias'],[181,9999,'+180 dias']];
-  const envelhecimento=bins.map(([lo,hi,lbl])=>{const sub=pvEnvList.filter(r=>r.dias>=lo&&r.dias<=hi);return{faixa:lbl,qtd:sub.length,valor:round(sub.reduce((a,r)=>a+r.valor,0))};});
+  const envelhecimento=bins.map(([lo,hi,lbl])=>{const sub=pvEnvList.filter(r=>r.dias>=lo&&r.dias<=hi);return{faixa:lbl,qtd:sub.length,valor:round(sub.reduce((a,r)=>a+r.valor,0)),mc:round(sub.reduce((a,r)=>a+(r.mc||0),0))};});
 
   // Críticos
   const pvCritMap={};
@@ -1379,7 +1382,7 @@ function parseSheet(rows){
   function topVendedores(subset,n=5){const vM={};subset.forEach(r=>{const v=String(r['Vendedor']||'?');if(!vM[v])vM[v]={f:0,mc:0};vM[v].f+=toN(r['Total Líq.']||0);vM[v].mc+=toN(r['MC ($)']||0);});const s=Object.entries(vM).sort((a,b)=>b[1].f-a[1].f).slice(0,n);return{nomes:s.map(([k])=>k),faturamento:s.map(([,v])=>round(v.f)),mc:s.map(([,v])=>round(v.mc))};}
 
   return {
-    kpis:{'2025':kpisAno(all25),'2026':kpisAno(all26),'total':kpisAno(all)},
+    kpis:{'2025':kpisAno(all25,pen.filter(r=>getAno(r)===2025)),'2026':kpisAno(all26,pen.filter(r=>getAno(r)===2026)),'total':kpisAno(all,pen)},
     mensal:{'2025':mensalAno(all,2025),'2026':m26},
     status:{'2025':statusAno(all25),'2026':statusAno(all26),'total':statusAno(all)},
     empresas:{'2025':empresasAno(all25),'2026':empresasAno(all26),'total':empresasAno(all)},
