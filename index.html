@@ -1300,8 +1300,19 @@ function parseSheet(rows){
   const all=rows.filter(r=>String(r['Departamento']||'').trim()==='Licitações'&&toN(r['Total Líq.']||0)>0);
   if(!all.length) throw new Error('Nenhuma linha Licitações com valor > 0.');
 
-  const getAno=r=>{const a=toN(r['Ano']||0);return a>0?a:0;};
-  const getMes=r=>{const m=toN(r['Mês']||0);return m>0?m:0;};
+  const getDataPed=r=>toD(r['Data Ped']);
+  const getAno=r=>{
+    const d=getDataPed(r);
+    if(d) return d.getFullYear();
+    const a=toN(r['Ano']||0);
+    return a>0?a:0;
+  };
+  const getMes=r=>{
+    const d=getDataPed(r);
+    if(d) return d.getMonth()+1;
+    const m=toN(r['Mês']||0);
+    return m>0?m:0;
+  };
 
   const ent=all.filter(r=>String(r['Status Ent']||'').trim()==='Entregue');
   const pen=all.filter(r=>String(r['Status Ent']||'').trim()==='Pendente');
@@ -1413,4 +1424,3 @@ document.addEventListener('DOMContentLoaded', async()=>{
 </script>
 </body>
 </html>
-
