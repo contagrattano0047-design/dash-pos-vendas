@@ -190,6 +190,55 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 }
 @media(max-width:700px){.grid-3{grid-template-columns:1fr}.kpi-grid{grid-template-columns:1fr 1fr}}
 
+/* CALENDAR */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:16px}
+.cal-header-cell{padding:8px 4px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gray-400);background:var(--navy);color:var(--gold-light);border-radius:var(--radius-sm) var(--radius-sm) 0 0}
+.cal-cell{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--radius-sm);min-height:120px;padding:0;display:flex;flex-direction:column;transition:box-shadow .2s}
+.cal-cell:hover{box-shadow:var(--shadow-md);z-index:1}
+.cal-cell.outside{background:var(--gray-50);opacity:.45}
+.cal-cell.today{border:2px solid var(--gold);box-shadow:0 0 0 2px rgba(201,168,76,.2)}
+.cal-cell.has-items{border-left:3px solid var(--gold)}
+.cal-cell.week-selected{background:rgba(201,168,76,.08);border-color:var(--gold)}
+.cal-cell.week-selected.has-items{border-left:3px solid var(--gold)}
+.cal-week-row{cursor:pointer}
+.cal-day-num{padding:6px 8px 2px;font-family:'DM Serif Display',serif;font-size:15px;color:var(--navy);display:flex;justify-content:space-between;align-items:center}
+.cal-day-num .cal-day-total{font-size:10px;font-weight:600;color:var(--gold);font-family:'DM Sans',sans-serif}
+.cal-day-num .cal-day-name{font-size:9px;font-weight:600;color:var(--gray-400);font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:.5px}
+.cal-items{padding:2px 6px 6px;flex:1;overflow-y:auto;max-height:160px}
+.cal-item{padding:4px 6px;margin-bottom:3px;border-radius:4px;font-size:10px;line-height:1.3;cursor:default;transition:background .15s}
+.cal-item:last-child{margin-bottom:0}
+.cal-item:hover{filter:brightness(.95)}
+.cal-item.risk-ok{background:#e6f4ef;border-left:2px solid var(--green-light)}
+.cal-item.risk-warn{background:#fef3e2;border-left:2px solid var(--orange)}
+.cal-item.risk-danger{background:var(--red-pale);border-left:2px solid var(--red)}
+.cal-item.risk-late{background:#fce8ea;border-left:2px solid var(--red)}
+.cal-item-pv{font-weight:700;color:var(--navy)}
+.cal-item-cli{color:var(--gray-600);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-item-val{font-weight:600;color:var(--navy);margin-top:1px}
+.cal-empty{padding:16px;text-align:center;color:var(--gray-400);font-size:11px;font-style:italic}
+.cal-nav{display:flex;align-items:center;gap:12px}
+.cal-nav-btn{background:none;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);padding:6px 12px;cursor:pointer;font-size:13px;color:var(--navy);font-family:'DM Sans',sans-serif;transition:all .2s}
+.cal-nav-btn:hover{background:var(--gray-50);border-color:var(--gold)}
+.cal-month-label{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);min-width:180px;text-align:center}
+/* EXPANDABLE TABLE */
+.expand-row{cursor:pointer;transition:background .15s}
+.expand-row:hover td{background:var(--gray-50)!important}
+.expand-toggle{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:var(--gray-100);color:var(--navy);font-size:11px;font-weight:700;transition:all .2s;margin-right:6px;flex-shrink:0;border:1px solid var(--gray-200)}
+.expand-toggle.open{background:var(--gold);color:var(--navy);transform:rotate(90deg)}
+.expand-detail{display:none}
+.expand-detail.open{display:table-row}
+.expand-detail td{padding:0!important;border-bottom:2px solid var(--gold)!important}
+.itens-wrapper{padding:8px 12px 12px 40px;background:var(--gray-50)}
+.itens-table{width:100%;border-collapse:collapse;font-size:12px}
+.itens-table th{text-align:left;padding:5px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gray-400);background:var(--gray-100);border-bottom:1px solid var(--gray-200)}
+.itens-table td{padding:6px 10px;border-bottom:1px solid var(--gray-200);color:var(--gray-600)}
+.itens-table tr:last-child td{border-bottom:none}
+.itens-table .item-desc{color:var(--navy);font-weight:500;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.itens-count{font-size:10px;color:var(--gray-400);font-weight:600;margin-left:4px}
+
+@media(max-width:900px){.cal-grid{grid-template-columns:repeat(2,1fr)}.cal-header-cell{display:none}.cal-cell{min-height:80px}}
+@media(max-width:500px){.cal-grid{grid-template-columns:1fr}}
+
 /* PRINT */
 @media print{
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
@@ -271,6 +320,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   <div class="tab" onclick="switchTab('status',this)">3. Status dos Empenhos</div>
   <div class="tab" onclick="switchTab('clientes',this)">4. Clientes &amp; Vendedores</div>
   <div class="tab" onclick="switchTab('gargalos',this)">5. Gargalos &amp; Risco</div>
+  <div class="tab" onclick="switchTab('previsao',this)">6. Previsão da Semana</div>
 </div>
 
 <div class="main">
@@ -494,6 +544,63 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════
+     6. PREVISÃO DA SEMANA
+══════════════════════════════════════════════════ -->
+<div class="view" id="view-previsao">
+  <div class="section-header">
+    <div>
+      <div class="section-title">Previsão de Faturamento</div>
+      <div class="section-subtitle" id="subtitlePrevisao">Calendário baseado na coluna Prev. Fat · Pendentes com valor &gt; 0</div>
+    </div>
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="navCalendar(-1)">◀</button>
+      <div class="cal-month-label" id="calMonthLabel">—</div>
+      <button class="cal-nav-btn" onclick="navCalendar(1)">▶</button>
+      <button class="cal-nav-btn" onclick="navCalendar(0)" style="font-size:11px;font-weight:600">Hoje</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid" id="kpiPrevisao"></div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body" style="padding:12px">
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header" style="padding-bottom:14px">
+      <div>
+        <div class="card-title">📋 Entregas Previstas na Semana</div>
+        <div class="card-subtitle" id="previsaoWeekRange">Clique na linha para ver os itens do pedido</div>
+      </div>
+      <span id="previsaoWeekCount" style="font-size:12px;color:var(--gray-400);white-space:nowrap"></span>
+    </div>
+    <div style="overflow-x:auto;max-height:520px;overflow-y:auto">
+      <table class="data-table" id="previsaoWeekTable">
+        <thead style="position:sticky;top:0;z-index:1">
+          <tr>
+            <th style="width:30px"></th><th>PV</th><th>Cliente</th><th>Prev. Fat</th><th style="text-align:right">Valor</th><th>Empenho</th><th>UASG</th><th style="text-align:center">Dias</th><th>Risco</th>
+          </tr>
+        </thead>
+        <tbody id="previsaoTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Resumo do Mês</div><div class="card-subtitle">Valor previsto por semana</div></div>
+      <div class="chart-wrap" style="height:220px"><canvas id="chartPrevisaoDia"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Top Clientes do Mês</div><div class="card-subtitle">Maior valor previsto</div></div>
+      <div class="card-body" id="previsaoClientesPanel"></div>
+    </div>
+  </div>
+</div>
+
 </div><!-- /main -->
 
 <script>
@@ -535,6 +642,15 @@ const DEFAULT_DATA = {
     {pv:'5794',cliente:'HOSPITAL MUNICIPAL ROCHA FARIA',empenho:'2025NE000807',uasg:'986001',valor:5124.83,dias:316,prev_ent:'—'},
     {pv:'5888',cliente:'HOSPITAL FEDERAL DOS SERVIDORES DO ESTADO',empenho:'2025NE000916',uasg:'250061',valor:0,dias:247,prev_ent:'24/07/2025'},
     {pv:'5938/2',cliente:'HOSPITAL FEDERAL DO ANDARAÍ',empenho:'2025NE000522',uasg:'986001',valor:174603.00,dias:184,prev_ent:'—'},
+  ],
+  previsao_semana:[
+    {pv:'6086',cliente:'ESCOLA NACIONAL DE SAUDE PUBLICA',empenho:'2026NE000112',uasg:'254420',valor:374.00,dias:45,prev_fat_date:'2026-04-03T00:00:00.000Z',itens:[{desc:'Luva cirúrgica estéril',qtd:500,und:'PAR',valor:374.00}]},
+    {pv:'6122',cliente:'CENTRO DE OBTENÇÃO DA MARINHA RJ',empenho:'2026NE000203',uasg:'787010',valor:27153.98,dias:30,prev_fat_date:'2026-04-14T00:00:00.000Z',itens:[{desc:'Avental descartável',qtd:2000,und:'UN',valor:15200.00},{desc:'Máscara N95',qtd:1500,und:'UN',valor:11953.98}]},
+    {pv:'6220',cliente:'HOSPITAL FEDERAL DO ANDARAÍ',empenho:'2026NE000315',uasg:'986001',valor:3120.00,dias:28,prev_fat_date:'2026-04-14T00:00:00.000Z',itens:[{desc:'Campo cirúrgico',qtd:200,und:'UN',valor:3120.00}]},
+    {pv:'6128',cliente:'INST. NACIONAL DE CANCER',empenho:'2026NE000180',uasg:'250052',valor:106708.68,dias:35,prev_fat_date:'2026-04-30T00:00:00.000Z',itens:[{desc:'Kit paramentação completo',qtd:800,und:'KIT',valor:89329.08},{desc:'Propé descartável',qtd:3000,und:'PAR',valor:17379.60}]},
+    {pv:'6162',cliente:'RJ - GABINETE DO SECRETAR',empenho:'2026NE000245',uasg:'926573',valor:4384.07,dias:22,prev_fat_date:'2026-04-30T00:00:00.000Z',itens:[{desc:'Touca descartável',qtd:5000,und:'UN',valor:1689.48},{desc:'Sapatilha propé',qtd:3000,und:'PAR',valor:2601.30},{desc:'Fita adesiva hospitalar',qtd:100,und:'UN',valor:93.29}]},
+    {pv:'6165',cliente:'FUNDO MUNICIPAL DE SAUDE DE DUQUE DE CAXIAS',empenho:'2026NE000258',uasg:'927845',valor:41372.93,dias:20,prev_fat_date:'2026-04-03T00:00:00.000Z',itens:[{desc:'Luva procedimento nitrilo M',qtd:10000,und:'UN',valor:41372.93}]},
+    {pv:'6126',cliente:'INST. NACIONAL DE CANCER',empenho:'2026NE000178',uasg:'250052',valor:9937.92,dias:38,prev_fat_date:'2026-05-15T00:00:00.000Z',itens:[{desc:'Compressa gaze estéril',qtd:4000,und:'UN',valor:7242.90},{desc:'Atadura elástica',qtd:1500,und:'UN',valor:2695.02}]},
   ],
   pendentes_list:[],
   clientes:{
@@ -592,6 +708,7 @@ function renderAll(){
   renderStatus();
   renderClientes();
   renderGargalos();
+  renderPrevisao();
 }
 
 // ════════════════════════════════════════════
@@ -908,6 +1025,204 @@ function renderGargalos(){
     {n:'02',t:'Negociar fornecedores',d:'Verificar abastecimento para entregas próximas',cor:C.gold},
     {n:'03',t:'Tratativa com órgãos',d:'Contato sobre documentação pendente que trava entrega',cor:C.navy},
   ].map(dec=>`<div style="display:flex;gap:11px;align-items:flex-start;padding:12px;background:var(--gray-50);border-radius:var(--radius-sm);border-left:4px solid ${dec.cor};margin-bottom:9px"><div style="font-family:'DM Serif Display',serif;font-size:19px;color:${dec.cor};min-width:26px;line-height:1">${dec.n}</div><div><div style="font-size:13px;font-weight:700;color:var(--navy)">${dec.t}</div><div style="font-size:12px;color:var(--gray-600);margin-top:2px">${dec.d}</div></div></div>`).join('');
+}
+
+// ════════════════════════════════════════════
+// 6. PREVISÃO DA SEMANA (CALENDÁRIO)
+// ════════════════════════════════════════════
+let _calYear, _calMonth, _selWeekStart=null;
+(function(){const n=new Date();_calYear=n.getFullYear();_calMonth=n.getMonth();})();
+
+function navCalendar(dir){
+  if(dir===0){const n=new Date();_calYear=n.getFullYear();_calMonth=n.getMonth();_selWeekStart=null;}
+  else{_calMonth+=dir;if(_calMonth>11){_calMonth=0;_calYear++;}if(_calMonth<0){_calMonth=11;_calYear--;}_selWeekStart=null;}
+  renderPrevisao();
+}
+function selectWeek(isoStart){
+  _selWeekStart=_selWeekStart===isoStart?null:isoStart;
+  renderPrevisao();
+}
+
+function renderPrevisao(){
+  const all=D.previsao_semana||[];
+  const today=new Date(); today.setHours(0,0,0,0);
+  const mN=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const dN=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+
+  document.getElementById('calMonthLabel').textContent=mN[_calMonth]+' '+_calYear;
+
+  // Build day→items map for this month
+  const firstDay=new Date(_calYear,_calMonth,1);
+  const lastDay=new Date(_calYear,_calMonth+1,0);
+  const monthItems={};
+  all.forEach(r=>{
+    if(!r.prev_fat_date) return;
+    const d=new Date(r.prev_fat_date); d.setHours(0,0,0,0);
+    if(d.getFullYear()===_calYear&&d.getMonth()===_calMonth){
+      const dk=d.getDate();
+      if(!monthItems[dk])monthItems[dk]=[];
+      monthItems[dk].push(r);
+    }
+  });
+
+  // KPIs for this month
+  const monthFiltered=all.filter(r=>{if(!r.prev_fat_date)return false;const d=new Date(r.prev_fat_date);return d.getFullYear()===_calYear&&d.getMonth()===_calMonth;});
+  const totalValor=monthFiltered.reduce((a,r)=>a+r.valor,0);
+  const totalPVs=new Set(monthFiltered.map(r=>r.pv)).size;
+  const atrasados=monthFiltered.filter(r=>{const d=new Date(r.prev_fat_date);d.setHours(0,0,0,0);return d<today&&r.valor>0;});
+  const atrasadosValor=atrasados.reduce((a,r)=>a+r.valor,0);
+  // Current week (for "today" reference)
+  const curWeekStart=new Date(today);const wd=today.getDay();const diff=wd===0?6:wd-1;curWeekStart.setDate(today.getDate()-diff);
+  // Selected week (clicked or default to current)
+  const selWS=_selWeekStart?new Date(_selWeekStart):new Date(curWeekStart);
+  selWS.setHours(0,0,0,0);
+  const selWE=new Date(selWS);selWE.setDate(selWS.getDate()+6);selWE.setHours(23,59,59,999);
+  const weekFiltered=all.filter(r=>{if(!r.prev_fat_date)return false;const d=new Date(r.prev_fat_date);return d>=selWS&&d<=selWE;});
+  const weekValor=weekFiltered.reduce((a,r)=>a+r.valor,0);
+  const weekPVs=new Set(weekFiltered.map(r=>r.pv)).size;
+
+  document.getElementById('kpiPrevisao').innerHTML=
+    kpiCard('gold','📦','PVs no Mês',totalPVs+' PVs',fmtS(totalValor)+' · '+mN[_calMonth],'badge-pos',totalPVs+' PVs')+
+    kpiCard('teal','💰','Valor Previsto Mês',fmtS(totalValor),totalPVs+' PVs previstos')+
+    kpiCard('navy','📅','Semana Selecionada',weekPVs+' PVs',fmtS(weekValor)+' · '+selWS.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' a '+selWE.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}),weekPVs?'badge-pos':'',''+weekPVs)+
+    kpiCard('red','⚠️','Atrasados',(new Set(atrasados.map(r=>r.pv)).size)+' PVs',fmtS(atrasadosValor)+' em atraso',atrasados.length?'badge-danger':'badge-pos',atrasados.length?'Atenção':'OK');
+
+  // Build calendar grid
+  let startDow=firstDay.getDay(); startDow=startDow===0?6:startDow-1; // Mon=0
+  const totalDays=lastDay.getDate();
+  const prevMonth=new Date(_calYear,_calMonth,0);
+  const prevDays=prevMonth.getDate();
+
+  let html='';
+  // Header row
+  dN.forEach(d=>{html+=`<div class="cal-header-cell">${d}</div>`;});
+
+  // Cells
+  const totalCells=Math.ceil((startDow+totalDays)/7)*7;
+  for(let i=0;i<totalCells;i++){
+    const dayNum=i-startDow+1;
+    const isOutside=dayNum<1||dayNum>totalDays;
+    const displayDay=isOutside?(dayNum<1?prevDays+dayNum:dayNum-totalDays):dayNum;
+    const cellDate=new Date(_calYear,_calMonth,dayNum); cellDate.setHours(0,0,0,0);
+    const isToday=!isOutside&&cellDate.getTime()===today.getTime();
+    const items=isOutside?[]:(monthItems[dayNum]||[]);
+    const hasItems=items.length>0;
+    const dayTotal=items.reduce((a,r)=>a+r.valor,0);
+    const dowIdx=i%7;
+    const dayName=dN[dowIdx];
+
+    // Week start for this cell (Monday)
+    const cellWS=new Date(cellDate);const cdow=cellDate.getDay();const cdiff=cdow===0?6:cdow-1;cellWS.setDate(cellDate.getDate()-cdiff);cellWS.setHours(0,0,0,0);
+    const inSelectedWeek=!isOutside&&cellWS.getTime()===selWS.getTime();
+
+    let cls='cal-cell';
+    if(isOutside) cls+=' outside';
+    if(isToday) cls+=' today';
+    if(hasItems) cls+=' has-items';
+    if(inSelectedWeek) cls+=' week-selected';
+
+    const cellWSIso=cellWS.toISOString();
+    html+=`<div class="${cls}" onclick="selectWeek('${cellWSIso}')" style="cursor:pointer">`;
+    html+=`<div class="cal-day-num"><span><span class="cal-day-name">${dayName} </span>${displayDay}</span>${hasItems?'<span class="cal-day-total">'+fmtS(dayTotal)+'</span>':''}</div>`;
+    html+=`<div class="cal-items">`;
+    if(hasItems){
+      items.sort((a,b)=>b.valor-a.valor).forEach(r=>{
+        const isLate=new Date(r.prev_fat_date)<today;
+        const riskCls=r.dias>180?'risk-danger':r.dias>90?'risk-warn':isLate?'risk-late':'risk-ok';
+        html+=`<div class="cal-item ${riskCls}" title="PV ${r.pv} · ${r.cliente} · ${fmt(r.valor)} · ${r.dias}d na casa">`;
+        html+=`<div class="cal-item-pv">PV ${r.pv}</div>`;
+        html+=`<div class="cal-item-cli">${(r.cliente||'').substring(0,25)}</div>`;
+        html+=`<div class="cal-item-val">${fmtS(r.valor)}</div>`;
+        html+=`</div>`;
+      });
+    }
+    html+=`</div></div>`;
+  }
+  document.getElementById('calGrid').innerHTML=html;
+
+  // Chart: valor por semana do mês
+  const weeks=[];
+  let wStart=new Date(firstDay);
+  let wDow2=wStart.getDay();wDow2=wDow2===0?6:wDow2-1;
+  wStart.setDate(wStart.getDate()-wDow2);
+  while(wStart<=lastDay){
+    const wEnd=new Date(wStart);wEnd.setDate(wStart.getDate()+6);wEnd.setHours(23,59,59,999);
+    const wLabel=wStart.getDate()+'/'+(wStart.getMonth()+1)+' – '+wEnd.getDate()+'/'+(wEnd.getMonth()+1);
+    const wVal=monthFiltered.filter(r=>{const d=new Date(r.prev_fat_date);return d>=wStart&&d<=wEnd;}).reduce((a,r)=>a+r.valor,0);
+    const wPVs=new Set(monthFiltered.filter(r=>{const d=new Date(r.prev_fat_date);return d>=wStart&&d<=wEnd;}).map(r=>r.pv)).size;
+    weeks.push({label:'Sem '+wLabel,valor:wVal,pvs:wPVs,startIso:new Date(wStart).toISOString()});
+    wStart=new Date(wStart);wStart.setDate(wStart.getDate()+7);
+  }
+
+  const weekColors=weeks.map(w=>{
+    const ws=new Date(w.startIso);ws.setHours(0,0,0,0);
+    return ws.getTime()===selWS.getTime()?C.gold+'dd':C.navy+'77';
+  });
+
+  killChart('chartPrevisaoDia');
+  charts.chartPrevisaoDia=new Chart(document.getElementById('chartPrevisaoDia'),{
+    type:'bar',
+    data:{labels:weeks.map(w=>w.label),datasets:[{data:weeks.map(w=>w.valor/1000),backgroundColor:weekColors,borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,onClick:(evt,elems)=>{if(elems.length){const idx=elems[0].index;selectWeek(weeks[idx].startIso);}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'R$ '+(ctx.raw*1000).toLocaleString('pt-BR',{minimumFractionDigits:2})+' ('+weeks[ctx.dataIndex].pvs+' PVs) — clique para selecionar'}}},
+      scales:{y:{grid:{color:'#f0f2f5'},ticks:{callback:v=>'R$'+v.toFixed(0)+'k',font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}
+    }
+  });
+
+  // Top clientes do mês
+  const cliMap={};
+  monthFiltered.forEach(r=>{const c=r.cliente||'?';if(!cliMap[c])cliMap[c]=0;cliMap[c]+=r.valor;});
+  const topCli=Object.entries(cliMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const maxCli=topCli.length?topCli[0][1]:1;
+  const pal=[C.gold,C.navy,C.teal,C.green,C.orange,C.blue];
+  document.getElementById('previsaoClientesPanel').innerHTML=topCli.length?topCli.map(([nome,val],i)=>{
+    const barW=Math.max(0,val/(maxCli||1)*100).toFixed(0);
+    return `<div class="progress-item"><div class="progress-header"><div class="progress-name" title="${nome}">${nome.substring(0,35)}</div><div class="progress-val">${fmtS(val)}</div></div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${barW}%;background:${pal[i]||C.navy}"></div></div></div>`;
+  }).join(''):'<div style="color:var(--gray-400);font-size:13px;text-align:center;padding:24px">Nenhuma previsão neste mês</div>';
+
+  // Week table with expandable items
+  const weekLabel=selWS.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' a '+selWE.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+  document.getElementById('previsaoWeekRange').textContent='Semana '+weekLabel+' · Clique na linha para ver os itens';
+  const weekPvMap={};
+  weekFiltered.forEach(r=>{if(!weekPvMap[r.pv])weekPvMap[r.pv]={...r};else weekPvMap[r.pv].valor+=r.valor;});
+  const weekRows=Object.values(weekPvMap).sort((a,b)=>new Date(a.prev_fat_date)-new Date(b.prev_fat_date));
+  document.getElementById('previsaoWeekCount').textContent=weekRows.length+' PV'+(weekRows.length!==1?'s':'')+' · '+fmtS(weekValor);
+
+  let tblHtml='';
+  weekRows.forEach((r,idx)=>{
+    const pfDate=r.prev_fat_date?new Date(r.prev_fat_date).toLocaleDateString('pt-BR'):'—';
+    const isLate=r.prev_fat_date&&new Date(r.prev_fat_date)<today;
+    const risco=r.dias>180?'<span class="badge badge-red">Crítico</span>':r.dias>90?'<span class="badge badge-orange">Alerta</span>':isLate?'<span class="badge badge-orange">Atrasado</span>':'<span class="badge badge-green">OK</span>';
+    const nItens=(r.itens||[]).length;
+    const rid='prevRow'+idx;
+    tblHtml+=`<tr class="expand-row" onclick="togglePrevItems('${rid}',this)">`;
+    tblHtml+=`<td><span class="expand-toggle" id="tog-${rid}">▶</span></td>`;
+    tblHtml+=`<td><strong>${r.pv}</strong><span class="itens-count">${nItens} ite${nItens!==1?'ns':'m'}</span></td>`;
+    tblHtml+=`<td>${(r.cliente||'').substring(0,35)}</td>`;
+    tblHtml+=`<td${isLate?' style="color:var(--red);font-weight:600"':''}>${pfDate}</td>`;
+    tblHtml+=`<td style="text-align:right"><strong>${fmt(r.valor)}</strong></td>`;
+    tblHtml+=`<td style="font-size:12px;color:var(--gray-600)">${r.empenho||'—'}</td>`;
+    tblHtml+=`<td style="font-size:12px;color:var(--gray-600)">${r.uasg||'—'}</td>`;
+    tblHtml+=`<td style="text-align:center"><span class="badge badge-navy">${r.dias}d</span></td>`;
+    tblHtml+=`<td>${risco}</td></tr>`;
+    // Expandable detail row
+    tblHtml+=`<tr class="expand-detail" id="${rid}"><td colspan="9"><div class="itens-wrapper">`;
+    tblHtml+=`<table class="itens-table"><thead><tr><th>Descrição</th><th style="text-align:center">Qtd</th><th>Und</th><th style="text-align:right">Valor</th></tr></thead><tbody>`;
+    (r.itens||[]).forEach(it=>{
+      tblHtml+=`<tr><td class="item-desc" title="${it.desc}">${it.desc}</td><td style="text-align:center">${it.qtd>0?it.qtd.toLocaleString('pt-BR'):'—'}</td><td>${it.und}</td><td style="text-align:right;font-weight:600">${fmt(it.valor)}</td></tr>`;
+    });
+    if(!nItens) tblHtml+=`<tr><td colspan="4" style="text-align:center;color:var(--gray-400)">Sem detalhamento de itens</td></tr>`;
+    tblHtml+=`</tbody></table></div></td></tr>`;
+  });
+  if(!weekRows.length) tblHtml='<tr><td colspan="9" style="text-align:center;color:var(--gray-400);padding:24px">Nenhuma previsão de faturamento nesta semana</td></tr>';
+  document.getElementById('previsaoTbody').innerHTML=tblHtml;
+}
+
+function togglePrevItems(id,row){
+  const detail=document.getElementById(id);
+  const tog=document.getElementById('tog-'+id);
+  if(detail.classList.contains('open')){detail.classList.remove('open');tog.classList.remove('open');}
+  else{detail.classList.add('open');tog.classList.add('open');}
 }
 
 // ════════════════════════════════════════════
@@ -1392,12 +1707,26 @@ function parseSheet(rows){
   function topClientes(subset,n=8){const cM={};subset.forEach(r=>{const c=String(r['Cliente']||'?');if(!cM[c])cM[c]={f:0,mc:0};cM[c].f+=toN(r['Total Líq.']||0);cM[c].mc+=toN(r['MC ($)']||0);});const s=Object.entries(cM).sort((a,b)=>b[1].f-a[1].f).slice(0,n);return{nomes:s.map(([k])=>k),faturamento:s.map(([,v])=>round(v.f)),mc:s.map(([,v])=>round(v.mc))};}
   function topVendedores(subset,n=5){const vM={};subset.forEach(r=>{const v=String(r['Vendedor']||'?');if(!vM[v])vM[v]={f:0,mc:0};vM[v].f+=toN(r['Total Líq.']||0);vM[v].mc+=toN(r['MC ($)']||0);});const s=Object.entries(vM).sort((a,b)=>b[1].f-a[1].f).slice(0,n);return{nomes:s.map(([k])=>k),faturamento:s.map(([,v])=>round(v.f)),mc:s.map(([,v])=>round(v.mc))};}
 
+  // Previsão da semana (Prev. Fat) — todos pendentes com data + itens
+  const previsao_semana=[];
+  const pvPrevMap={};
+  penD.forEach(r=>{
+    const pf=toD(r['Prev. Fat']);
+    const pv=String(r['PV']||'');
+    if(!pvPrevMap[pv])pvPrevMap[pv]={pv,cliente:String(r['Cliente']||''),empenho:String(r['Empenho']||'—'),uasg:String(r['UASG']||'—'),valor:0,dias:r.dias,prev_fat_date:pf?pf.toISOString():null,itens:[]};
+    const valItem=toN(r['Total Líq.']||0);
+    pvPrevMap[pv].valor+=valItem;
+    pvPrevMap[pv].itens.push({desc:String(r['Desc. Resumida']||r['DESCRIÇÃO']||'—').substring(0,60),qtd:toN(r['Qtd.']||r['QUANT']||0),und:String(r['Und']||r['Un']||'—'),valor:round(valItem)});
+    if(pf&&!pvPrevMap[pv].prev_fat_date) pvPrevMap[pv].prev_fat_date=pf.toISOString();
+  });
+  Object.values(pvPrevMap).forEach(r=>{if(r.prev_fat_date&&r.valor>0)previsao_semana.push(r);});
+
   return {
     kpis:{'2025':kpisAno(all25,pen.filter(r=>getAno(r)===2025)),'2026':kpisAno(all26,pen.filter(r=>getAno(r)===2026)),'total':kpisAno(all,pen)},
     mensal:{'2025':mensalAno(all,2025),'2026':m26},
     status:{'2025':statusAno(all25),'2026':statusAno(all26),'total':statusAno(all)},
     empresas:{'2025':empresasAno(all25),'2026':empresasAno(all26),'total':empresasAno(all)},
-    envelhecimento,criticos,pendentes_list,
+    envelhecimento,criticos,pendentes_list,previsao_semana,
     clientes:{'2025':topClientes(all25),'2026':topClientes(all26),'total':topClientes(all)},
     vendedores:{'2025':topVendedores(all25),'2026':topVendedores(all26),'total':topVendedores(all)},
   };
