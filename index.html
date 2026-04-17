@@ -1010,6 +1010,13 @@ function summarizeComparedItems(items){
 function syncSimScenariosToItem(){
   if(!_simModalState.itemRef) return;
   _simModalState.itemRef.sim_saved=_simModalState.scenarios.map(cloneScenarioData);
+  const activeId=String(_simModalState.activeId||'');
+  const hasActive=!!(activeId&&_simModalState.itemRef.sim_saved.some(s=>s.id===activeId));
+  _simModalState.itemRef.sim_active_id=hasActive?activeId:'';
+}
+function persistSimModalState(renderTable){
+  syncSimScenariosToItem();
+  if(renderTable) renderPendentesTable(_pendentesData,true);
 }
 function createSimScenario(inputs,name,id){
   if(id){
@@ -1021,18 +1028,14 @@ function createSimScenario(inputs,name,id){
 }
 function applySimScenarioToItem(id){
   if(!_simModalState.itemRef) return;
-  syncSimScenariosToItem();
-  _simModalState.itemRef.sim_active_id=id;
   _simModalState.activeId=id;
-  renderPendentesTable(_pendentesData,true);
+  persistSimModalState(true);
   renderSimModal();
 }
 function clearSimAppliedScenario(){
   if(!_simModalState.itemRef) return;
-  syncSimScenariosToItem();
-  _simModalState.itemRef.sim_active_id='';
   _simModalState.activeId='';
-  renderPendentesTable(_pendentesData,true);
+  persistSimModalState(true);
   renderSimModal();
 }
 function openItemSimulator(pv,itemIdx){
@@ -1069,24 +1072,29 @@ function addSimScenario(){
   if(!_simModalState.baseInputs) return;
   const last=_simModalState.scenarios[_simModalState.scenarios.length-1];
   _simModalState.scenarios.push(createSimScenario(last?last.inputs:_simModalState.baseInputs));
+  persistSimModalState(false);
   renderSimModal();
 }
 function resetSimScenario(id){
   const scenario=getSimScenario(id);
   if(!scenario||!_simModalState.baseInputs) return;
   scenario.inputs=clone(_simModalState.baseInputs);
+  persistSimModalState(_simModalState.activeId===id);
   renderSimModal();
 }
 function removeSimScenario(id){
   if(_simModalState.scenarios.length<=1) return;
+  const wasActive=_simModalState.activeId===id;
   _simModalState.scenarios=_simModalState.scenarios.filter(s=>s.id!==id);
   if(_simModalState.activeId===id) _simModalState.activeId='';
+  persistSimModalState(wasActive);
   renderSimModal();
 }
 function updateSimScenarioField(id,key,value,isPct){
   const scenario=getSimScenario(id);
   if(!scenario) return;
   scenario.inputs[key]=isPct?num(value)/100:num(value);
+  persistSimModalState(_simModalState.activeId===id);
   renderSimScenarioOutputs(id);
 }
 function renderSimDelta(calc,base){
