@@ -45,6 +45,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .btn-success:not(:disabled):hover{background:var(--green);transform:translateY(-1px)}
 .btn-ghost{background:rgba(255,255,255,.08);color:var(--gray-400);border:1.5px solid rgba(255,255,255,.12);font-size:12px;padding:7px 13px}
 .btn-ghost:not(:disabled):hover{background:rgba(255,255,255,.15);color:var(--white)}
+.btn-copy{background:var(--navy);color:var(--white)}
+.btn-copy:not(:disabled):hover{background:var(--navy-light);transform:translateY(-1px);box-shadow:0 4px 12px rgba(10,22,40,.18)}
 
 /* SELECTOR PILLS */
 .pill-group{display:flex;gap:4px;background:rgba(0,0,0,.2);padding:4px;border-radius:var(--radius-sm)}
@@ -78,6 +80,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .section-header{margin-bottom:20px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .section-title{font-family:'DM Serif Display',serif;font-size:24px;font-weight:400;color:var(--navy)}
 .section-subtitle{font-size:13px;color:var(--gray-600);margin-top:3px}
+.header-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.micro-status{font-size:11px;color:var(--gray-400);white-space:nowrap}
 
 /* RECORTE TAG */
 .recorte-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:var(--navy);color:var(--gold-light);border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.3px}
@@ -249,6 +253,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .sim-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:5px 9px;border:1px solid rgba(201,168,76,.35);border-radius:999px;background:rgba(201,168,76,.14);color:var(--navy);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s}
 .sim-btn:hover:not(:disabled){background:var(--gold);border-color:var(--gold);transform:translateY(-1px)}
 .sim-btn:disabled{opacity:.45;cursor:not-allowed}
+.metric-stack{display:flex;flex-direction:column;gap:3px}
+.metric-stack.end{align-items:flex-end}
+.metric-stack.center{align-items:center}
+.metric-current{font-weight:700;color:var(--navy)}
+.metric-compare{font-size:10px;font-weight:700;color:var(--gray-400)}
+.metric-compare.pos{color:var(--teal)}
+.metric-compare.neg{color:var(--red)}
+.metric-compare.good{color:var(--green-light)}
+.metric-compare.warn{color:#d4821a}
+.compare-note{display:block;font-size:10px;color:var(--gray-400);white-space:nowrap}
+.compare-note.active{color:var(--gold);font-weight:700}
 
 /* SIMULADOR */
 .sim-modal{position:fixed;inset:0;z-index:1200;display:flex;align-items:stretch;justify-content:center;padding:20px;background:rgba(10,22,40,.7);backdrop-filter:blur(6px)}
@@ -277,6 +292,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .sim-card-actions{display:flex;gap:8px;flex-wrap:wrap}
 .sim-text-btn{background:none;border:none;color:var(--gray-600);font-size:11px;font-weight:700;cursor:pointer}
 .sim-text-btn:hover{color:var(--navy)}
+.sim-text-btn.cta{padding:6px 10px;border:1px solid rgba(201,168,76,.35);border-radius:999px;background:rgba(201,168,76,.12);color:var(--navy)}
+.sim-text-btn.cta:hover{background:var(--gold);color:var(--navy)}
+.sim-text-btn.active{background:#e6f4ef;border-color:rgba(64,145,108,.25);color:var(--green);cursor:default}
 .sim-card-body{padding:16px 18px 18px}
 .sim-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
 .sim-summary-box{padding:10px 12px;border-radius:12px;background:var(--gray-50);border:1px solid var(--gray-100)}
@@ -379,6 +397,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
       <div class="sim-toolbar-copy" id="simToolbarCopy">Use a base da planilha como referência e compare quantos cenários quiser.</div>
       <div class="sim-toolbar-actions">
         <button class="btn btn-outline" type="button" style="color:var(--navy);border-color:var(--gray-200)" onclick="addSimScenario()">+ Cenário</button>
+        <button class="btn btn-outline" id="btnClearSimApplied" type="button" style="color:var(--navy);border-color:var(--gray-200)" onclick="clearSimAppliedScenario()">Tirar da linha</button>
         <button class="btn btn-outline" type="button" style="color:var(--navy);border-color:var(--gray-200)" onclick="closeSimModal()">Fechar</button>
       </div>
     </div>
@@ -556,9 +575,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
         <div class="card-title">📋 Lista Completa de Pendentes</div>
         <div class="card-subtitle">Status Ent = Pendente · valor &gt; 0 · toda a carteira · clique na linha para ver itens</div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px">
+      <div class="header-tools">
         <input id="searchPendentes" type="text" placeholder="Buscar PV, cliente, empenho…" oninput="filterPendentes(this.value)"
           style="padding:6px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none;width:220px">
+        <button class="btn btn-copy" id="btnPendentesImage" type="button" style="padding:7px 12px;font-size:12px" onclick="sharePendentesAsImage()">🖼 Imagem WhatsApp</button>
+        <span id="pendentesImageStatus" class="micro-status"></span>
         <span id="pendentesCount" style="font-size:12px;color:var(--gray-400);white-space:nowrap"></span>
       </div>
     </div>
@@ -788,8 +809,10 @@ let _pendentesData = [];
 let _pendentesSort = {col:'dias',asc:false};
 let _pendentesFilter = {produto:'',categoria:'',marca:'',tipo:''};
 let _pendentesSearch = '';
+let _pendentesVisible = [];
+let _pendentesImageStatusTimer = null;
 let _prodCatalog = {};
-let _simModalState = {item:null,baseInputs:null,scenarios:[],seq:0};
+let _simModalState = {item:null,itemRef:null,baseInputs:null,scenarios:[],seq:0,activeId:''};
 
 // -------------------------------------------------------
 // FORMATTERS
@@ -934,9 +957,83 @@ function canSimulateItem(item){
   return num(item?.qtd||0)>0 && num(sim.preco_venda_un||0)>0 && (num(sim.custo_un||0)>0 || num(item?.mc_valor||0)!==0);
 }
 function getSimScenario(id){return _simModalState.scenarios.find(s=>s.id===id);}
-function createSimScenario(inputs){
+function getScenarioSeq(id){
+  const m=String(id||'').match(/(\d+)$/);
+  return m?num(m[1]):0;
+}
+function cloneScenarioData(scenario){
+  return {id:String(scenario?.id||''),name:String(scenario?.name||'Cenário'),inputs:clone(scenario?.inputs||{})};
+}
+function getItemSavedScenarios(item){
+  return Array.isArray(item?.sim_saved)?item.sim_saved.map(cloneScenarioData):[];
+}
+function getItemActiveScenario(item){
+  const activeId=String(item?.sim_active_id||'');
+  if(!activeId) return null;
+  return getItemSavedScenarios(item).find(s=>s.id===activeId)||null;
+}
+function getItemComparedMetrics(item){
+  const activeScenario=getItemActiveScenario(item);
+  if(!activeScenario){
+    return {valor:num(item?.valor||0),mc_valor:num(item?.mc_valor||0),has_compare:false,scenario_name:''};
+  }
+  const calc=calcSimScenario(activeScenario.inputs||deriveSimInputs(item));
+  return {
+    valor:roundN(calc.total),
+    mc_valor:roundN(calc.mcValor),
+    has_compare:true,
+    scenario_name:activeScenario.name||'Cenário'
+  };
+}
+function summarizeComparedItems(items){
+  const labels=new Set();
+  let compareValor=0;
+  let compareMc=0;
+  let compareItems=0;
+  items.forEach(item=>{
+    const compared=getItemComparedMetrics(item);
+    compareValor+=compared.valor;
+    compareMc+=compared.mc_valor;
+    if(compared.has_compare){
+      compareItems+=1;
+      if(compared.scenario_name) labels.add(compared.scenario_name);
+    }
+  });
+  return {
+    compare_valor:roundN(compareValor),
+    compare_mc_valor:roundN(compareMc),
+    has_compare:compareItems>0,
+    compare_items_count:compareItems,
+    compare_label:compareItems===0?'Base':(labels.size<=1?[...labels][0]||'Cenário':`${labels.size} cenários`)
+  };
+}
+function syncSimScenariosToItem(){
+  if(!_simModalState.itemRef) return;
+  _simModalState.itemRef.sim_saved=_simModalState.scenarios.map(cloneScenarioData);
+}
+function createSimScenario(inputs,name,id){
+  if(id){
+    _simModalState.seq=Math.max(_simModalState.seq,getScenarioSeq(id));
+    return {id:String(id),name:name||(`Cenário ${getScenarioSeq(id)||1}`),inputs:clone(inputs)};
+  }
   _simModalState.seq+=1;
-  return {id:'sim-'+_simModalState.seq,name:'Cenário '+_simModalState.seq,inputs:clone(inputs)};
+  return {id:'sim-'+_simModalState.seq,name:name||('Cenário '+_simModalState.seq),inputs:clone(inputs)};
+}
+function applySimScenarioToItem(id){
+  if(!_simModalState.itemRef) return;
+  syncSimScenariosToItem();
+  _simModalState.itemRef.sim_active_id=id;
+  _simModalState.activeId=id;
+  renderPendentesTable(_pendentesData,true);
+  renderSimModal();
+}
+function clearSimAppliedScenario(){
+  if(!_simModalState.itemRef) return;
+  syncSimScenariosToItem();
+  _simModalState.itemRef.sim_active_id='';
+  _simModalState.activeId='';
+  renderPendentesTable(_pendentesData,true);
+  renderSimModal();
 }
 function openItemSimulator(pv,itemIdx){
   const row=(D.pendentes_list||[]).find(r=>String(r.pv)===String(pv));
@@ -946,8 +1043,18 @@ function openItemSimulator(pv,itemIdx){
     return;
   }
   const baseInputs=deriveSimInputs(item);
-  _simModalState={item:{...item,pv:row.pv,cliente:row.cliente,empenho:row.empenho,uasg:row.uasg},baseInputs:clone(baseInputs),scenarios:[],seq:0};
-  _simModalState.scenarios=[createSimScenario(baseInputs)];
+  const savedScenarios=getItemSavedScenarios(item);
+  const maxSavedSeq=savedScenarios.reduce((max,scenario)=>Math.max(max,getScenarioSeq(scenario.id)),0);
+  _simModalState={
+    item:{...item,pv:row.pv,cliente:row.cliente,empenho:row.empenho,uasg:row.uasg},
+    itemRef:item,
+    baseInputs:clone(baseInputs),
+    scenarios:savedScenarios.length?savedScenarios.map(cloneScenarioData):[],
+    seq:maxSavedSeq,
+    activeId:String(item.sim_active_id||'')
+  };
+  if(!_simModalState.scenarios.length) _simModalState.scenarios=[createSimScenario(baseInputs)];
+  if(_simModalState.activeId&&!_simModalState.scenarios.some(s=>s.id===_simModalState.activeId)) _simModalState.activeId='';
   document.body.style.overflow='hidden';
   renderSimModal();
   document.getElementById('simModal').classList.remove('hidden');
@@ -956,7 +1063,7 @@ function closeSimModal(){
   const modal=document.getElementById('simModal');
   if(modal) modal.classList.add('hidden');
   document.body.style.overflow='';
-  _simModalState={item:null,baseInputs:null,scenarios:[],seq:0};
+  _simModalState={item:null,itemRef:null,baseInputs:null,scenarios:[],seq:0,activeId:''};
 }
 function addSimScenario(){
   if(!_simModalState.baseInputs) return;
@@ -973,6 +1080,7 @@ function resetSimScenario(id){
 function removeSimScenario(id){
   if(_simModalState.scenarios.length<=1) return;
   _simModalState.scenarios=_simModalState.scenarios.filter(s=>s.id!==id);
+  if(_simModalState.activeId===id) _simModalState.activeId='';
   renderSimModal();
 }
 function updateSimScenarioField(id,key,value,isPct){
@@ -1034,7 +1142,9 @@ function renderSimModal(){
     `<span class="sim-chip">PV ${esc(item.pv)}</span>`+
     `<span class="sim-chip">${esc(item.cliente||'—')}</span>`+
     `<span class="sim-chip">${num(item.qtd).toLocaleString('pt-BR')} ${esc(item.und||'und')}</span>`;
-  document.getElementById('simToolbarCopy').textContent='A base usa a lógica da planilha: Total, Total Líq., créditos, IPI/ST, fretes e DIFAL são recalculados a cada cenário. O MC % segue o Total.';
+  document.getElementById('simToolbarCopy').textContent='A base usa a lógica da planilha: Total, Total Líq., créditos, IPI/ST, fretes e DIFAL são recalculados a cada cenário. Escolha um cenário para aparecer na linha e entrar na imagem comparativa.';
+  const clearBtn=document.getElementById('btnClearSimApplied');
+  if(clearBtn) clearBtn.disabled=!(_simModalState.activeId||_simModalState.itemRef?.sim_active_id);
 
   const originalAssumptions = [
     ['Venda un.', fmt(original.precoVendaUn)],
@@ -1066,8 +1176,10 @@ function renderSimModal(){
   `);
 
   _simModalState.scenarios.forEach((scenario,idx)=>{
+    const isActive=_simModalState.activeId===scenario.id;
     const actions = `
       <div class="sim-card-actions">
+        <button class="sim-text-btn cta ${isActive?'active':''}" type="button" onclick="${isActive?'return false':'applySimScenarioToItem(\''+scenario.id+'\')'}">${isActive?'Aplicado na linha':'Usar na linha'}</button>
         <button class="sim-text-btn" type="button" onclick="resetSimScenario('${scenario.id}')">Resetar</button>
         ${_simModalState.scenarios.length>1?`<button class="sim-text-btn" type="button" onclick="removeSimScenario('${scenario.id}')">Remover</button>`:''}
       </div>
@@ -1095,7 +1207,7 @@ function renderSimModal(){
         <div class="sim-card-head">
           <div>
             <div class="sim-card-title">${scenario.name}</div>
-            <div class="sim-card-subtitle">Ajuste os campos e compare com a base</div>
+            <div class="sim-card-subtitle">${isActive?'Este é o cenário aplicado na linha para comparação':'Ajuste os campos e compare com a base'}</div>
           </div>
           ${actions}
         </div>
@@ -1346,6 +1458,19 @@ function clearPendentesFilters(){
   });
   renderPendentesTable(_pendentesData,true);
 }
+function setPendentesImageStatus(msg,isError){
+  const el=document.getElementById('pendentesImageStatus');
+  if(!el) return;
+  el.textContent=msg||'';
+  el.style.color=isError?'var(--red)':'var(--gray-400)';
+  if(_pendentesImageStatusTimer) clearTimeout(_pendentesImageStatusTimer);
+  if(msg){
+    _pendentesImageStatusTimer=setTimeout(()=>{
+      const node=document.getElementById('pendentesImageStatus');
+      if(node) node.textContent='';
+    },4600);
+  }
+}
 function filterArr(arr,q){
   if(!q) return arr;
   const ql=q.toLowerCase();
@@ -1372,7 +1497,10 @@ function populatePendentesFilters(data){
 function applyItemFilters(pv){
   const f=_pendentesFilter;
   const hasFilter=!!(f.produto||f.categoria||f.marca||f.tipo);
-  if(!hasFilter) return {itens:pv.itens||[],valor:pv.valor,mc_valor:pv.mc_valor,filtered:false};
+  if(!hasFilter){
+    const compare=summarizeComparedItems(pv.itens||[]);
+    return {itens:pv.itens||[],valor:pv.valor,mc_valor:pv.mc_valor,filtered:false,...compare};
+  }
   const q=(f.produto||'').toLowerCase();
   const itens=(pv.itens||[]).filter(it=>
     (!f.categoria||it.categoria===f.categoria)&&
@@ -1382,19 +1510,30 @@ function applyItemFilters(pv){
   );
   const valor=itens.reduce((a,it)=>a+(it.valor||0),0);
   const mc_valor=itens.reduce((a,it)=>a+(it.mc_valor||0),0);
-  return {itens,valor,mc_valor,filtered:true};
+  const compare=summarizeComparedItems(itens);
+  return {itens,valor,mc_valor,filtered:true,...compare};
 }
-function renderPendentesTable(data,keepSort){
-  if(!keepSort) _pendentesSort={col:'dias',asc:false};
+function getPendentesRows(data){
   const searched=filterArr(data,_pendentesSearch);
   const enriched=searched.map(pv=>{
     const res=applyItemFilters(pv);
     if(res.filtered&&!res.itens.length) return null;
-    return {...pv,_itens:res.itens,_valor:res.valor,_mc_valor:res.mc_valor,_filtered:res.filtered};
+    return {
+      ...pv,
+      _itens:res.itens,
+      _valor:res.valor,
+      _mc_valor:res.mc_valor,
+      _compare_valor:res.compare_valor,
+      _compare_mc_valor:res.compare_mc_valor,
+      _has_compare:res.has_compare,
+      _compare_items_count:res.compare_items_count,
+      _compare_label:res.compare_label,
+      _filtered:res.filtered
+    };
   }).filter(Boolean);
 
   const {col,asc}=_pendentesSort;
-  const sorted=enriched.sort((a,b)=>{
+  return enriched.sort((a,b)=>{
     let va,vb;
     if(col==='dias'){va=a.dias||0;vb=b.dias||0;}
     else if(col==='valor'){va=a._valor||0;vb=b._valor||0;}
@@ -1406,10 +1545,283 @@ function renderPendentesTable(data,keepSort){
     }
     return asc?va-vb:vb-va;
   });
+}
+function getPendentesFilterSummary(rows){
+  const parts=[];
+  if(_pendentesSearch) parts.push(`Busca: "${_pendentesSearch}"`);
+  if(_pendentesFilter.produto) parts.push(`Produto: ${_pendentesFilter.produto}`);
+  if(_pendentesFilter.categoria) parts.push(`Categoria: ${_pendentesFilter.categoria}`);
+  if(_pendentesFilter.marca) parts.push(`Marca: ${_pendentesFilter.marca}`);
+  if(_pendentesFilter.tipo) parts.push(`Tipo: ${_pendentesFilter.tipo}`);
+  const comparedRows=rows.filter(r=>r._has_compare).length;
+  if(comparedRows) parts.push(`${comparedRows} pedido${comparedRows!==1?'s':''} com cenário aplicado`);
+  if(!parts.length) parts.push('Sem filtros adicionais');
+  return `${rows.length} pedido${rows.length!==1?'s':''} no recorte atual • ${parts.join(' • ')}`;
+}
+function clipCanvasText(ctx,text,maxWidth){
+  const raw=String(text==null?'—':text);
+  if(ctx.measureText(raw).width<=maxWidth) return raw;
+  let out=raw;
+  while(out.length>1&&ctx.measureText(out+'…').width>maxWidth) out=out.slice(0,-1);
+  return out+'…';
+}
+function wrapCanvasText(ctx,text,maxWidth){
+  const words=String(text||'').split(/\s+/).filter(Boolean);
+  if(!words.length) return ['—'];
+  const lines=[]; let current=words[0];
+  for(let i=1;i<words.length;i++){
+    const candidate=current+' '+words[i];
+    if(ctx.measureText(candidate).width<=maxWidth) current=candidate;
+    else{lines.push(current); current=words[i];}
+  }
+  lines.push(current);
+  return lines;
+}
+function drawRoundRect(ctx,x,y,w,h,r,fill,stroke){
+  const rr=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+rr,y);
+  ctx.arcTo(x+w,y,x+w,y+h,rr);
+  ctx.arcTo(x+w,y+h,x,y+h,rr);
+  ctx.arcTo(x,y+h,x,y,rr);
+  ctx.arcTo(x,y,x+w,y,rr);
+  ctx.closePath();
+  if(fill){ctx.fillStyle=fill;ctx.fill();}
+  if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}
+}
+function pendenteRiskMeta(dias){
+  if(dias>300) return {label:'Altíssimo',color:C.red};
+  if(dias>200) return {label:'Alto',color:C.red};
+  if(dias>90) return {label:'Médio',color:C.orange};
+  return {label:'Normal',color:C.blue};
+}
+function pendenteMcMeta(pctVal){
+  if(pctVal>=20) return {color:C.green};
+  if(pctVal>=10) return {color:C.orange};
+  return {color:C.red};
+}
+function canvasToBlob(canvas){
+  return new Promise((resolve,reject)=>{
+    canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Falha ao gerar imagem.')),'image/png');
+  });
+}
+function downloadBlob(blob,fileName){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1200);
+}
+async function buildPendentesShareBlob(rows){
+  const width=1120;
+  const padding=44;
+  const tableLeft=padding+4;
+  const valueX=804;
+  const mcX=924;
+  const pctX=1006;
+  const diasX=1068;
+  const nowTxt=new Date().toLocaleString('pt-BR');
+  const hasCompareGlobal=rows.some(r=>r._has_compare);
+  const totalValor=rows.reduce((sum,row)=>sum+(row._valor||0),0);
+  const totalMc=rows.reduce((sum,row)=>sum+(row._mc_valor||0),0);
+  const mcPct=totalValor>0?(totalMc/totalValor*100):0;
+  const totalCompareValor=rows.reduce((sum,row)=>sum+(row._has_compare?row._compare_valor:row._valor),0);
+  const totalCompareMc=rows.reduce((sum,row)=>sum+(row._has_compare?row._compare_mc_valor:row._mc_valor),0);
+  const mcComparePct=totalCompareValor>0?(totalCompareMc/totalCompareValor*100):0;
+  const summaryAtual=`Atual • Valor ${fmt(totalValor)} • MC ${fmt(totalMc)} • MC ${pct(mcPct)}`;
+  const summaryCompare=`Cenário • Valor ${fmt(totalCompareValor)} • MC ${fmt(totalCompareMc)} • MC ${pct(mcComparePct)}`;
+  const measure=document.createElement('canvas').getContext('2d');
+  measure.font='500 14px DM Sans, sans-serif';
+  const filterLines=wrapCanvasText(measure,getPendentesFilterSummary(rows),width-(padding*2),width);
+  const filterStartY=hasCompareGlobal?212:192;
+  const headerHeight=filterStartY+(filterLines.length*20)+24;
+  const rowHeight=hasCompareGlobal?88:68;
+  const tableHeight=46+(rows.length*rowHeight);
+  const footerHeight=34;
+  const height=headerHeight+tableHeight+footerHeight;
+  const scale=rows.length>20?1.5:2;
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.round(width*scale);
+  canvas.height=Math.round(height*scale);
+  const ctx=canvas.getContext('2d');
+  ctx.scale(scale,scale);
+
+  ctx.fillStyle='#eef2f8';
+  ctx.fillRect(0,0,width,height);
+  drawRoundRect(ctx,24,24,width-48,height-48,24,'#ffffff');
+  const grad=ctx.createLinearGradient(0,24,width,220);
+  grad.addColorStop(0,C.navy);
+  grad.addColorStop(0.6,'#132240');
+  grad.addColorStop(1,C.blue);
+  ctx.fillStyle=grad;
+  ctx.fillRect(24,24,width-48,headerHeight-28);
+  ctx.fillStyle=C.gold;
+  ctx.fillRect(24,24,width-48,5);
+
+  ctx.fillStyle='#ffffff';
+  ctx.font='400 34px DM Serif Display, Georgia, serif';
+  ctx.fillText('Relação de Empenhos Filtrados',padding,78);
+  ctx.font='500 14px DM Sans, sans-serif';
+  ctx.fillStyle='#dfe7f3';
+  ctx.fillText(`Status • Pendentes | ${nowTxt}`,padding,108);
+  ctx.font='700 22px DM Sans, sans-serif';
+  ctx.fillStyle='#ffffff';
+  ctx.fillText(`${rows.length} pedido${rows.length!==1?'s':''}`,padding,144);
+  ctx.font='600 14px DM Sans, sans-serif';
+  ctx.fillStyle='#f3d992';
+  ctx.fillText(summaryAtual,padding,168);
+  if(hasCompareGlobal){
+    ctx.fillStyle='#fff1c9';
+    ctx.fillText(summaryCompare,padding,188);
+  }
+  ctx.font='500 14px DM Sans, sans-serif';
+  ctx.fillStyle='#e7eef9';
+  filterLines.forEach((line,idx)=>ctx.fillText(line,padding,filterStartY+(idx*19)));
+
+  const tableTop=headerHeight;
+  ctx.fillStyle='#f8fafc';
+  ctx.fillRect(24,tableTop,width-48,46);
+  ctx.strokeStyle='#e0e4ea';
+  ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(24,tableTop+46);
+  ctx.lineTo(width-24,tableTop+46);
+  ctx.stroke();
+
+  ctx.font='700 11px DM Sans, sans-serif';
+  ctx.fillStyle='#7b869b';
+  ctx.fillText('EMPENHO / CLIENTE',tableLeft,tableTop+28);
+  ctx.textAlign='right';
+  ctx.fillText('VALOR',valueX,tableTop+28);
+  ctx.fillText('MC $',mcX,tableTop+28);
+  ctx.fillText('MC %',pctX,tableTop+28);
+  ctx.fillText('DIAS',diasX,tableTop+28);
+  ctx.textAlign='left';
+
+  rows.forEach((row,idx)=>{
+    const y=tableTop+46+(idx*rowHeight);
+    if(idx%2===0){
+      ctx.fillStyle='#fcfdff';
+      ctx.fillRect(24,y,width-48,rowHeight);
+    }
+    const risco=pendenteRiskMeta(row.dias||0);
+    const mcPctRow=row._valor>0?(row._mc_valor/row._valor*100):0;
+    const compareValor=row._has_compare?row._compare_valor:row._valor;
+    const compareMc=row._has_compare?row._compare_mc_valor:row._mc_valor;
+    const comparePct=compareValor>0?(compareMc/compareValor*100):0;
+    const mcMeta=pendenteMcMeta(mcPctRow);
+    const comparePctMeta=pendenteMcMeta(comparePct);
+    const itensLabel=row._filtered?`${row._itens.length}/${row.n_itens} itens`:`${row.n_itens||0} itens`;
+    const metaLine=`${row.empenho||'—'} • UASG ${row.uasg||'—'} • Prev. ${(!row.prev_ent||String(row.prev_ent).trim()==='?')?'—':row.prev_ent} • ${itensLabel}`;
+    const compareLine=row._has_compare
+      ? `Comparado: ${row._compare_items_count} item${row._compare_items_count!==1?'s':''} • ${row._compare_label}`
+      : 'Comparado: base atual';
+
+    ctx.fillStyle=risco.color;
+    ctx.beginPath();
+    ctx.arc(tableLeft+8,y+23,6,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.font='700 17px DM Sans, sans-serif';
+    ctx.fillStyle=C.navy;
+    const pvLabel=`PV ${row.pv}`;
+    ctx.fillText(pvLabel,tableLeft+24,y+28);
+    const pvWidth=ctx.measureText(pvLabel).width;
+    ctx.font='600 15px DM Sans, sans-serif';
+    ctx.fillText(clipCanvasText(ctx,row.cliente||'—',Math.max(180,valueX-(tableLeft+pvWidth+56))),tableLeft+pvWidth+38,y+28);
+
+    ctx.font='500 12px DM Sans, sans-serif';
+    ctx.fillStyle='#5c6578';
+    ctx.fillText(clipCanvasText(ctx,metaLine,valueX-(tableLeft+24)),tableLeft+24,y+49);
+    if(hasCompareGlobal){
+      ctx.fillStyle=row._has_compare?C.gold:'#97a3b7';
+      ctx.fillText(clipCanvasText(ctx,compareLine,valueX-(tableLeft+24)),tableLeft+24,y+66);
+    }
+
+    ctx.textAlign='right';
+    ctx.font='700 15px DM Sans, sans-serif';
+    ctx.fillStyle=C.navy;
+    ctx.fillText(fmt(row._valor),valueX,y+(hasCompareGlobal?25:28));
+    ctx.fillStyle=row._mc_valor<0?C.red:C.navy;
+    ctx.fillText(fmt(row._mc_valor),mcX,y+(hasCompareGlobal?25:28));
+    ctx.fillStyle=mcMeta.color;
+    ctx.fillText(pct(mcPctRow),pctX,y+(hasCompareGlobal?25:28));
+    ctx.fillStyle=risco.color;
+    ctx.fillText(`${row.dias||0}d`,diasX,y+(hasCompareGlobal?25:28));
+    if(hasCompareGlobal){
+      ctx.font='700 12px DM Sans, sans-serif';
+      ctx.fillStyle=row._has_compare?C.gold:'#97a3b7';
+      ctx.fillText(`Cen. ${fmt(compareValor)}`,valueX,y+46);
+      ctx.fillStyle=row._has_compare?(compareMc<0?C.red:C.gold):'#97a3b7';
+      ctx.fillText(`Cen. ${fmt(compareMc)}`,mcX,y+46);
+      ctx.fillStyle=row._has_compare?comparePctMeta.color:'#97a3b7';
+      ctx.fillText(`Cen. ${pct(comparePct)}`,pctX,y+46);
+    }
+    ctx.textAlign='left';
+
+    ctx.strokeStyle='#edf1f6';
+    ctx.beginPath();
+    ctx.moveTo(24,y+rowHeight);
+    ctx.lineTo(width-24,y+rowHeight);
+    ctx.stroke();
+  });
+
+  ctx.font='500 11px DM Sans, sans-serif';
+  ctx.fillStyle='#7b869b';
+  ctx.fillText('Gerado pelo Dash Pós-Vendas • pronto para envio no WhatsApp',padding,height-24);
+
+  const blob=await canvasToBlob(canvas);
+  return {blob,fileName:`pendentes-whatsapp-${Date.now()}.png`};
+}
+async function sharePendentesAsImage(){
+  const rows=_pendentesVisible||[];
+  const btn=document.getElementById('btnPendentesImage');
+  if(!rows.length){
+    setPendentesImageStatus('Nenhum pedido no filtro atual.',true);
+    return;
+  }
+  const prevLabel=btn?btn.innerHTML:'';
+  if(btn){btn.disabled=true;btn.innerHTML='Gerando imagem...';}
+  setPendentesImageStatus('');
+  try{
+    const {blob,fileName}=await buildPendentesShareBlob(rows);
+    if(navigator.clipboard&&window.ClipboardItem){
+      await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+      setPendentesImageStatus('Imagem copiada. Cole no WhatsApp.');
+    }else{
+      downloadBlob(blob,fileName);
+      setPendentesImageStatus('PNG baixado. Envie no WhatsApp.');
+    }
+  }catch(err){
+    if(err&&/Clipboard|clipboard|TypeError/i.test(String(err))){
+      try{
+        const {blob,fileName}=await buildPendentesShareBlob(rows);
+        downloadBlob(blob,fileName);
+        setPendentesImageStatus('Clipboard indisponível. PNG baixado para envio.');
+      }catch(downloadErr){
+        setPendentesImageStatus('Não foi possível gerar a imagem.',true);
+      }
+    }else{
+      setPendentesImageStatus('Não foi possível gerar a imagem.',true);
+    }
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML=prevLabel||'🖼 Imagem WhatsApp';}
+  }
+}
+function renderPendentesTable(data,keepSort){
+  if(!keepSort) _pendentesSort={col:'dias',asc:false};
+  const sorted=getPendentesRows(data);
+  _pendentesVisible=sorted;
 
   const tbody=document.getElementById('pendentesTbody'); if(!tbody) return;
   const count=document.getElementById('pendentesCount');
   if(count) count.textContent=sorted.length+' pedido'+(sorted.length!==1?'s':'');
+  const shareBtn=document.getElementById('btnPendentesImage');
+  if(shareBtn) shareBtn.disabled=!sorted.length;
+  const hasCompareGlobal=sorted.some(r=>r._has_compare);
 
   const mcBadgeCls=p=>p>=20?'badge-green':p>=10?'badge-orange':'badge-red';
 
@@ -1419,6 +1831,12 @@ function renderPendentesTable(data,keepSort){
     const nItens=r._itens.length;
     const totalItens=r.n_itens||0;
     const mcPct=r._valor>0?(r._mc_valor/r._valor*100):0;
+    const compareValor=r._has_compare?r._compare_valor:r._valor;
+    const compareMc=r._has_compare?r._compare_mc_valor:r._mc_valor;
+    const comparePct=compareValor>0?(compareMc/compareValor*100):0;
+    const compareNote=r._has_compare
+      ? `${r._compare_items_count} item${r._compare_items_count!==1?'s':''} com ${r._compare_label}`
+      : 'Abra os itens';
     const rid='penRow'+idx;
     const itensLabel=r._filtered
       ? `<span class="itens-count" style="color:var(--gold)">${nItens}/${totalItens} it</span>`
@@ -1430,13 +1848,19 @@ function renderPendentesTable(data,keepSort){
     html+=`<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.cliente}">${r.cliente}</td>`;
     html+=`<td style="font-size:11px;color:var(--gray-600)">${r.empenho}</td>`;
     html+=`<td style="font-size:11px;color:var(--gray-600)">${r.uasg||'—'}</td>`;
-    html+=`<td style="text-align:right"><strong>${fmt(r._valor)}</strong></td>`;
-    html+=`<td style="text-align:right;color:${r._mc_valor<0?'var(--red)':'var(--navy)'}">${fmt(r._mc_valor)}</td>`;
-    html+=`<td style="text-align:center"><span class="badge ${mcBadgeCls(mcPct)}">${mcPct.toFixed(1)}%</span></td>`;
+    html+=hasCompareGlobal
+      ? `<td style="text-align:right"><div class="metric-stack end"><div class="metric-current">${fmt(r._valor)}</div><div class="metric-compare ${r._has_compare?'pos':''}">Cen. ${fmt(compareValor)}</div></div></td>`
+      : `<td style="text-align:right"><strong>${fmt(r._valor)}</strong></td>`;
+    html+=hasCompareGlobal
+      ? `<td style="text-align:right"><div class="metric-stack end"><div class="metric-current" style="color:${r._mc_valor<0?'var(--red)':'var(--navy)'}">${fmt(r._mc_valor)}</div><div class="metric-compare ${compareMc<0?'neg':'pos'}">Cen. ${fmt(compareMc)}</div></div></td>`
+      : `<td style="text-align:right;color:${r._mc_valor<0?'var(--red)':'var(--navy)'}">${fmt(r._mc_valor)}</td>`;
+    html+=hasCompareGlobal
+      ? `<td style="text-align:center"><div class="metric-stack center"><div class="metric-current"><span class="badge ${mcBadgeCls(mcPct)}">${mcPct.toFixed(1)}%</span></div><div class="metric-compare ${comparePct>=20?'good':comparePct>=10?'warn':'neg'}">Cen. ${comparePct.toFixed(1)}%</div></div></td>`
+      : `<td style="text-align:center"><span class="badge ${mcBadgeCls(mcPct)}">${mcPct.toFixed(1)}%</span></td>`;
     html+=`<td style="text-align:center"><span class="badge ${db}">${r.dias}d</span></td>`;
     html+=`<td style="font-size:11px">${(!r.prev_ent || String(r.prev_ent).trim()==='?') ? '—' : r.prev_ent}</td>`;
     html+=`<td>${risco}</td>`;
-    html+=`<td style="text-align:center;font-size:11px;color:var(--gray-400)">Abra os itens</td></tr>`;
+    html+=`<td style="text-align:center;font-size:11px;color:var(--gray-400)"><span class="compare-note ${r._has_compare?'active':''}">${compareNote}</span></td></tr>`;
 
     html+=`<tr class="expand-detail" id="${rid}"><td colspan="12"><div class="itens-wrapper">`;
     html+=`<table class="itens-table"><thead><tr><th>Descrição</th><th>Marca</th><th>Categoria</th><th>Tipo</th><th style="text-align:center">Qtd</th><th>Und</th><th style="text-align:right">Valor</th><th style="text-align:right">MC $</th><th style="text-align:center">MC %</th><th style="text-align:center">Simulação</th></tr></thead><tbody>`;
@@ -1444,6 +1868,7 @@ function renderPendentesTable(data,keepSort){
       const iPct=it.valor>0?(it.mc_valor/it.valor*100):0;
       const originalIdx=(r.itens||[]).indexOf(it);
       const canSim=canSimulateItem(it) && originalIdx>=0;
+      const activeScenario=getItemActiveScenario(it);
       const pvArg=JSON.stringify(String(r.pv));
       html+=`<tr>`;
       html+=`<td class="item-desc" title="${(it.desc||'').replace(/"/g,'&quot;')}">${it.desc||'—'}</td>`;
@@ -1455,7 +1880,7 @@ function renderPendentesTable(data,keepSort){
       html+=`<td style="text-align:right;font-weight:600">${fmt(it.valor)}</td>`;
       html+=`<td style="text-align:right;color:${it.mc_valor<0?'var(--red)':'var(--navy)'}">${fmt(it.mc_valor)}</td>`;
       html+=`<td style="text-align:center"><span class="badge ${mcBadgeCls(iPct)}">${iPct.toFixed(1)}%</span></td>`;
-      html+=`<td style="text-align:center"><button class="sim-btn" type="button" ${canSim?'':"disabled title=\"Requer base da planilha\""} onclick='event.stopPropagation();openItemSimulator(${pvArg},${originalIdx})'>🧮 Simular</button></td>`;
+      html+=`<td style="text-align:center"><button class="sim-btn" type="button" ${canSim?'':"disabled title=\"Requer base da planilha\""} title="${activeScenario?`Comparando com ${activeScenario.name}`:'Abrir simulador'}" onclick='event.stopPropagation();openItemSimulator(${pvArg},${originalIdx})'>${activeScenario?'🧮 Ativo':'🧮 Simular'}</button></td>`;
       html+=`</tr>`;
     });
     if(!r._itens.length) html+=`<tr><td colspan="10" style="text-align:center;color:var(--gray-400);padding:12px">Sem itens correspondentes ao filtro</td></tr>`;
