@@ -236,15 +236,90 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .itens-table .item-desc{color:var(--navy);font-weight:500;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .itens-count{font-size:10px;color:var(--gray-400);font-weight:600;margin-left:4px}
 
+/* PENDENTES FILTER BAR */
+.pend-filter-bar{display:flex;gap:8px;padding:10px 20px 14px;flex-wrap:wrap;align-items:center;background:var(--gray-50);border-top:1px solid var(--gray-200);border-bottom:1px solid var(--gray-200)}
+.pend-filter-bar input,.pend-filter-bar select{padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);background:#fff;outline:none;transition:border-color .15s}
+.pend-filter-bar input{flex:1;min-width:200px}
+.pend-filter-bar select{min-width:150px}
+.pend-filter-bar input:focus,.pend-filter-bar select:focus{border-color:var(--gold)}
+.pend-filter-bar .btn-clear-filters{padding:6px 12px;background:transparent;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--gray-600);cursor:pointer;transition:all .15s}
+.pend-filter-bar .btn-clear-filters:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+.itens-table .cat-tag{display:inline-block;padding:1px 6px;background:var(--navy);color:var(--gold-light);border-radius:10px;font-size:9px;font-weight:600;letter-spacing:.3px}
+.itens-table .brand-tag{display:inline-block;padding:1px 6px;background:var(--gray-100);color:var(--navy);border-radius:10px;font-size:9px;font-weight:600}
+.sim-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:5px 9px;border:1px solid rgba(201,168,76,.35);border-radius:999px;background:rgba(201,168,76,.14);color:var(--navy);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s}
+.sim-btn:hover:not(:disabled){background:var(--gold);border-color:var(--gold);transform:translateY(-1px)}
+.sim-btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* SIMULADOR */
+.sim-modal{position:fixed;inset:0;z-index:1200;display:flex;align-items:stretch;justify-content:center;padding:20px;background:rgba(10,22,40,.7);backdrop-filter:blur(6px)}
+.sim-modal.hidden{display:none}
+.sim-panel{width:min(1600px,100%);background:linear-gradient(180deg,#fff 0%,#fbfbfd 100%);border-radius:20px;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;border:1px solid rgba(255,255,255,.5)}
+.sim-header{padding:20px 24px 16px;background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 62%,var(--navy-light) 100%);color:#fff;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.sim-header h3{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.05}
+.sim-header p{margin-top:6px;font-size:13px;color:rgba(255,255,255,.75);max-width:900px}
+.sim-header .sim-header-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.sim-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.12);font-size:11px;font-weight:700;color:var(--gold-light)}
+.sim-close{border:none;background:rgba(255,255,255,.1);color:#fff;width:40px;height:40px;border-radius:12px;font-size:22px;cursor:pointer;transition:all .15s}
+.sim-close:hover{background:rgba(255,255,255,.18)}
+.sim-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 24px;background:#fff;border-bottom:1px solid var(--gray-200);flex-wrap:wrap}
+.sim-toolbar-copy{font-size:12px;color:var(--gray-600);line-height:1.5}
+.sim-toolbar-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sim-toolbar-actions .btn{padding:8px 14px}
+.sim-board{padding:20px 24px 24px;overflow:auto;background:
+  radial-gradient(circle at top left, rgba(201,168,76,.1), transparent 28%),
+  linear-gradient(180deg,#f6f7fb 0%,#f9fbfc 100%)}
+.sim-cards{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(360px,1fr);gap:16px;align-items:start}
+.sim-card{background:#fff;border:1px solid var(--gray-200);border-radius:18px;box-shadow:var(--shadow-sm);overflow:hidden}
+.sim-card.original{background:linear-gradient(180deg,#fffef9 0%,#fff 100%);border-color:rgba(201,168,76,.45)}
+.sim-card-head{padding:16px 18px 14px;border-bottom:1px solid var(--gray-100);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.sim-card-title{font-size:16px;font-weight:700;color:var(--navy)}
+.sim-card-subtitle{margin-top:4px;font-size:11px;color:var(--gray-400)}
+.sim-card-actions{display:flex;gap:8px;flex-wrap:wrap}
+.sim-text-btn{background:none;border:none;color:var(--gray-600);font-size:11px;font-weight:700;cursor:pointer}
+.sim-text-btn:hover{color:var(--navy)}
+.sim-card-body{padding:16px 18px 18px}
+.sim-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.sim-summary-box{padding:10px 12px;border-radius:12px;background:var(--gray-50);border:1px solid var(--gray-100)}
+.sim-summary-box .label{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--gray-400)}
+.sim-summary-box .value{font-family:'DM Serif Display',serif;font-size:19px;line-height:1.05;color:var(--navy);margin-top:4px}
+.sim-summary-box .value.up{color:var(--green-light)}
+.sim-summary-box .value.down{color:var(--red)}
+.sim-delta-note{margin-bottom:14px;padding:10px 12px;border-radius:12px;font-size:12px;font-weight:600}
+.sim-delta-note.good{background:#e6f4ef;color:var(--green-light)}
+.sim-delta-note.bad{background:var(--red-pale);color:var(--red)}
+.sim-delta-note.neutral{background:#eef3fb;color:var(--navy)}
+.sim-section-title{font-size:11px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--gray-400);margin:16px 0 10px}
+.sim-input-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sim-field label{display:block;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:5px}
+.sim-field .hint{display:block;font-size:10px;font-weight:500;color:var(--gray-400);margin-top:3px}
+.sim-field input{width:100%;padding:9px 11px;border:1.5px solid var(--gray-200);border-radius:10px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--navy);background:#fff;outline:none;transition:border-color .15s,box-shadow .15s}
+.sim-field input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.14)}
+.sim-output-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.sim-output-box{padding:9px 11px;border-radius:12px;background:var(--gray-50);border:1px solid var(--gray-100)}
+.sim-output-box .label{font-size:10px;font-weight:700;letter-spacing:.55px;text-transform:uppercase;color:var(--gray-400)}
+.sim-output-box .value{font-size:13px;font-weight:700;color:var(--navy);margin-top:4px}
+.sim-assumption-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.sim-assumption{padding:9px 10px;border-radius:12px;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.22)}
+.sim-assumption .label{font-size:10px;font-weight:700;letter-spacing:.55px;text-transform:uppercase;color:var(--gray-600)}
+.sim-assumption .value{font-size:13px;font-weight:700;color:var(--navy);margin-top:4px}
+
 @media(max-width:900px){.cal-grid{grid-template-columns:repeat(2,1fr)}.cal-header-cell{display:none}.cal-cell{min-height:80px}}
 @media(max-width:500px){.cal-grid{grid-template-columns:1fr}}
+@media(max-width:900px){
+  .sim-modal{padding:12px}
+  .sim-header{padding:16px 18px 14px}
+  .sim-toolbar,.sim-board{padding-left:18px;padding-right:18px}
+  .sim-cards{grid-auto-columns:minmax(300px,88vw)}
+  .sim-input-grid,.sim-output-grid,.sim-assumption-list{grid-template-columns:1fr}
+  .sim-summary-grid{grid-template-columns:1fr}
+}
 
 /* PRINT */
 @media print{
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   body{background:#fff!important;font-size:11px}
   .tabs-wrapper,.status-bar,.first-run,.loading-overlay,.btn,
-  .pill-group,#searchPendentes,#pendentesCount{display:none!important}
+  .pill-group,#searchPendentes,#pendentesCount,.pend-filter-bar,.sim-modal{display:none!important}
   .header{position:static!important;padding:10px 18px!important}
   .header-title h1{font-size:14px!important}
   .main{padding:8px 14px!important}
@@ -290,6 +365,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   <div class="loading-box"><div class="spinner"></div><p id="loadingMsg">Lendo planilha…</p></div>
 </div>
 
+<div class="sim-modal hidden" id="simModal" onclick="if(event.target===this) closeSimModal()">
+  <div class="sim-panel" role="dialog" aria-modal="true" aria-labelledby="simModalTitle">
+    <div class="sim-header">
+      <div>
+        <h3 id="simModalTitle">Simulador de MC</h3>
+        <p id="simModalSubtitle">Carregando item…</p>
+        <div class="sim-header-meta" id="simModalMeta"></div>
+      </div>
+      <button class="sim-close" type="button" aria-label="Fechar simulador" onclick="closeSimModal()">×</button>
+    </div>
+    <div class="sim-toolbar">
+      <div class="sim-toolbar-copy" id="simToolbarCopy">Use a base da planilha como referência e compare quantos cenários quiser.</div>
+      <div class="sim-toolbar-actions">
+        <button class="btn btn-outline" type="button" style="color:var(--navy);border-color:var(--gray-200)" onclick="addSimScenario()">+ Cenário</button>
+        <button class="btn btn-outline" type="button" style="color:var(--navy);border-color:var(--gray-200)" onclick="closeSimModal()">Fechar</button>
+      </div>
+    </div>
+    <div class="sim-board">
+      <div class="sim-cards" id="simCards"></div>
+    </div>
+  </div>
+</div>
+
 <header class="header">
   <div class="header-left">
     <div class="logo-mark">PV</div>
@@ -325,9 +423,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 
 <div class="main">
 
-<!-- ══════════════════════════════════════════════════
+<!-- --------------------------------------------------
      1. PANORAMA GERAL
-══════════════════════════════════════════════════ -->
+-------------------------------------------------- -->
 <div class="view active" id="view-panorama">
   <div class="section-header">
     <div>
@@ -375,9 +473,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════
+<!-- --------------------------------------------------
      2. ENVELHECIMENTO
-══════════════════════════════════════════════════ -->
+-------------------------------------------------- -->
 <div class="view" id="view-envelhecimento">
   <div class="section-header">
     <div>
@@ -408,9 +506,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════
+<!-- --------------------------------------------------
      3. STATUS
-══════════════════════════════════════════════════ -->
+-------------------------------------------------- -->
 <div class="view" id="view-status">
   <div class="section-header">
     <div>
@@ -455,25 +553,37 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   <div class="card">
     <div class="card-header" style="padding-bottom:14px">
       <div>
-        <div class="card-title">⏳ Lista Completa de Pendentes</div>
-        <div class="card-subtitle">Status Ent = Pendente · valor &gt; 0 · toda a carteira · ordenado por dias</div>
+        <div class="card-title">📋 Lista Completa de Pendentes</div>
+        <div class="card-subtitle">Status Ent = Pendente · valor &gt; 0 · toda a carteira · clique na linha para ver itens</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
-        <input id="searchPendentes" type="text" placeholder="Buscar…" oninput="filterPendentes(this.value)"
-          style="padding:6px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none;width:200px">
+        <input id="searchPendentes" type="text" placeholder="Buscar PV, cliente, empenho…" oninput="filterPendentes(this.value)"
+          style="padding:6px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none;width:220px">
         <span id="pendentesCount" style="font-size:12px;color:var(--gray-400);white-space:nowrap"></span>
       </div>
     </div>
-    <div style="overflow-x:auto;max-height:460px;overflow-y:auto">
+
+    <div class="pend-filter-bar">
+      <input id="filtProduto" type="text" placeholder="🔍 Filtrar por produto (descrição)…" oninput="updatePendentesFilter('produto',this.value)">
+      <select id="filtCategoria" onchange="updatePendentesFilter('categoria',this.value)"><option value="">Categoria: Todas</option></select>
+      <select id="filtMarca" onchange="updatePendentesFilter('marca',this.value)"><option value="">Marca: Todas</option></select>
+      <select id="filtTipo" onchange="updatePendentesFilter('tipo',this.value)"><option value="">Tipo: Todos</option></select>
+      <button class="btn-clear-filters" onclick="clearPendentesFilters()">Limpar</button>
+    </div>
+
+    <div style="overflow-x:auto;max-height:520px;overflow-y:auto">
       <table class="data-table">
         <thead style="position:sticky;top:0;z-index:1">
           <tr>
+            <th style="width:30px"></th>
             <th style="cursor:pointer" onclick="sortPendentes('pv')">PV ↕</th>
             <th style="cursor:pointer" onclick="sortPendentes('cliente')">Cliente ↕</th>
             <th>Nº Empenho</th><th>UASG</th>
             <th style="cursor:pointer;text-align:right" onclick="sortPendentes('valor')">Valor ↕</th>
+            <th style="cursor:pointer;text-align:right" onclick="sortPendentes('mc')">MC $ ↕</th>
+            <th style="cursor:pointer;text-align:center" onclick="sortPendentes('mcpct')">MC % ↕</th>
             <th style="cursor:pointer;text-align:center" onclick="sortPendentes('dias')">Dias ↕</th>
-            <th>Prev. Entrega</th><th>Risco</th>
+            <th>Prev. Entrega</th><th>Risco</th><th style="text-align:center">Ação</th>
           </tr>
         </thead>
         <tbody id="pendentesTbody"></tbody>
@@ -482,9 +592,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════
+<!-- --------------------------------------------------
      4. CLIENTES
-══════════════════════════════════════════════════ -->
+-------------------------------------------------- -->
 <div class="view" id="view-clientes">
   <div class="section-header">
     <div>
@@ -524,9 +634,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════
+<!-- --------------------------------------------------
      5. GARGALOS
-══════════════════════════════════════════════════ -->
+-------------------------------------------------- -->
 <div class="view" id="view-gargalos">
   <div class="section-header">
     <div><div class="section-title">Gargalos &amp; Exposição de Risco</div><div class="section-subtitle">Somente travamentos reais · Carteira total pendente</div></div>
@@ -544,9 +654,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════
+<!-- --------------------------------------------------
      6. PREVISÃO DA SEMANA
-══════════════════════════════════════════════════ -->
+-------------------------------------------------- -->
 <div class="view" id="view-previsao">
   <div class="section-header">
     <div>
@@ -604,9 +714,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 </div><!-- /main -->
 
 <script>
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 // DADOS PRÉ-CARREGADOS
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 const DEFAULT_DATA = {
   kpis:{
     '2026':{total_carteira:2749884.05,valor_executado:2590674.16,valor_a_executar:159209.89,mc_total:292969.18,mc_pct:10.7,total_empenhos:86,pendentes:23,executados:63,mc_pendente:15945.59},
@@ -652,7 +762,7 @@ const DEFAULT_DATA = {
     {pv:'6165',cliente:'FUNDO MUNICIPAL DE SAUDE DE DUQUE DE CAXIAS',empenho:'2026NE000258',uasg:'927845',valor:41372.93,dias:20,prev_fat_date:'2026-04-03T00:00:00.000Z',itens:[{desc:'Luva procedimento nitrilo M',qtd:10000,und:'UN',valor:41372.93}]},
     {pv:'6126',cliente:'INST. NACIONAL DE CANCER',empenho:'2026NE000178',uasg:'250052',valor:9937.92,dias:38,prev_fat_date:'2026-05-15T00:00:00.000Z',itens:[{desc:'Compressa gaze estéril',qtd:4000,und:'UN',valor:7242.90},{desc:'Atadura elástica',qtd:1500,und:'UN',valor:2695.02}]},
   ],
-  pendentes_list:[],
+  pendentes_list:[{"pv":"1080","dias":0,"cliente":"PRIMEIRO BATALHAO DE POLICIA DO EXERCITO","empenho":"2026NE000003","uasg":"160255","valor":353.1,"mc_valor":82.13,"prev_ent":"23/02/2026","n_itens":2,"itens":[{"chave":"8203039346","desc":"LUVA DESC PROC NITRÍLICA HD TAM M","marca":"LUVIX","categoria":"LUVAS NITRÍLICAS","tipo":"LUVAS","qtd":19,"und":"CX100","valor":278.02,"mc_valor":63.51,"sim":{"preco_venda_un":18.76,"custo_un":15.95,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":66.671,"cred_pis":3.9002535000000007,"cred_cofins":17.964804,"frete_entrada":0,"frete_c":0}},{"chave":"8203039354","desc":"LUVA DESC PROC NITRÍLICA HD TAM G","marca":"LUVIX","categoria":"LUVAS NITRÍLICAS","tipo":"LUVAS","qtd":5,"und":"CX100","valor":75.08,"mc_valor":18.62,"sim":{"preco_venda_un":19.25,"custo_un":15.95,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":17.545,"cred_pis":1.0263825,"cred_cofins":4.72758,"frete_entrada":0,"frete_c":0}}]},{"pv":"1089","dias":0,"cliente":"9 GRUPAMENTO LOGISTICO","empenho":"2026NE000023","uasg":"160136","valor":729.79,"mc_valor":-147.07,"prev_ent":"—","n_itens":2,"itens":[{"chave":"8203039346","desc":"LUVA DESC PROC NITRÍLICA HD TAM M","marca":"LUVIX","categoria":"LUVAS NITRÍLICAS","tipo":"LUVAS","qtd":20,"und":"CX100","valor":360.19,"mc_valor":-75.5,"sim":{"preco_venda_un":18.76,"custo_un":15.95,"icms_pct":0.04,"pis_pct":1e-8,"cofins_pct":1e-8,"ipi_pct":0,"icms_st_pct":0,"difal_valor":37.52,"cred_icms":70.18,"cred_pis":4.10553,"cred_cofins":18.91032,"frete_entrada":172.36688,"frete_c":0}},{"chave":"8203039354","desc":"LUVA DESC PROC NITRÍLICA HD TAM G","marca":"LUVIX","categoria":"LUVAS NITRÍLICAS","tipo":"LUVAS","qtd":20,"und":"CX100","valor":369.6,"mc_valor":-71.57,"sim":{"preco_venda_un":19.25,"custo_un":15.95,"icms_pct":0.04,"pis_pct":1e-9,"cofins_pct":1e-9,"ipi_pct":0,"icms_st_pct":0,"difal_valor":38.5,"cred_icms":70.18,"cred_pis":4.10553,"cred_cofins":18.91032,"frete_entrada":176.869,"frete_c":0}}]},{"pv":"1101","dias":0,"cliente":"PRIMEIRO BATALHAO DE POLICIA DO EXERCITO","empenho":"2026NE000029","uasg":"160255","valor":1860.93,"mc_valor":438.37,"prev_ent":"31/03/2026","n_itens":2,"itens":[{"chave":"8203039346","desc":"LUVA DESC PROC NITRÍLICA HD TAM M","marca":"LUVIX","categoria":"LUVAS NITRÍLICAS","tipo":"LUVAS","qtd":81,"und":"CX100","valor":1185.26,"mc_valor":270.75,"sim":{"preco_venda_un":18.76,"custo_un":15.95,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":284.229,"cred_pis":16.6273965,"cred_cofins":76.58679599999999,"frete_entrada":0,"frete_c":0}},{"chave":"8203039354","desc":"LUVA DESC PROC NITRÍLICA HD TAM G","marca":"LUVIX","categoria":"LUVAS NITRÍLICAS","tipo":"LUVAS","qtd":45,"und":"CX100","valor":675.68,"mc_valor":167.62,"sim":{"preco_venda_un":19.25,"custo_un":15.95,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":157.905,"cred_pis":9.2374425,"cred_cofins":42.54822,"frete_entrada":0,"frete_c":0}}]},{"pv":"1126","dias":0,"cliente":"ESSLOG / CMVM","empenho":"2026NE000012","uasg":"160255","valor":1345.27,"mc_valor":101.17,"prev_ent":"27/03/2026","n_itens":2,"itens":[{"chave":"8203039346","desc":"LUVA DESC PROC NITRÍLICA HD TAM M","marca":"LUVIX","categoria":"LUVAS NITRÍLICAS","tipo":"LUVAS","qtd":50,"und":"CX100","valor":663.96,"mc_valor":41.91,"sim":{"preco_venda_un":18.76,"custo_un":15.95,"icms_pct":0.22,"pis_pct":0.0165,"cofins_pct":0.076,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":175.45,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}},{"chave":"8203039354","desc":"LUVA DESC PROC NITRÍLICA HD TAM G","marca":"LUVIX","categoria":"LUVAS NITRÍLICAS","tipo":"LUVAS","qtd":50,"und":"CX100","valor":681.31,"mc_valor":59.26,"sim":{"preco_venda_un":19.25,"custo_un":15.95,"icms_pct":0.22,"pis_pct":0.0165,"cofins_pct":0.076,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":175.45,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]},{"pv":"5799","dias":0,"cliente":"HOSPITAL MUNICIPAL BARATA RIBEIRO","empenho":"2025NE000167","uasg":"986001","valor":32016.66,"mc_valor":5934.24,"prev_ent":"22/05/2025","n_itens":2,"itens":[{"chave":"6560847376","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM G","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":600,"und":"CX100","valor":9477,"mc_valor":1614.6,"sim":{"preco_venda_un":20.25,"custo_un":16.8,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":2217.6,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}},{"chave":"6562987881","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM M","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":1420,"und":"CX100","valor":22539.66,"mc_valor":4319.64,"sim":{"preco_venda_un":20.35,"custo_un":16.45,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":5138.9800000000005,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]},{"pv":"5812","dias":0,"cliente":"INSTITUTO PHILIPE PINEL","empenho":"2025NE000077","uasg":"986001","valor":3091.73,"mc_valor":577.4,"prev_ent":"21/05/2025","n_itens":2,"itens":[{"chave":"6560847376","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM G","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":45,"und":"CX100","valor":710.78,"mc_valor":121.09,"sim":{"preco_venda_un":20.25,"custo_un":16.8,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":166.32,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}},{"chave":"6562987881","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM M","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":150,"und":"CX100","valor":2380.95,"mc_valor":456.3,"sim":{"preco_venda_un":20.35,"custo_un":16.45,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":542.85,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]},{"pv":"5813","dias":0,"cliente":"MATERNIDADE FERNANDO MAGALHÃES","empenho":"2025NE000184","uasg":"986001","valor":19609.2,"mc_valor":3011.64,"prev_ent":"03/06/2025","n_itens":3,"itens":[{"chave":"6560847376","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM G","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":240,"und":"CX100","valor":3790.8,"mc_valor":645.84,"sim":{"preco_venda_un":20.25,"custo_un":16.8,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":887.04,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}},{"chave":"6813855187","desc":"LUVA LÁTEX COM PÓ UG T: P","marca":"UNIGLOVES","categoria":"—","tipo":"—","qtd":200,"und":"CX100","valor":3120,"mc_valor":-67.8,"sim":{"preco_venda_un":20,"custo_un":16.1,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":128.8,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":96.60000000000001}},{"chave":"6562987881","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM M","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":800,"und":"CX100","valor":12698.4,"mc_valor":2433.6,"sim":{"preco_venda_un":20.35,"custo_un":16.45,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":2895.2,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]},{"pv":"5828","dias":0,"cliente":"IMAS NISE DA SILVEIRA","empenho":"2025NE000105","uasg":"986001","valor":3174.6,"mc_valor":608.4,"prev_ent":"14/06/2025","n_itens":1,"itens":[{"chave":"6562987881","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM M","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":200,"und":"CX100","valor":3174.6,"mc_valor":608.4,"sim":{"preco_venda_un":20.35,"custo_un":16.45,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":723.8,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]},{"pv":"5829","dias":0,"cliente":"HOSPITAL FEDERAL DO ANDARAÍ","empenho":"2025NE000185","uasg":"986001","valor":3340.12,"mc_valor":419.8,"prev_ent":"17/06/2025","n_itens":1,"itens":[{"chave":"6560863103","desc":"LUVA CIRÚRGICA S/ LÁTEX S/ PÓ MS TAM 7,0","marca":"LUVIX","categoria":"LUVAS CIRÚRGICAS S/PO","tipo":"LUVAS","qtd":1170,"und":"PR","valor":3340.12,"mc_valor":419.8,"sim":{"preco_venda_un":3.66,"custo_un":3.2,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":823.68,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]},{"pv":"5847","dias":0,"cliente":"HOSPITAL MUNICIPAL ROCHA MAIA","empenho":"2025NE000216","uasg":"986001","valor":11040.9,"mc_valor":795.03,"prev_ent":"20/06/2025","n_itens":3,"itens":[{"chave":"6721093224","desc":"LUVA DESC PROC LÁTEX C/ PÓ LB TAM P","marca":"LEMGRUBER","categoria":"—","tipo":"—","qtd":200,"und":"CX100","valor":3120,"mc_valor":-655.77,"sim":{"preco_venda_un":20,"custo_un":17.5,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0.0587927619047619,"difal_valor":0,"cred_icms":0,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":70}},{"chave":"6560847376","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM G","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":200,"und":"CX100","valor":3159,"mc_valor":538.2,"sim":{"preco_venda_un":20.25,"custo_un":16.8,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":739.2,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}},{"chave":"6562987881","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM M","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":300,"und":"CX100","valor":4761.9,"mc_valor":912.6,"sim":{"preco_venda_un":20.35,"custo_un":16.45,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":1085.7,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]},{"pv":"5878","dias":0,"cliente":"HOSPITAL PEDRO ERNESTO","empenho":"2025NE03620","uasg":"31545","valor":49257,"mc_valor":10764,"prev_ent":"18/07/2025","n_itens":1,"itens":[{"chave":"6562987881","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM M","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":3000,"und":"CX100","valor":49257,"mc_valor":10764,"sim":{"preco_venda_un":21.05,"custo_un":16.45,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":10857,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]},{"pv":"5902","dias":0,"cliente":"INSTITUTO MUNICIPAL DE VIGILÂNCIA SANITÁRIA","empenho":"2025NE000387","uasg":"986001","valor":317.46,"mc_valor":66.14,"prev_ent":"08/08/2025","n_itens":1,"itens":[{"chave":"6562987881","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM M","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":20,"und":"CX100","valor":317.46,"mc_valor":66.14,"sim":{"preco_venda_un":20.35,"custo_un":16.11,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":70.884,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]}],
   clientes:{
     '2026':{nomes:['FUNDO MUN. DE SAUDE DE MACAE','COMPLEXO HOSPITALAR DA UFRJ','FUNDAÇÃO SAUDE DO ESTADO DO RJ','SOUZA AGUIAR','HOSP. UNIVERSITARIO ANTONIO PEDRO','INST. DE INFECTOLOGIA E.CHAGAS','CENTRO DE OBTENÇÃO MARINHA RJ','LOURENÇO JORGE'],faturamento:[673493.98,605328.50,400873.20,327605.00,277720.20,195233.77,60918.00,40540.50],mc:[27984.26,49426.42,109145.14,59391.28,6782.57,-2522.18,11716.05,4043.69]},
     '2025':{nomes:['FUNDAÇÃO SAUDE DO ESTADO DO RJ','HOSPITAL FEDERAL DO ANDARAÍ','HOSPITAL PEDRO ERNESTO','FUNDO MUN. DE SAUDE DE MACAE','SOUZA AGUIAR','RONALDO GAZOLA','HOSP. UNIV. ANTONIO PEDRO','INST. DE INFECTOLOGIA E.CHAGAS'],faturamento:[6813771.40,2075484.48,1475138.86,666915.60,893788.12,1136456.25,850296.75,524654.61],mc:[1588212.44,345303.37,347997.05,26545.14,178460.39,374470.59,64376.44,22576.08]},
@@ -665,9 +775,9 @@ const DEFAULT_DATA = {
   },
 };
 
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 // STATE
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 let D = JSON.parse(JSON.stringify(DEFAULT_DATA));
 let charts = {};
 let fileHandle = null;
@@ -676,10 +786,26 @@ let _statusAno   = '2026';
 let _clientesAno = '2026';
 let _pendentesData = [];
 let _pendentesSort = {col:'dias',asc:false};
+let _pendentesFilter = {produto:'',categoria:'',marca:'',tipo:''};
+let _pendentesSearch = '';
+let _prodCatalog = {};
+let _simModalState = {item:null,baseInputs:null,scenarios:[],seq:0};
 
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 // FORMATTERS
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
+const num = v => {
+  if(v===null||v===undefined||v==='') return 0;
+  if(typeof v==='number') return isNaN(v)?0:v;
+  if(v instanceof Date) return 0;
+  let s=String(v).trim().replace(/[R$\s]/g,'');
+  if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s=s.replace(/\./g,'').replace(',','.');
+  else if(/^\d+(,\d+)$/.test(s)) s=s.replace(',','.');
+  const n=parseFloat(s);
+  return isNaN(n)?0:n;
+};
+const clone = obj => JSON.parse(JSON.stringify(obj));
+const roundN = (v,d=2) => Math.round((num(v)+Number.EPSILON)*Math.pow(10,d))/Math.pow(10,d);
 const fmt  = v => (v==null||isNaN(v))? '—' : 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtS = v => {
   if(v==null||isNaN(v)) return '—';
@@ -690,6 +816,30 @@ const fmtS = v => {
 const pct = v => (v||0).toFixed(1)+'%';
 const C = {navy:'#0a1628',gold:'#c9a84c',teal:'#2a9d8f',red:'#e63946',green:'#40916c',orange:'#f4a261',blue:'#457b9d',purple:'#6a4c93'};
 const LABEL = {'2026':'Pedidos 2026','2025':'Pedidos 2025','total':'Toda a carteira'};
+const SIM_INPUT_SECTIONS = [
+  {title:'Comercial',fields:[
+    {key:'preco_venda_un',label:'Venda un.',hint:'Valor unitário bruto',step:'0.01',pct:false},
+    {key:'qtd',label:'Quantidade',hint:'Mesma lógica da planilha',step:'1',pct:false},
+    {key:'custo_un',label:'Custo un.',hint:'Custo base de compra',step:'0.01',pct:false},
+  ]},
+  {title:'Impostos venda',fields:[
+    {key:'icms_pct',label:'ICMS venda %',hint:'Incide sobre total',step:'0.01',pct:true},
+    {key:'pis_pct',label:'PIS %',hint:'Incide sobre total s/ ICMS',step:'0.01',pct:true},
+    {key:'cofins_pct',label:'COFINS %',hint:'Incide sobre total s/ ICMS',step:'0.01',pct:true},
+    {key:'difal_pct',label:'DIFAL %',hint:'Calculado sobre total',step:'0.01',pct:true},
+  ]},
+  {title:'Custos e créditos',fields:[
+    {key:'cred_icms_pct',label:'Créd. ICMS %',hint:'Sobre custo total',step:'0.01',pct:true},
+    {key:'cred_pis_pct',label:'Créd. PIS %',hint:'Sobre custo total - créd. ICMS',step:'0.01',pct:true},
+    {key:'cred_cofins_pct',label:'Créd. COFINS %',hint:'Sobre custo total - créd. ICMS',step:'0.01',pct:true},
+    {key:'ipi_pct',label:'IPI %',hint:'Sobre custo total',step:'0.01',pct:true},
+    {key:'icms_st_pct',label:'ICMS ST %',hint:'Sobre custo total',step:'0.01',pct:true},
+  ]},
+  {title:'Fretes',fields:[
+    {key:'frete_pct',label:'Frete venda %',hint:'Sobre total bruto',step:'0.01',pct:true},
+    {key:'frete_c_pct',label:'Frete compra %',hint:'Sobre custo total',step:'0.01',pct:true},
+  ]},
+];
 
 function killChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 function kpiCard(accent,icon,label,value,sub,bClass='',bText=''){
@@ -697,10 +847,275 @@ function kpiCard(accent,icon,label,value,sub,bClass='',bText=''){
   return `<div class="kpi-card ${accent}">${badge}<div class="kpi-icon">${icon}</div><div class="kpi-label">${label}</div><div class="kpi-value ${value.length>11?'sm':''}">${value}</div><div class="kpi-sub">${sub}</div></div>`;
 }
 function recorteTag(txt){return `<div class="recorte-tag">📅 Recorte: ${txt}</div>`;}
+function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function simValue(field,val){
+  if(field.pct) return roundN(num(val)*100,4);
+  return roundN(val,4);
+}
+function deriveSimInputs(item){
+  const sim=item?.sim||{};
+  const qtd=Math.max(0,num(item?.qtd||sim.qtd||0));
+  const precoVendaUn=num(sim.preco_venda_un||0);
+  const custoUn=num(sim.custo_un||0);
+  const total=precoVendaUn*qtd;
+  const custoTotal=custoUn*qtd;
+  const credIcms=num(sim.cred_icms||0);
+  const credBase=Math.max(custoTotal-credIcms,0);
+  const pickPct=(direct,fallback) => {
+    if(direct!==undefined&&direct!==null&&direct!=='') return num(direct);
+    return fallback;
+  };
+  return {
+    preco_venda_un:precoVendaUn,
+    qtd,
+    custo_un:custoUn,
+    icms_pct:pickPct(sim.icms_pct,0),
+    pis_pct:pickPct(sim.pis_pct,0),
+    cofins_pct:pickPct(sim.cofins_pct,0),
+    difal_pct:pickPct(sim.difal_pct,total>0?num(sim.difal_valor||0)/total:0),
+    cred_icms_pct:pickPct(sim.cred_icms_pct,custoTotal>0?credIcms/custoTotal:0),
+    cred_pis_pct:pickPct(sim.cred_pis_pct,credBase>0?num(sim.cred_pis||0)/credBase:0),
+    cred_cofins_pct:pickPct(sim.cred_cofins_pct,credBase>0?num(sim.cred_cofins||0)/credBase:0),
+    ipi_pct:pickPct(sim.ipi_pct,0),
+    icms_st_pct:pickPct(sim.icms_st_pct,0),
+    frete_pct:pickPct(sim.frete_pct,total>0?num(sim.frete_entrada||0)/total:0),
+    frete_c_pct:pickPct(sim.frete_c_pct,custoTotal>0?num(sim.frete_c||0)/custoTotal:0),
+  };
+}
+function calcSimScenario(inputs){
+  const qtd=Math.max(0,num(inputs.qtd));
+  const precoVendaUn=num(inputs.preco_venda_un);
+  const custoUn=num(inputs.custo_un);
+  const icmsPct=num(inputs.icms_pct);
+  const pisPct=num(inputs.pis_pct);
+  const cofinsPct=num(inputs.cofins_pct);
+  const difalPct=num(inputs.difal_pct);
+  const credIcmsPct=num(inputs.cred_icms_pct);
+  const credPisPct=num(inputs.cred_pis_pct);
+  const credCofinsPct=num(inputs.cred_cofins_pct);
+  const ipiPct=num(inputs.ipi_pct);
+  const icmsStPct=num(inputs.icms_st_pct);
+  const fretePct=num(inputs.frete_pct);
+  const freteCPct=num(inputs.frete_c_pct);
 
-// ═══════════════════════════════════════════════════════
+  const total=precoVendaUn*qtd;
+  const unitSemIcms=precoVendaUn-(precoVendaUn*icmsPct);
+  const totalSemIcms=unitSemIcms*qtd;
+  const unitLiq=unitSemIcms-(unitSemIcms*(pisPct+cofinsPct));
+  const totalLiq=unitLiq*qtd;
+  const custoTotal=custoUn*qtd;
+  const credIcmsValor=custoTotal*credIcmsPct;
+  const baseCredPisCofins=Math.max(custoTotal-credIcmsValor,0);
+  const credPisValor=baseCredPisCofins*credPisPct;
+  const credCofinsValor=baseCredPisCofins*credCofinsPct;
+  const ipiValor=custoTotal*ipiPct;
+  const icmsStValor=custoTotal*icmsStPct;
+  const freteCompraValor=custoTotal*freteCPct;
+  const freteVendaValor=total*fretePct;
+  const difalValor=total*difalPct;
+  const icmsVendaValor=icmsPct*total;
+  const pisVendaValor=pisPct*totalSemIcms;
+  const cofinsVendaValor=cofinsPct*totalSemIcms;
+  const custoLiqTotal=custoTotal+ipiValor+icmsStValor-credIcmsValor-credPisValor-credCofinsValor+freteCompraValor+freteVendaValor;
+  const custoLiqUnit=qtd>0?custoLiqTotal/qtd:0;
+  const mcValor=totalLiq-custoLiqTotal-difalValor;
+  return {
+    qtd,precoVendaUn,custoUn,total,unitSemIcms,totalSemIcms,unitLiq,totalLiq,custoTotal,custoLiqTotal,custoLiqUnit,
+    credIcmsValor,credPisValor,credCofinsValor,ipiValor,icmsStValor,freteCompraValor,freteVendaValor,difalValor,
+    icmsVendaValor,pisVendaValor,cofinsVendaValor,
+    mcValor,
+    mcPctLiq:totalLiq>0?(mcValor/totalLiq*100):0,
+    mcPctBruto:total>0?(mcValor/total*100):0,
+    impostosPct:total>0?((icmsVendaValor+pisVendaValor+cofinsVendaValor+difalValor)/total*100):0,
+  };
+}
+function canSimulateItem(item){
+  const sim=item?.sim||{};
+  return num(item?.qtd||0)>0 && num(sim.preco_venda_un||0)>0 && (num(sim.custo_un||0)>0 || num(item?.mc_valor||0)!==0);
+}
+function getSimScenario(id){return _simModalState.scenarios.find(s=>s.id===id);}
+function createSimScenario(inputs){
+  _simModalState.seq+=1;
+  return {id:'sim-'+_simModalState.seq,name:'Cenário '+_simModalState.seq,inputs:clone(inputs)};
+}
+function openItemSimulator(pv,itemIdx){
+  const row=(D.pendentes_list||[]).find(r=>String(r.pv)===String(pv));
+  const item=row?.itens?.[itemIdx];
+  if(!item||!canSimulateItem(item)){
+    alert('Este item não tem base suficiente para simulação nos dados atuais. Tente reconectar à planilha.');
+    return;
+  }
+  const baseInputs=deriveSimInputs(item);
+  _simModalState={item:{...item,pv:row.pv,cliente:row.cliente,empenho:row.empenho,uasg:row.uasg},baseInputs:clone(baseInputs),scenarios:[],seq:0};
+  _simModalState.scenarios=[createSimScenario(baseInputs)];
+  document.body.style.overflow='hidden';
+  renderSimModal();
+  document.getElementById('simModal').classList.remove('hidden');
+}
+function closeSimModal(){
+  const modal=document.getElementById('simModal');
+  if(modal) modal.classList.add('hidden');
+  document.body.style.overflow='';
+  _simModalState={item:null,baseInputs:null,scenarios:[],seq:0};
+}
+function addSimScenario(){
+  if(!_simModalState.baseInputs) return;
+  const last=_simModalState.scenarios[_simModalState.scenarios.length-1];
+  _simModalState.scenarios.push(createSimScenario(last?last.inputs:_simModalState.baseInputs));
+  renderSimModal();
+}
+function resetSimScenario(id){
+  const scenario=getSimScenario(id);
+  if(!scenario||!_simModalState.baseInputs) return;
+  scenario.inputs=clone(_simModalState.baseInputs);
+  renderSimModal();
+}
+function removeSimScenario(id){
+  if(_simModalState.scenarios.length<=1) return;
+  _simModalState.scenarios=_simModalState.scenarios.filter(s=>s.id!==id);
+  renderSimModal();
+}
+function updateSimScenarioField(id,key,value,isPct){
+  const scenario=getSimScenario(id);
+  if(!scenario) return;
+  scenario.inputs[key]=isPct?num(value)/100:num(value);
+  renderSimScenarioOutputs(id);
+}
+function renderSimDelta(calc,base){
+  const mcDiff=calc.mcValor-base.mcValor;
+  const totalDiff=calc.totalLiq-base.totalLiq;
+  let cls='neutral';
+  if(mcDiff>0.009) cls='good';
+  else if(mcDiff<-0.009) cls='bad';
+  const mcTxt=mcDiff===0?'igual à planilha':(mcDiff>0?`+${fmt(Math.abs(mcDiff))}`:`-${fmt(Math.abs(mcDiff))}`);
+  const totalTxt=totalDiff===0?'sem mudança no total líquido':(totalDiff>0?`+${fmt(Math.abs(totalDiff))}`:`-${fmt(Math.abs(totalDiff))}`);
+  return `<div class="sim-delta-note ${cls}">MC ${mcTxt} · Total Líq. ${totalTxt} vs. base</div>`;
+}
+function renderSimOutputsBlock(calc){
+  const mcCls=calc.mcValor>=0?'up':'down';
+  return `
+    <div class="sim-summary-grid">
+      <div class="sim-summary-box"><div class="label">MC $</div><div class="value ${mcCls}">${fmt(calc.mcValor)}</div></div>
+      <div class="sim-summary-box"><div class="label">MC %</div><div class="value">${pct(calc.mcPctLiq)}</div></div>
+      <div class="sim-summary-box"><div class="label">Total Líq.</div><div class="value">${fmt(calc.totalLiq)}</div></div>
+    </div>
+    <div class="sim-section-title">Saídas calculadas</div>
+    <div class="sim-output-grid">
+      <div class="sim-output-box"><div class="label">Total bruto</div><div class="value">${fmt(calc.total)}</div></div>
+      <div class="sim-output-box"><div class="label">Total s/ ICMS</div><div class="value">${fmt(calc.totalSemIcms)}</div></div>
+      <div class="sim-output-box"><div class="label">Custo total</div><div class="value">${fmt(calc.custoTotal)}</div></div>
+      <div class="sim-output-box"><div class="label">Custo líq. total</div><div class="value">${fmt(calc.custoLiqTotal)}</div></div>
+      <div class="sim-output-box"><div class="label">DIFAL ($)</div><div class="value">${fmt(calc.difalValor)}</div></div>
+      <div class="sim-output-box"><div class="label">Impostos venda</div><div class="value">${pct(calc.impostosPct)}</div></div>
+      <div class="sim-output-box"><div class="label">Créd. ICMS</div><div class="value">${fmt(calc.credIcmsValor)}</div></div>
+      <div class="sim-output-box"><div class="label">Créd. PIS</div><div class="value">${fmt(calc.credPisValor)}</div></div>
+      <div class="sim-output-box"><div class="label">Créd. COFINS</div><div class="value">${fmt(calc.credCofinsValor)}</div></div>
+      <div class="sim-output-box"><div class="label">IPI + ICMS ST</div><div class="value">${fmt(calc.ipiValor+calc.icmsStValor)}</div></div>
+      <div class="sim-output-box"><div class="label">Frete venda</div><div class="value">${fmt(calc.freteVendaValor)}</div></div>
+      <div class="sim-output-box"><div class="label">Frete compra</div><div class="value">${fmt(calc.freteCompraValor)}</div></div>
+    </div>
+  `;
+}
+function renderSimScenarioOutputs(id){
+  const original=calcSimScenario(_simModalState.baseInputs||{});
+  const scenario=getSimScenario(id);
+  if(!scenario) return;
+  const calc=calcSimScenario(scenario.inputs);
+  const mount=document.getElementById(`sim-outputs-${id}`);
+  if(mount) mount.innerHTML=renderSimDelta(calc,original)+renderSimOutputsBlock(calc);
+}
+function renderSimModal(){
+  if(!_simModalState.item||!_simModalState.baseInputs) return;
+  const item=_simModalState.item;
+  const original=calcSimScenario(_simModalState.baseInputs);
+  document.getElementById('simModalSubtitle').textContent=item.desc||'Item sem descrição';
+  document.getElementById('simModalMeta').innerHTML=
+    `<span class="sim-chip">PV ${esc(item.pv)}</span>`+
+    `<span class="sim-chip">${esc(item.cliente||'—')}</span>`+
+    `<span class="sim-chip">${num(item.qtd).toLocaleString('pt-BR')} ${esc(item.und||'und')}</span>`;
+  document.getElementById('simToolbarCopy').textContent='A base usa a lógica da planilha: Total Líq., créditos, IPI/ST, fretes e DIFAL são recalculados a cada cenário.';
+
+  const originalAssumptions = [
+    ['Venda un.', fmt(original.precoVendaUn)],
+    ['Custo un.', fmt(original.custoUn)],
+    ['ICMS venda', pct((_simModalState.baseInputs.icms_pct||0)*100)],
+    ['PIS + COFINS', pct(((_simModalState.baseInputs.pis_pct||0)+(_simModalState.baseInputs.cofins_pct||0))*100)],
+    ['DIFAL', pct((_simModalState.baseInputs.difal_pct||0)*100)],
+    ['Fretes', `${pct((_simModalState.baseInputs.frete_pct||0)*100)} / ${pct((_simModalState.baseInputs.frete_c_pct||0)*100)}`],
+  ];
+
+  const cards = [];
+  cards.push(`
+    <section class="sim-card original">
+      <div class="sim-card-head">
+        <div>
+          <div class="sim-card-title">Base da planilha</div>
+          <div class="sim-card-subtitle">Leitura atual do item, sem alterar a planilha</div>
+        </div>
+        <span class="badge badge-navy">Original</span>
+      </div>
+      <div class="sim-card-body">
+        ${renderSimOutputsBlock(original)}
+        <div class="sim-section-title">Premissas carregadas</div>
+        <div class="sim-assumption-list">
+          ${originalAssumptions.map(([label,value])=>`<div class="sim-assumption"><div class="label">${label}</div><div class="value">${value}</div></div>`).join('')}
+        </div>
+      </div>
+    </section>
+  `);
+
+  _simModalState.scenarios.forEach((scenario,idx)=>{
+    const actions = `
+      <div class="sim-card-actions">
+        <button class="sim-text-btn" type="button" onclick="resetSimScenario('${scenario.id}')">Resetar</button>
+        ${_simModalState.scenarios.length>1?`<button class="sim-text-btn" type="button" onclick="removeSimScenario('${scenario.id}')">Remover</button>`:''}
+      </div>
+    `;
+    const sections = SIM_INPUT_SECTIONS.map(section=>`
+      <div class="sim-section-title">${section.title}</div>
+      <div class="sim-input-grid">
+        ${section.fields.map(field=>`
+          <div class="sim-field">
+            <label for="${field.key}-${scenario.id}">${field.label}</label>
+            <input
+              id="${field.key}-${scenario.id}"
+              type="number"
+              step="${field.step}"
+              value="${simValue(field,scenario.inputs[field.key])}"
+              oninput="updateSimScenarioField('${scenario.id}','${field.key}',this.value,${field.pct?'true':'false'})"
+            >
+            <span class="hint">${field.hint}</span>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+    cards.push(`
+      <section class="sim-card">
+        <div class="sim-card-head">
+          <div>
+            <div class="sim-card-title">${scenario.name}</div>
+            <div class="sim-card-subtitle">Ajuste os campos e compare com a base</div>
+          </div>
+          ${actions}
+        </div>
+        <div class="sim-card-body">
+          <div id="sim-outputs-${scenario.id}">${renderSimDelta(calcSimScenario(scenario.inputs),original)+renderSimOutputsBlock(calcSimScenario(scenario.inputs))}</div>
+          ${sections}
+        </div>
+      </section>
+    `);
+  });
+
+  document.getElementById('simCards').innerHTML = cards.join('');
+}
+
+window.addEventListener('keydown', e=>{
+  if(e.key==='Escape'&&!document.getElementById('simModal')?.classList.contains('hidden')) closeSimModal();
+});
+
+// -------------------------------------------------------
 // RENDER ALL
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 function renderAll(){
   document.getElementById('lastUpdateTime').textContent = new Date().toLocaleString('pt-BR');
   renderPanorama();
@@ -711,9 +1126,9 @@ function renderAll(){
   renderPrevisao();
 }
 
-// ════════════════════════════════════════════
+// --------------------------------------------
 // 1. PANORAMA
-// ════════════════════════════════════════════
+// --------------------------------------------
 function setPanoramaAno(ano, el){
   _panoramaAno = ano;
   document.querySelectorAll('#pillsPanorama .pill').forEach(p=>p.classList.remove('active'));
@@ -730,10 +1145,10 @@ function renderPanorama(){
   document.getElementById('recorteTagPanorama').innerHTML = recorteTag(lbl);
 
   document.getElementById('kpiPanorama').innerHTML =
-    kpiCard('gold','🏛','Total Empenhos',fmtS(k.total_carteira),`${k.total_empenhos} PVs únicos · ${lbl}`)+
+    kpiCard('gold','📦','Total Empenhos',fmtS(k.total_carteira),`${k.total_empenhos} PVs únicos · ${lbl}`)+
     kpiCard('green','✅','Valor Executado',fmtS(k.valor_executado),`${execPct}% concluído`,'badge-pos',execPct+'%')+
     kpiCard('red','⏳','A Executar',fmtS(k.valor_a_executar),`${k.pendentes} PVs pendentes`,'badge-danger',k.pendentes+' PVs')+
-    kpiCard('teal','📈','MC Total',fmtS(k.mc_total),`Margem: ${pct(k.mc_pct)}`,'badge-pos',pct(k.mc_pct));
+    kpiCard('teal','💰','MC Total',fmtS(k.mc_total),`Margem: ${pct(k.mc_pct)}`,'badge-pos',pct(k.mc_pct));
 
   // Mensal comparativo 2025 vs 2026
   const m25 = D.mensal['2025']; const m26 = D.mensal['2026'];
@@ -757,7 +1172,7 @@ function renderPanorama(){
         legend:{position:'top',labels:{font:{family:'DM Sans',size:11},boxWidth:10}},
         tooltip:{callbacks:{label:ctx=>{
           const v=ctx.raw; if(v===null) return null;
-          const suf=(ctx.dataset.label==='2026'&&ctx.label==='Mar')?' ⚠ em andamento':'';
+          const suf=(ctx.dataset.label==='2026'&&ctx.label==='Mar')?' ? em andamento':'';
           return ctx.dataset.label+': R$ '+v.toFixed(0)+'k'+suf;
         }}},
       },
@@ -793,19 +1208,19 @@ function renderPanorama(){
   }).join('');
 }
 
-// ════════════════════════════════════════════
+// --------------------------------------------
 // 2. ENVELHECIMENTO
-// ════════════════════════════════════════════
+// --------------------------------------------
 function renderEnvelhecimento(){
   const env = D.envelhecimento;
   const totalPend = D.kpis.total.valor_a_executar;
   const totalPVs = env.reduce((a,e)=>a+e.qtd,0);
 
   document.getElementById('kpiAging').innerHTML =
-    kpiCard('navy','📦','Total PVs Pendentes',totalPVs+' PVs',fmtS(totalPend),'badge-warn',totalPVs+' PVs')+
+    kpiCard('navy','📋','Total PVs Pendentes',totalPVs+' PVs',fmtS(totalPend),'badge-warn',totalPVs+' PVs')+
     kpiCard('red','🚨','Críticos +180 dias',env[4].qtd+' PVs',fmtS(env[4].valor),'badge-danger','Urgente')+
     kpiCard('orange','⚠️','Alerta 91-180 dias',env[3].qtd+' PVs',fmtS(env[3].valor),'badge-warn','Alerta')+
-    kpiCard('green','✅','Saudáveis 0-30 dias',env[0].qtd+' PVs',fmtS(env[0].valor),'badge-pos','OK');
+    kpiCard('green','🌿','Saudáveis 0-30 dias',env[0].qtd+' PVs',fmtS(env[0].valor),'badge-pos','OK');
 
   killChart('chartAging');
   charts.chartAging = new Chart(document.getElementById('chartAging'),{
@@ -829,9 +1244,9 @@ function renderEnvelhecimento(){
   }).join('');
 }
 
-// ════════════════════════════════════════════
+// --------------------------------------------
 // 3. STATUS
-// ════════════════════════════════════════════
+// --------------------------------------------
 function setStatusAno(ano, el){
   _statusAno = ano;
   document.querySelectorAll('#pillsStatus .pill').forEach(p=>p.classList.remove('active'));
@@ -910,6 +1325,7 @@ function renderStatus(){
   // Tabela pendentes
   _pendentesData = [...(D.pendentes_list||[])];
   _pendentesSort = {col:'dias',asc:false};
+  populatePendentesFilters(_pendentesData);
   renderPendentesTable(_pendentesData);
 }
 
@@ -917,41 +1333,150 @@ function renderStatus(){
 function sortPendentes(col){
   if(_pendentesSort.col===col) _pendentesSort.asc=!_pendentesSort.asc;
   else{_pendentesSort.col=col;_pendentesSort.asc=(col==='cliente'||col==='pv');}
-  renderPendentesTable(filterArr(_pendentesData,document.getElementById('searchPendentes').value),true);
+  renderPendentesTable(_pendentesData,true);
 }
-function filterPendentes(q){renderPendentesTable(filterArr(_pendentesData,q),true);}
+function filterPendentes(q){_pendentesSearch=q;renderPendentesTable(_pendentesData,true);}
+function updatePendentesFilter(key,value){_pendentesFilter[key]=value;renderPendentesTable(_pendentesData,true);}
+function clearPendentesFilters(){
+  _pendentesFilter={produto:'',categoria:'',marca:'',tipo:''};
+  _pendentesSearch='';
+  ['filtProduto','filtCategoria','filtMarca','filtTipo','searchPendentes'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  renderPendentesTable(_pendentesData,true);
+}
 function filterArr(arr,q){
   if(!q) return arr;
   const ql=q.toLowerCase();
   return arr.filter(r=>r.cliente.toLowerCase().includes(ql)||String(r.empenho).toLowerCase().includes(ql)||String(r.pv).toLowerCase().includes(ql)||String(r.uasg).toLowerCase().includes(ql));
 }
+function populatePendentesFilters(data){
+  const cats=new Set(),marcas=new Set(),tipos=new Set();
+  data.forEach(pv=>(pv.itens||[]).forEach(it=>{
+    if(it.categoria&&it.categoria!=='—') cats.add(it.categoria);
+    if(it.marca&&it.marca!=='—') marcas.add(it.marca);
+    if(it.tipo&&it.tipo!=='—') tipos.add(it.tipo);
+  }));
+  const fill=(id,vals,placeholder)=>{
+    const sel=document.getElementById(id); if(!sel) return;
+    const cur=sel.value;
+    sel.innerHTML=`<option value="">${placeholder}</option>`+
+      [...vals].sort((a,b)=>a.localeCompare(b,'pt-BR')).map(v=>`<option value="${v}">${v}</option>`).join('');
+    sel.value=cur;
+  };
+  fill('filtCategoria',cats,'Categoria: Todas');
+  fill('filtMarca',marcas,'Marca: Todas');
+  fill('filtTipo',tipos,'Tipo: Todos');
+}
+function applyItemFilters(pv){
+  const f=_pendentesFilter;
+  const hasFilter=!!(f.produto||f.categoria||f.marca||f.tipo);
+  if(!hasFilter) return {itens:pv.itens||[],valor:pv.valor,mc_valor:pv.mc_valor,filtered:false};
+  const q=(f.produto||'').toLowerCase();
+  const itens=(pv.itens||[]).filter(it=>
+    (!f.categoria||it.categoria===f.categoria)&&
+    (!f.marca||it.marca===f.marca)&&
+    (!f.tipo||it.tipo===f.tipo)&&
+    (!q||String(it.desc||'').toLowerCase().includes(q))
+  );
+  const valor=itens.reduce((a,it)=>a+(it.valor||0),0);
+  const mc_valor=itens.reduce((a,it)=>a+(it.mc_valor||0),0);
+  return {itens,valor,mc_valor,filtered:true};
+}
 function renderPendentesTable(data,keepSort){
-  if(!keepSort){_pendentesSort={col:'dias',asc:false};}
+  if(!keepSort) _pendentesSort={col:'dias',asc:false};
+  const searched=filterArr(data,_pendentesSearch);
+  const enriched=searched.map(pv=>{
+    const res=applyItemFilters(pv);
+    if(res.filtered&&!res.itens.length) return null;
+    return {...pv,_itens:res.itens,_valor:res.valor,_mc_valor:res.mc_valor,_filtered:res.filtered};
+  }).filter(Boolean);
+
   const {col,asc}=_pendentesSort;
-  const sorted=[...data].sort((a,b)=>{
-    let va=a[col], vb=b[col];
-    // Numeric columns
-    if(col==='dias'||col==='valor'){
-      va=parseFloat(va)||0; vb=parseFloat(vb)||0;
-      return asc?va-vb:vb-va;
+  const sorted=enriched.sort((a,b)=>{
+    let va,vb;
+    if(col==='dias'){va=a.dias||0;vb=b.dias||0;}
+    else if(col==='valor'){va=a._valor||0;vb=b._valor||0;}
+    else if(col==='mc'){va=a._mc_valor||0;vb=b._mc_valor||0;}
+    else if(col==='mcpct'){va=a._valor>0?a._mc_valor/a._valor:0;vb=b._valor>0?b._mc_valor/b._valor:0;}
+    else{
+      va=String(a[col]==null?'':a[col]); vb=String(b[col]==null?'':b[col]);
+      return asc?va.localeCompare(vb,'pt-BR'):vb.localeCompare(va,'pt-BR');
     }
-    // String columns — force to string safely
-    va=String(va==null?'':va); vb=String(vb==null?'':vb);
-    return asc?va.localeCompare(vb,'pt-BR'):vb.localeCompare(va,'pt-BR');
+    return asc?va-vb:vb-va;
   });
+
   const tbody=document.getElementById('pendentesTbody'); if(!tbody) return;
-  const count=document.getElementById('pendentesCount'); if(count) count.textContent=sorted.length+' pedido'+(sorted.length!==1?'s':'');
-  tbody.innerHTML=sorted.map(r=>{
+  const count=document.getElementById('pendentesCount');
+  if(count) count.textContent=sorted.length+' pedido'+(sorted.length!==1?'s':'');
+
+  const mcBadgeCls=p=>p>=20?'badge-green':p>=10?'badge-orange':'badge-red';
+
+  tbody.innerHTML=sorted.map((r,idx)=>{
     const risco=r.dias>300?'<span class="badge badge-red">🔴 Altíssimo</span>':r.dias>200?'<span class="badge badge-red">🔴 Alto</span>':r.dias>90?'<span class="badge badge-orange">🟡 Médio</span>':'<span class="badge badge-navy">⚪ Normal</span>';
     const db=r.dias>200?'badge-red':r.dias>90?'badge-orange':'badge-navy';
-    const itensLabel=r.n_itens>1?` <span style="font-size:10px;color:var(--gray-400)">(${r.n_itens}it)</span>`:'';
-    return `<tr><td><strong>${r.pv}</strong>${itensLabel}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.cliente}">${r.cliente}</td><td style="font-size:11px;color:var(--gray-600)">${r.empenho}</td><td style="font-size:11px;color:var(--gray-600)">${r.uasg||'—'}</td><td style="text-align:right"><strong>${fmt(r.valor)}</strong></td><td style="text-align:center"><span class="badge ${db}">${r.dias}d</span></td><td style="font-size:11px">${r.prev_ent||'—'}</td><td>${risco}</td></tr>`;
+    const nItens=r._itens.length;
+    const totalItens=r.n_itens||0;
+    const mcPct=r._valor>0?(r._mc_valor/r._valor*100):0;
+    const rid='penRow'+idx;
+    const itensLabel=r._filtered
+      ? `<span class="itens-count" style="color:var(--gold)">${nItens}/${totalItens} it</span>`
+      : `<span class="itens-count">${totalItens} ite${totalItens!==1?'ns':'m'}</span>`;
+
+    let html=`<tr class="expand-row" onclick="togglePenItems('${rid}',this)">`;
+    html+=`<td><span class="expand-toggle" id="tog-${rid}">▶</span></td>`;
+    html+=`<td><strong>${r.pv}</strong>${itensLabel}</td>`;
+    html+=`<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.cliente}">${r.cliente}</td>`;
+    html+=`<td style="font-size:11px;color:var(--gray-600)">${r.empenho}</td>`;
+    html+=`<td style="font-size:11px;color:var(--gray-600)">${r.uasg||'—'}</td>`;
+    html+=`<td style="text-align:right"><strong>${fmt(r._valor)}</strong></td>`;
+    html+=`<td style="text-align:right;color:${r._mc_valor<0?'var(--red)':'var(--navy)'}">${fmt(r._mc_valor)}</td>`;
+    html+=`<td style="text-align:center"><span class="badge ${mcBadgeCls(mcPct)}">${mcPct.toFixed(1)}%</span></td>`;
+    html+=`<td style="text-align:center"><span class="badge ${db}">${r.dias}d</span></td>`;
+    html+=`<td style="font-size:11px">${(!r.prev_ent || String(r.prev_ent).trim()==='?') ? '—' : r.prev_ent}</td>`;
+    html+=`<td>${risco}</td>`;
+    html+=`<td style="text-align:center;font-size:11px;color:var(--gray-400)">Abra os itens</td></tr>`;
+
+    html+=`<tr class="expand-detail" id="${rid}"><td colspan="12"><div class="itens-wrapper">`;
+    html+=`<table class="itens-table"><thead><tr><th>Descrição</th><th>Marca</th><th>Categoria</th><th>Tipo</th><th style="text-align:center">Qtd</th><th>Und</th><th style="text-align:right">Valor</th><th style="text-align:right">MC $</th><th style="text-align:center">MC %</th><th style="text-align:center">Simulação</th></tr></thead><tbody>`;
+    r._itens.forEach(it=>{
+      const iPct=it.valor>0?(it.mc_valor/it.valor*100):0;
+      const originalIdx=(r.itens||[]).indexOf(it);
+      const canSim=canSimulateItem(it) && originalIdx>=0;
+      const pvArg=JSON.stringify(String(r.pv));
+      html+=`<tr>`;
+      html+=`<td class="item-desc" title="${(it.desc||'').replace(/"/g,'&quot;')}">${it.desc||'—'}</td>`;
+      html+=`<td><span class="brand-tag">${it.marca||'—'}</span></td>`;
+      html+=`<td>${it.categoria&&it.categoria!=='—'?`<span class="cat-tag">${it.categoria}</span>`:'<span style="color:var(--gray-400);font-size:11px">—</span>'}</td>`;
+      html+=`<td style="font-size:11px;color:var(--gray-600)">${it.tipo||'—'}</td>`;
+      html+=`<td style="text-align:center">${it.qtd>0?it.qtd.toLocaleString('pt-BR'):'—'}</td>`;
+      html+=`<td>${it.und||'—'}</td>`;
+      html+=`<td style="text-align:right;font-weight:600">${fmt(it.valor)}</td>`;
+      html+=`<td style="text-align:right;color:${it.mc_valor<0?'var(--red)':'var(--navy)'}">${fmt(it.mc_valor)}</td>`;
+      html+=`<td style="text-align:center"><span class="badge ${mcBadgeCls(iPct)}">${iPct.toFixed(1)}%</span></td>`;
+      html+=`<td style="text-align:center"><button class="sim-btn" type="button" ${canSim?'':"disabled title=\"Requer base da planilha\""} onclick='event.stopPropagation();openItemSimulator(${pvArg},${originalIdx})'>🧮 Simular</button></td>`;
+      html+=`</tr>`;
+    });
+    if(!r._itens.length) html+=`<tr><td colspan="10" style="text-align:center;color:var(--gray-400);padding:12px">Sem itens correspondentes ao filtro</td></tr>`;
+    html+=`</tbody></table></div></td></tr>`;
+    return html;
   }).join('');
+
+  if(!sorted.length){
+    tbody.innerHTML=`<tr><td colspan="12" style="text-align:center;color:var(--gray-400);padding:28px">Nenhum empenho pendente corresponde aos filtros</td></tr>`;
+  }
+}
+function togglePenItems(id,row){
+  const detail=document.getElementById(id);
+  const tog=document.getElementById('tog-'+id);
+  if(!detail||!tog) return;
+  if(detail.classList.contains('open')){detail.classList.remove('open');tog.classList.remove('open');}
+  else{detail.classList.add('open');tog.classList.add('open');}
 }
 
-// ════════════════════════════════════════════
+// --------------------------------------------
 // 4. CLIENTES
-// ════════════════════════════════════════════
+// --------------------------------------------
 function setClientesAno(ano, el){
   _clientesAno = ano;
   document.querySelectorAll('#pillsClientes .pill').forEach(p=>p.classList.remove('active'));
@@ -999,9 +1524,9 @@ function renderClientes(){
   }).join('');
 }
 
-// ════════════════════════════════════════════
+// --------------------------------------------
 // 5. GARGALOS
-// ════════════════════════════════════════════
+// --------------------------------------------
 function renderGargalos(){
   // Gargalos sempre usa TODA a carteira (sem filtro de ano)
   const k=D.kpis['total']; const env=D.envelhecimento;
@@ -1010,10 +1535,10 @@ function renderGargalos(){
   const mcRisco = k.mc_pendente||0;
 
   document.getElementById('kpiRisco').innerHTML=
-    kpiCard('red','⚠️','Valor em Risco',fmtS(k.valor_a_executar),`${totalPVs} PVs sem entrega · toda a carteira`,'badge-danger',totalPVs+' PVs')+
-    kpiCard('navy','🚨','Críticos +180d',env[4].qtd+' PVs',fmtS(env[4].valor),'badge-danger','Urgente')+
-    kpiCard('gold','💰','MC em Risco',fmtS(mcRisco),'MC real dos pendentes · toda carteira')+
-    kpiCard('teal','🎯','MC Realizada Total',pct(k.mc_pct),'Carteira total · valor > 0','badge-pos',pct(k.mc_pct));
+    kpiCard('red','🚨','Valor em Risco',fmtS(k.valor_a_executar),`${totalPVs} PVs sem entrega · toda a carteira`,'badge-danger',totalPVs+' PVs')+
+    kpiCard('navy','⏰','Críticos +180d',env[4].qtd+' PVs',fmtS(env[4].valor),'badge-danger','Urgente')+
+    kpiCard('gold','💸','MC em Risco',fmtS(mcRisco),'MC real dos pendentes · toda carteira')+
+    kpiCard('teal','📈','MC Realizada Total',pct(k.mc_pct),'Carteira total · valor > 0','badge-pos',pct(k.mc_pct));
 
   const crit180=(D.criticos||[]).filter(c=>c.dias>=180&&c.valor>0);
   document.getElementById('riscoPanel').innerHTML=
@@ -1027,9 +1552,9 @@ function renderGargalos(){
   ].map(dec=>`<div style="display:flex;gap:11px;align-items:flex-start;padding:12px;background:var(--gray-50);border-radius:var(--radius-sm);border-left:4px solid ${dec.cor};margin-bottom:9px"><div style="font-family:'DM Serif Display',serif;font-size:19px;color:${dec.cor};min-width:26px;line-height:1">${dec.n}</div><div><div style="font-size:13px;font-weight:700;color:var(--navy)">${dec.t}</div><div style="font-size:12px;color:var(--gray-600);margin-top:2px">${dec.d}</div></div></div>`).join('');
 }
 
-// ════════════════════════════════════════════
+// --------------------------------------------
 // 6. PREVISÃO DA SEMANA (CALENDÁRIO)
-// ════════════════════════════════════════════
+// --------------------------------------------
 let _calYear, _calMonth, _selWeekStart=null;
 (function(){const n=new Date();_calYear=n.getFullYear();_calMonth=n.getMonth();})();
 
@@ -1051,7 +1576,7 @@ function renderPrevisao(){
 
   document.getElementById('calMonthLabel').textContent=mN[_calMonth]+' '+_calYear;
 
-  // Build day→items map for this month
+  // Build day?items map for this month
   const firstDay=new Date(_calYear,_calMonth,1);
   const lastDay=new Date(_calYear,_calMonth+1,0);
   const monthItems={};
@@ -1083,9 +1608,9 @@ function renderPrevisao(){
 
   document.getElementById('kpiPrevisao').innerHTML=
     kpiCard('gold','📦','PVs no Mês',totalPVs+' PVs',fmtS(totalValor)+' · '+mN[_calMonth],'badge-pos',totalPVs+' PVs')+
-    kpiCard('teal','💰','Valor Previsto Mês',fmtS(totalValor),totalPVs+' PVs previstos')+
-    kpiCard('navy','📅','Semana Selecionada',weekPVs+' PVs',fmtS(weekValor)+' · '+selWS.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' a '+selWE.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}),weekPVs?'badge-pos':'',''+weekPVs)+
-    kpiCard('red','⚠️','Atrasados',(new Set(atrasados.map(r=>r.pv)).size)+' PVs',fmtS(atrasadosValor)+' em atraso',atrasados.length?'badge-danger':'badge-pos',atrasados.length?'Atenção':'OK');
+    kpiCard('teal','💵','Valor Previsto Mês',fmtS(totalValor),totalPVs+' PVs previstos')+
+    kpiCard('navy','🗓️','Semana Selecionada',weekPVs+' PVs',fmtS(weekValor)+' · '+selWS.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' a '+selWE.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}),weekPVs?'badge-pos':'',''+weekPVs)+
+    kpiCard('red','⛔','Atrasados',(new Set(atrasados.map(r=>r.pv)).size)+' PVs',fmtS(atrasadosValor)+' em atraso',atrasados.length?'badge-danger':'badge-pos',atrasados.length?'Atenção':'OK');
 
   // Build calendar grid
   let startDow=firstDay.getDay(); startDow=startDow===0?6:startDow-1; // Mon=0
@@ -1171,7 +1696,7 @@ function renderPrevisao(){
 
   // Top clientes do mês
   const cliMap={};
-  monthFiltered.forEach(r=>{const c=r.cliente||'?';if(!cliMap[c])cliMap[c]=0;cliMap[c]+=r.valor;});
+  monthFiltered.forEach(r=>{const c=r.cliente||'—';if(!cliMap[c])cliMap[c]=0;cliMap[c]+=r.valor;});
   const topCli=Object.entries(cliMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
   const maxCli=topCli.length?topCli[0][1]:1;
   const pal=[C.gold,C.navy,C.teal,C.green,C.orange,C.blue];
@@ -1225,7 +1750,7 @@ function togglePrevItems(id,row){
   else{detail.classList.add('open');tog.classList.add('open');}
 }
 
-// ════════════════════════════════════════════
+// --------------------------------------------
 // SHAREPOINT / MSAL
 const msalConfig = {
   auth: {
@@ -1484,6 +2009,7 @@ async function readAndRender(){
 
     setLoading(true,'Calculando indicadores...');
     D = parseSheet(rows);
+    closeSimModal();
     renderAll();
     setLinked(fileName);
     document.getElementById('firstRun').classList.add('hidden');
@@ -1497,10 +2023,11 @@ async function readAndRender(){
 }
 
 function usePreloaded(){
+  closeSimModal();
   D=JSON.parse(JSON.stringify(DEFAULT_DATA));renderAll();
   document.getElementById('firstRun').classList.add('hidden');
   document.getElementById('fileDot').className='file-dot none';
-  document.getElementById('fileStatusText').innerHTML='Dados prÃ©-carregados';
+  document.getElementById('fileStatusText').innerHTML='Dados pr?-carregados';
   document.getElementById('statusHint').textContent='Clique em "Reconectar" para acessar os dados do SharePoint';
   document.getElementById('btnRefresh').disabled=true;
 }
@@ -1591,7 +2118,7 @@ function printAll(){
 }
 
 // PARSE SHEET
-// ════════════════════════════════════════════
+// --------------------------------------------
 function parseSheet(rows){
   const today=new Date();
   const toN=v=>{
@@ -1680,7 +2207,7 @@ function parseSheet(rows){
   // Empresas por ano
   function empresasAno(subset){
     const eM={};
-    subset.forEach(r=>{const e=String(r['Empresa']||'?');if(!eM[e])eM[e]={f:0,mc:0};eM[e].f+=toN(r['Total Líq.']||0);eM[e].mc+=toN(r['MC ($)']||0);});
+    subset.forEach(r=>{const e=String(r['Empresa']||'—');if(!eM[e])eM[e]={f:0,mc:0};eM[e].f+=toN(r['Total Líq.']||0);eM[e].mc+=toN(r['MC ($)']||0);});
     const sorted=Object.entries(eM).sort((a,b)=>b[1].f-a[1].f);
     return {nomes:sorted.map(([n])=>n),faturamento:sorted.map(([,v])=>round(v.f)),mc:sorted.map(([,v])=>round(v.mc))};
   }
@@ -1698,14 +2225,67 @@ function parseSheet(rows){
   penD.forEach(r=>{const pv=String(r['PV']||'');if(!pvCritMap[pv])pvCritMap[pv]={pv,dias:r.dias,cliente:String(r['Cliente']||'').substring(0,45),valor:0,empenho:String(r['Empenho']||'—'),uasg:String(r['UASG']||'—'),prev_ent:fmtD(toD(r['Prev. Ent']))};pvCritMap[pv].valor+=toN(r['Total Líq.']||0);});
   const criticos=Object.values(pvCritMap).filter(r=>r.valor>0).sort((a,b)=>b.dias-a.dias).slice(0,10);
 
-  // Pendentes list
+  // Pendentes list (com itens + MC + lookup de categoria/tipo)
   const pvPendMap={};
-  penD.forEach(r=>{const pv=String(r['PV']||'');if(!pvPendMap[pv])pvPendMap[pv]={pv,dias:r.dias,cliente:String(r['Cliente']||''),empenho:String(r['Empenho']||'—'),uasg:String(r['UASG']||'—'),valor:0,prev_ent:fmtD(toD(r['Prev. Ent'])),n_itens:0};pvPendMap[pv].valor+=toN(r['Total Líq.']||0);pvPendMap[pv].n_itens+=1;});
-  const pendentes_list=Object.values(pvPendMap).filter(r=>r.valor>0).sort((a,b)=>b.dias-a.dias);
+  penD.forEach(r=>{
+    const pv=String(r['PV']||'');
+    if(!pvPendMap[pv]) pvPendMap[pv]={
+      pv, dias:r.dias,
+      cliente:String(r['Cliente']||''),
+      empenho:String(r['Empenho']||'—'),
+      uasg:String(r['UASG']||'—'),
+      valor:0, mc_valor:0,
+      prev_ent:fmtD(toD(r['Prev. Ent'])),
+      n_itens:0, itens:[]
+    };
+    const v=toN(r['Total Líq.']||0);
+    const mv=toN(r['MC ($)']||0);
+    const chave=String(r['Chave Produto']||'').trim();
+    const cat=_prodCatalog[chave]||{};
+    pvPendMap[pv].valor+=v;
+    pvPendMap[pv].mc_valor+=mv;
+    pvPendMap[pv].n_itens+=1;
+    pvPendMap[pv].itens.push({
+      chave,
+      desc:String(r['Desc. Resumida']||r['DESCRIÇÃO']||'—').substring(0,120),
+      marca:(String(r['Fabricante']||'').trim())||'—',
+      categoria:cat.categoria||'—',
+      tipo:cat.tipo||'—',
+      qtd:toN(r['Qtd.']||r['QUANT']||0),
+      und:String(r['Und']||'—'),
+      valor:round(v),
+      mc_valor:round(mv),
+      sim:{
+        preco_venda_un:toN(r['Un']||0),
+        custo_un:toN(r['Custo Un']||0),
+        icms_pct:toN(r['ICMS Real Venda']||0),
+        difal_pct:toN(r['DIFAL']||0),
+        pis_pct:toN(r['PIS']||0),
+        cofins_pct:toN(r['COFINS']||0),
+        cred_icms_pct:toN(r['Créd ICMS Real']||0),
+        cred_pis_pct:toN(r['Créd PIS']||0),
+        cred_cofins_pct:toN(r['Créd COFINS']||0),
+        ipi_pct:toN(r['IPI %']||0),
+        icms_st_pct:toN(r['ICMS ST %']||0),
+        difal_valor:toN(r['DIFAL ($)']||0),
+        cred_icms:toN(r['Créd ICMS ($)']||0),
+        cred_pis:toN(r['PIS ($)2']||0),
+        cred_cofins:toN(r['COFINS ($)13']||0),
+        frete_entrada:toN(r['Frete']||0),
+        frete_c:toN(r['Frete C']||0),
+        frete_pct:toN(r['% Frete']||0),
+        frete_c_pct:toN(r['% Frete C']||0)
+      }
+    });
+  });
+  const pendentes_list=Object.values(pvPendMap)
+    .filter(r=>r.valor>0)
+    .map(r=>({...r,valor:round(r.valor),mc_valor:round(r.mc_valor)}))
+    .sort((a,b)=>b.dias-a.dias);
 
   // Clientes e vendedores
-  function topClientes(subset,n=8){const cM={};subset.forEach(r=>{const c=String(r['Cliente']||'?');if(!cM[c])cM[c]={f:0,mc:0};cM[c].f+=toN(r['Total Líq.']||0);cM[c].mc+=toN(r['MC ($)']||0);});const s=Object.entries(cM).sort((a,b)=>b[1].f-a[1].f).slice(0,n);return{nomes:s.map(([k])=>k),faturamento:s.map(([,v])=>round(v.f)),mc:s.map(([,v])=>round(v.mc))};}
-  function topVendedores(subset,n=5){const vM={};subset.forEach(r=>{const v=String(r['Vendedor']||'?');if(!vM[v])vM[v]={f:0,mc:0};vM[v].f+=toN(r['Total Líq.']||0);vM[v].mc+=toN(r['MC ($)']||0);});const s=Object.entries(vM).sort((a,b)=>b[1].f-a[1].f).slice(0,n);return{nomes:s.map(([k])=>k),faturamento:s.map(([,v])=>round(v.f)),mc:s.map(([,v])=>round(v.mc))};}
+  function topClientes(subset,n=8){const cM={};subset.forEach(r=>{const c=String(r['Cliente']||'—');if(!cM[c])cM[c]={f:0,mc:0};cM[c].f+=toN(r['Total Líq.']||0);cM[c].mc+=toN(r['MC ($)']||0);});const s=Object.entries(cM).sort((a,b)=>b[1].f-a[1].f).slice(0,n);return{nomes:s.map(([k])=>k),faturamento:s.map(([,v])=>round(v.f)),mc:s.map(([,v])=>round(v.mc))};}
+  function topVendedores(subset,n=5){const vM={};subset.forEach(r=>{const v=String(r['Vendedor']||'—');if(!vM[v])vM[v]={f:0,mc:0};vM[v].f+=toN(r['Total Líq.']||0);vM[v].mc+=toN(r['MC ($)']||0);});const s=Object.entries(vM).sort((a,b)=>b[1].f-a[1].f).slice(0,n);return{nomes:s.map(([k])=>k),faturamento:s.map(([,v])=>round(v.f)),mc:s.map(([,v])=>round(v.mc))};}
 
   // Previsão da semana (Prev. Fat) — todos pendentes com data + itens
   const previsao_semana=[];
@@ -1735,6 +2315,29 @@ function parseSheet(rows){
 // INIT
 document.addEventListener('DOMContentLoaded', async()=>{
   Chart.defaults.font.family='DM Sans';
+
+  // Catálogo de produtos + sample de pendentes com base de simulação
+  try{
+    const [prodResult,pendResult] = await Promise.allSettled([
+      fetch('produtos.json',{cache:'no-store'}),
+      fetch('_pendentes_sim.json',{cache:'no-store'}),
+    ]);
+    if(prodResult.status==='fulfilled'){
+      _prodCatalog=prodResult.value.ok?await prodResult.value.json():{};
+    }else{
+      _prodCatalog={};
+    }
+    if(pendResult.status==='fulfilled' && pendResult.value.ok){
+      const pendentesSample = await pendResult.value.json();
+      if(Array.isArray(pendentesSample) && pendentesSample.length){
+        DEFAULT_DATA.pendentes_list = pendentesSample;
+      }
+    }
+  }catch(e){
+    _prodCatalog={};
+  }
+
+  D = JSON.parse(JSON.stringify(DEFAULT_DATA));
   renderAll();
 
   try{
@@ -1748,8 +2351,12 @@ document.addEventListener('DOMContentLoaded', async()=>{
   }
 
   const ln = localStorage.getItem('dashLastFile');
-  if(ln) document.querySelector('.first-run-box p').innerHTML+=`<br><br>Ãšltimo arquivo: <b>${ln}</b>`;
+  if(ln) document.querySelector('.first-run-box p').innerHTML+=`<br><br>Último arquivo: <b>${ln}</b>`;
 });
 </script>
 </body>
 </html>
+
+
+
+
