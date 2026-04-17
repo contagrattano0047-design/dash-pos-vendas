@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.27.0/lib/msal-browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 :root{
@@ -579,6 +580,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
         <input id="searchPendentes" type="text" placeholder="Buscar PV, cliente, empenho…" oninput="filterPendentes(this.value)"
           style="padding:6px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none;width:220px">
         <button class="btn btn-copy" id="btnPendentesImage" type="button" style="padding:7px 12px;font-size:12px" onclick="sharePendentesAsImage()">🖼 Imagem WhatsApp</button>
+        <button class="btn btn-primary" id="btnPendentesPdf" type="button" style="padding:7px 12px;font-size:12px" onclick="downloadPendentesAsPdf()">📄 PDF WhatsApp</button>
         <span id="pendentesImageStatus" class="micro-status"></span>
         <span id="pendentesCount" style="font-size:12px;color:var(--gray-400);white-space:nowrap"></span>
       </div>
@@ -1623,14 +1625,10 @@ function downloadBlob(blob,fileName){
   a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1200);
 }
-async function buildPendentesShareBlob(rows){
-  const width=1120;
-  const padding=44;
-  const tableLeft=padding+4;
-  const valueX=804;
-  const mcX=924;
-  const pctX=1006;
-  const diasX=1068;
+function getPendentesShareRowHeight(row){
+  return row&&row._has_compare?88:68;
+}
+function getPendentesShareMetrics(rows,width,padding,pageChipSpace){
   const nowTxt=new Date().toLocaleString('pt-BR');
   const hasCompareGlobal=rows.some(r=>r._has_compare);
   const totalValor=rows.reduce((sum,row)=>sum+(row._valor||0),0);
@@ -1643,14 +1641,41 @@ async function buildPendentesShareBlob(rows){
   const summaryCompare=`Cenário • Valor ${fmt(totalCompareValor)} • MC ${fmt(totalCompareMc)} • MC ${pct(mcComparePct)}`;
   const measure=document.createElement('canvas').getContext('2d');
   measure.font='500 14px DM Sans, sans-serif';
-  const filterLines=wrapCanvasText(measure,getPendentesFilterSummary(rows),width-(padding*2),width);
-  const filterStartY=hasCompareGlobal?212:192;
-  const headerHeight=filterStartY+(filterLines.length*20)+24;
-  const rowHeights=rows.map(row=>row._has_compare?88:68);
+  const filterLines=wrapCanvasText(measure,getPendentesFilterSummary(rows),width-(padding*2)-pageChipSpace,width);
+  return {nowTxt,hasCompareGlobal,summaryAtual,summaryCompare,filterLines};
+}
+function chunkPendentesShareRows(rows,maxBodyHeight){
+  const chunks=[]; let current=[]; let currentHeight=0;
+  rows.forEach(row=>{
+    const rowHeight=getPendentesShareRowHeight(row);
+    if(current.length&&(currentHeight+rowHeight)>maxBodyHeight){
+      chunks.push(current);
+      current=[row];
+      currentHeight=rowHeight;
+      return;
+    }
+    current.push(row);
+    currentHeight+=rowHeight;
+  });
+  if(current.length) chunks.push(current);
+  return chunks.length?chunks:[[]];
+}
+function buildPendentesShareCanvas(rows){
+  const width=1180;
+  const padding=44;
+  const tableLeft=padding+4;
+  const valueX=866;
+  const mcX=992;
+  const pctX=1074;
+  const diasX=1136;
+  const metrics=getPendentesShareMetrics(rows,width,padding,160);
+  const filterStartY=metrics.hasCompareGlobal?212:192;
+  const headerHeight=filterStartY+(metrics.filterLines.length*20)+24;
+  const rowHeights=rows.map(getPendentesShareRowHeight);
   const tableHeight=46+rowHeights.reduce((sum,h)=>sum+h,0);
-  const footerHeight=34;
+  const footerHeight=40;
   const height=headerHeight+tableHeight+footerHeight;
-  const scale=rows.length>20?1.5:2;
+  const scale=3;
   const canvas=document.createElement('canvas');
   canvas.width=Math.round(width*scale);
   canvas.height=Math.round(height*scale);
@@ -1674,20 +1699,20 @@ async function buildPendentesShareBlob(rows){
   ctx.fillText('Relação de Empenhos Filtrados',padding,78);
   ctx.font='500 14px DM Sans, sans-serif';
   ctx.fillStyle='#dfe7f3';
-  ctx.fillText(`Status • Pendentes | ${nowTxt}`,padding,108);
+  ctx.fillText(`Status • Pendentes | ${metrics.nowTxt}`,padding,108);
   ctx.font='700 22px DM Sans, sans-serif';
   ctx.fillStyle='#ffffff';
   ctx.fillText(`${rows.length} pedido${rows.length!==1?'s':''}`,padding,144);
   ctx.font='600 14px DM Sans, sans-serif';
   ctx.fillStyle='#f3d992';
-  ctx.fillText(summaryAtual,padding,168);
-  if(hasCompareGlobal){
+  ctx.fillText(metrics.summaryAtual,padding,168);
+  if(metrics.hasCompareGlobal){
     ctx.fillStyle='#fff1c9';
-    ctx.fillText(summaryCompare,padding,188);
+    ctx.fillText(metrics.summaryCompare,padding,188);
   }
   ctx.font='500 14px DM Sans, sans-serif';
   ctx.fillStyle='#e7eef9';
-  filterLines.forEach((line,idx)=>ctx.fillText(line,padding,filterStartY+(idx*19)));
+  metrics.filterLines.forEach((line,idx)=>ctx.fillText(line,padding,filterStartY+(idx*19)));
 
   const tableTop=headerHeight;
   ctx.fillStyle='#f8fafc';
@@ -1711,7 +1736,7 @@ async function buildPendentesShareBlob(rows){
 
   let rowY=tableTop+46;
   rows.forEach((row,idx)=>{
-    const rowHeight=row._has_compare?88:68;
+    const rowHeight=getPendentesShareRowHeight(row);
     const y=rowY;
     if(idx%2===0){
       ctx.fillStyle='#fcfdff';
@@ -1784,8 +1809,12 @@ async function buildPendentesShareBlob(rows){
   ctx.fillStyle='#7b869b';
   ctx.fillText('Gerado pelo Dash Pós-Vendas • pronto para envio no WhatsApp',padding,height-24);
 
-  const blob=await canvasToBlob(canvas);
-  return {blob,fileName:`pendentes-whatsapp-${Date.now()}.png`};
+  return {canvas,fileName:`pendentes-whatsapp-${Date.now()}.png`};
+}
+async function buildPendentesShareBlob(rows){
+  const page=buildPendentesShareCanvas(rows);
+  const blob=await canvasToBlob(page.canvas);
+  return {blob,fileName:page.fileName};
 }
 async function sharePendentesAsImage(){
   const rows=_pendentesVisible||[];
@@ -1822,6 +1851,290 @@ async function sharePendentesAsImage(){
     if(btn){btn.disabled=false;btn.innerHTML=prevLabel||'🖼 Imagem WhatsApp';}
   }
 }
+function getPendentesPdfLayout(rows){
+  const hasCompareGlobal=rows.some(r=>r._has_compare);
+  if(hasCompareGlobal){
+    return {
+      orientation:'landscape',
+      width:841.89,
+      height:595.28,
+      padding:28,
+      tableLeft:34,
+      valueX:606,
+      mcX:690,
+      pctX:754,
+      diasX:806,
+      pageChipSpace:120,
+      titleFont:24,
+      titleY:56,
+      statusY:76,
+      countY:102,
+      summaryY:122,
+      rowHeight:46,
+      rowCompareHeight:62,
+      filterLineHeight:14,
+      footerHeight:26,
+      chipWidth:104
+    };
+  }
+  return {
+    orientation:'portrait',
+    width:595.28,
+    height:841.89,
+    padding:24,
+    tableLeft:30,
+    valueX:378,
+    mcX:450,
+    pctX:510,
+    diasX:560,
+    pageChipSpace:96,
+    titleFont:22,
+    titleY:54,
+    statusY:73,
+    countY:98,
+    summaryY:118,
+    rowHeight:42,
+    rowCompareHeight:58,
+    filterLineHeight:13,
+    footerHeight:24,
+    chipWidth:92
+  };
+}
+function getPendentesPdfRowHeight(row,layout){
+  return row&&row._has_compare?layout.rowCompareHeight:layout.rowHeight;
+}
+function getPendentesPdfMetrics(rows,layout){
+  const base=getPendentesShareMetrics(rows,layout.width,layout.padding,layout.pageChipSpace);
+  const filterStartY=base.hasCompareGlobal
+    ? layout.summaryY+40
+    : layout.summaryY+24;
+  const headerHeight=filterStartY+(base.filterLines.length*layout.filterLineHeight)+18;
+  const bodyMaxHeight=layout.height-headerHeight-layout.footerHeight-26;
+  return {...base,filterStartY,headerHeight,footerHeight:layout.footerHeight,bodyMaxHeight};
+}
+function hexToRgb(hex){
+  const raw=String(hex||'#000000').replace('#','');
+  const value=raw.length===3?raw.split('').map(ch=>ch+ch).join(''):raw.padEnd(6,'0').slice(0,6);
+  return {
+    r:parseInt(value.slice(0,2),16),
+    g:parseInt(value.slice(2,4),16),
+    b:parseInt(value.slice(4,6),16)
+  };
+}
+function setPdfFillColor(doc,hex){
+  const {r,g,b}=hexToRgb(hex);
+  doc.setFillColor(r,g,b);
+}
+function setPdfTextColor(doc,hex){
+  const {r,g,b}=hexToRgb(hex);
+  doc.setTextColor(r,g,b);
+}
+function setPdfDrawColor(doc,hex){
+  const {r,g,b}=hexToRgb(hex);
+  doc.setDrawColor(r,g,b);
+}
+function clipPdfText(doc,text,maxWidth){
+  const raw=String(text==null?'—':text);
+  if(doc.getTextWidth(raw)<=maxWidth) return raw;
+  let out=raw;
+  while(out.length>1&&doc.getTextWidth(out+'…')>maxWidth) out=out.slice(0,-1);
+  return out+'…';
+}
+function chunkPendentesPdfRows(rows,maxBodyHeight,layout){
+  const chunks=[]; let current=[]; let currentHeight=0;
+  rows.forEach(row=>{
+    const rowHeight=getPendentesPdfRowHeight(row,layout);
+    if(current.length&&(currentHeight+rowHeight)>maxBodyHeight){
+      chunks.push(current);
+      current=[row];
+      currentHeight=rowHeight;
+      return;
+    }
+    current.push(row);
+    currentHeight+=rowHeight;
+  });
+  if(current.length) chunks.push(current);
+  return chunks.length?chunks:[[]];
+}
+function drawPendentesPdfPage(doc,allRows,pageRows,pageIndex,pageCount,layout,metrics){
+  setPdfFillColor(doc,'#eef2f8');
+  doc.rect(0,0,layout.width,layout.height,'F');
+  setPdfFillColor(doc,'#ffffff');
+  doc.roundedRect(12,12,layout.width-24,layout.height-24,14,14,'F');
+  setPdfFillColor(doc,C.navy);
+  doc.roundedRect(12,12,layout.width-24,metrics.headerHeight-4,14,14,'F');
+  setPdfFillColor(doc,C.gold);
+  doc.rect(12,12,layout.width-24,4,'F');
+
+  doc.setFont('times','bold');
+  doc.setFontSize(layout.titleFont);
+  setPdfTextColor(doc,'#ffffff');
+  doc.text('Relação de Empenhos Filtrados',layout.padding,layout.titleY);
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(11);
+  setPdfTextColor(doc,'#dfe7f3');
+  doc.text(`Status • Pendentes | ${metrics.nowTxt}`,layout.padding,layout.statusY);
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(18);
+  setPdfTextColor(doc,'#ffffff');
+  doc.text(`${allRows.length} pedido${allRows.length!==1?'s':''}`,layout.padding,layout.countY);
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  setPdfTextColor(doc,'#f3d992');
+  doc.text(clipPdfText(doc,metrics.summaryAtual,layout.width-layout.padding*2-layout.chipWidth-12),layout.padding,layout.summaryY);
+  if(metrics.hasCompareGlobal){
+    setPdfTextColor(doc,'#fff1c9');
+    doc.text(clipPdfText(doc,metrics.summaryCompare,layout.width-layout.padding*2-layout.chipWidth-12),layout.padding,layout.summaryY+17);
+  }
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  setPdfTextColor(doc,'#e7eef9');
+  metrics.filterLines.forEach((line,idx)=>doc.text(line,layout.padding,metrics.filterStartY+(idx*layout.filterLineHeight)));
+
+  const chipX=layout.width-layout.padding-layout.chipWidth;
+  setPdfFillColor(doc,'#3f5f82');
+  doc.roundedRect(chipX,layout.countY-16,layout.chipWidth,28,14,14,'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  setPdfTextColor(doc,'#ffffff');
+  doc.text(`Página ${pageIndex+1}/${pageCount}`,chipX+layout.chipWidth-14,layout.countY+2,{align:'right'});
+
+  const tableTop=metrics.headerHeight;
+  setPdfFillColor(doc,'#f8fafc');
+  doc.rect(12,tableTop,layout.width-24,40,'F');
+  setPdfDrawColor(doc,'#e0e4ea');
+  doc.setLineWidth(1);
+  doc.line(12,tableTop+40,layout.width-12,tableTop+40);
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9);
+  setPdfTextColor(doc,'#7b869b');
+  doc.text('EMPENHO / CLIENTE',layout.tableLeft,tableTop+24);
+  doc.text('VALOR',layout.valueX,tableTop+24,{align:'right'});
+  doc.text('MC $',layout.mcX,tableTop+24,{align:'right'});
+  doc.text('MC %',layout.pctX,tableTop+24,{align:'right'});
+  doc.text('DIAS',layout.diasX,tableTop+24,{align:'right'});
+
+  let rowY=tableTop+40;
+  pageRows.forEach((row,idx)=>{
+    const rowHeight=getPendentesPdfRowHeight(row,layout);
+    const y=rowY;
+    if(idx%2===0){
+      setPdfFillColor(doc,'#fcfdff');
+      doc.rect(12,y,layout.width-24,rowHeight,'F');
+    }
+    const risco=pendenteRiskMeta(row.dias||0);
+    const mcPctRow=row._valor>0?(row._mc_valor/row._valor*100):0;
+    const compareValor=row._has_compare?row._compare_valor:row._valor;
+    const compareMc=row._has_compare?row._compare_mc_valor:row._mc_valor;
+    const comparePct=compareValor>0?(compareMc/compareValor*100):0;
+    const mcMeta=pendenteMcMeta(mcPctRow);
+    const comparePctMeta=pendenteMcMeta(comparePct);
+    const itensLabel=row._filtered?`${row._itens.length}/${row.n_itens} itens`:`${row.n_itens||0} itens`;
+    const metaLine=`${row.empenho||'—'} • UASG ${row.uasg||'—'} • Prev. ${(!row.prev_ent||String(row.prev_ent).trim()==='?')?'—':row.prev_ent} • ${itensLabel}`;
+    const compareLine=row._has_compare
+      ? `Comparado: ${row._compare_items_count} item${row._compare_items_count!==1?'s':''} • ${row._compare_label}`
+      : '';
+
+    setPdfFillColor(doc,risco.color);
+    doc.circle(layout.tableLeft+6,y+20,3,'F');
+
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(layout.orientation==='landscape'?12:11);
+    setPdfTextColor(doc,C.navy);
+    const pvLabel=`PV ${row.pv}`;
+    doc.text(pvLabel,layout.tableLeft+16,y+24);
+    const pvWidth=doc.getTextWidth(pvLabel);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(layout.orientation==='landscape'?11:10);
+    doc.text(
+      clipPdfText(doc,row.cliente||'—',Math.max(140,layout.valueX-(layout.tableLeft+pvWidth+42))),
+      layout.tableLeft+pvWidth+28,
+      y+24
+    );
+
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(8.5);
+    setPdfTextColor(doc,'#5c6578');
+    doc.text(clipPdfText(doc,metaLine,layout.valueX-(layout.tableLeft+16)),layout.tableLeft+16,y+39);
+    if(row._has_compare){
+      setPdfTextColor(doc,C.gold);
+      doc.text(clipPdfText(doc,compareLine,layout.valueX-(layout.tableLeft+16)),layout.tableLeft+16,y+53);
+    }
+
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(10);
+    setPdfTextColor(doc,C.navy);
+    doc.text(fmt(row._valor),layout.valueX,y+(row._has_compare?22:25),{align:'right'});
+    setPdfTextColor(doc,row._mc_valor<0?C.red:C.navy);
+    doc.text(fmt(row._mc_valor),layout.mcX,y+(row._has_compare?22:25),{align:'right'});
+    setPdfTextColor(doc,mcMeta.color);
+    doc.text(pct(mcPctRow),layout.pctX,y+(row._has_compare?22:25),{align:'right'});
+    setPdfTextColor(doc,risco.color);
+    doc.text(`${row.dias||0}d`,layout.diasX,y+(row._has_compare?22:25),{align:'right'});
+    if(row._has_compare){
+      doc.setFontSize(8.5);
+      setPdfTextColor(doc,C.gold);
+      doc.text(`Cen. ${fmt(compareValor)}`,layout.valueX,y+38,{align:'right'});
+      setPdfTextColor(doc,compareMc<0?C.red:C.gold);
+      doc.text(`Cen. ${fmt(compareMc)}`,layout.mcX,y+38,{align:'right'});
+      setPdfTextColor(doc,comparePctMeta.color);
+      doc.text(`Cen. ${pct(comparePct)}`,layout.pctX,y+38,{align:'right'});
+    }
+
+    setPdfDrawColor(doc,'#edf1f6');
+    doc.setLineWidth(.8);
+    doc.line(12,y+rowHeight,layout.width-12,y+rowHeight);
+    rowY+=rowHeight;
+  });
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);
+  setPdfTextColor(doc,'#7b869b');
+  doc.text(`Gerado pelo Dash Pós-Vendas • PDF A4 ${layout.orientation==='landscape'?'paisagem':'retrato'}`,layout.padding,layout.height-14);
+}
+function buildPendentesPdfPages(rows){
+  const layout=getPendentesPdfLayout(rows);
+  const metrics=getPendentesPdfMetrics(rows,layout);
+  const chunks=chunkPendentesPdfRows(rows,metrics.bodyMaxHeight,layout);
+  return {layout,metrics,chunks};
+}
+async function downloadPendentesAsPdf(){
+  const rows=_pendentesVisible||[];
+  const btn=document.getElementById('btnPendentesPdf');
+  if(!rows.length){
+    setPendentesImageStatus('Nenhum pedido no filtro atual.',true);
+    return;
+  }
+  if(!(window.jspdf&&window.jspdf.jsPDF)){
+    setPendentesImageStatus('Biblioteca de PDF indisponível no momento.',true);
+    return;
+  }
+  const prevLabel=btn?btn.innerHTML:'';
+  if(btn){btn.disabled=true;btn.innerHTML='Gerando PDF...';}
+  setPendentesImageStatus('');
+  try{
+    const {layout,metrics,chunks}=buildPendentesPdfPages(rows);
+    const {jsPDF}=window.jspdf;
+    const orientationCode=layout.orientation==='landscape'?'l':'p';
+    const doc=new jsPDF({orientation:orientationCode,unit:'pt',format:'a4',compress:true});
+    chunks.forEach((pageRows,idx)=>{
+      if(idx>0) doc.addPage('a4',orientationCode);
+      drawPendentesPdfPage(doc,rows,pageRows,idx,chunks.length,layout,metrics);
+    });
+    doc.save(`pendentes-whatsapp-${Date.now()}.pdf`);
+    setPendentesImageStatus(`PDF A4 ${layout.orientation==='landscape'?'paisagem':'retrato'} baixado${chunks.length>1?` (${chunks.length} páginas)`:''}.`);
+  }catch(err){
+    console.error('Falha ao gerar PDF de pendentes',err);
+    setPendentesImageStatus('Não foi possível gerar o PDF.',true);
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML=prevLabel||'📄 PDF WhatsApp';}
+  }
+}
 function renderPendentesTable(data,keepSort){
   if(!keepSort) _pendentesSort={col:'dias',asc:false};
   const sorted=getPendentesRows(data);
@@ -1831,7 +2144,9 @@ function renderPendentesTable(data,keepSort){
   const count=document.getElementById('pendentesCount');
   if(count) count.textContent=sorted.length+' pedido'+(sorted.length!==1?'s':'');
   const shareBtn=document.getElementById('btnPendentesImage');
+  const pdfBtn=document.getElementById('btnPendentesPdf');
   if(shareBtn) shareBtn.disabled=!sorted.length;
+  if(pdfBtn) pdfBtn.disabled=!sorted.length;
   const mcBadgeCls=p=>p>=20?'badge-green':p>=10?'badge-orange':'badge-red';
 
   tbody.innerHTML=sorted.map((r,idx)=>{
