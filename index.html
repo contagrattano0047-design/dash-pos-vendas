@@ -1638,8 +1638,8 @@ async function buildPendentesShareBlob(rows){
   const filterLines=wrapCanvasText(measure,getPendentesFilterSummary(rows),width-(padding*2),width);
   const filterStartY=hasCompareGlobal?212:192;
   const headerHeight=filterStartY+(filterLines.length*20)+24;
-  const rowHeight=hasCompareGlobal?88:68;
-  const tableHeight=46+(rows.length*rowHeight);
+  const rowHeights=rows.map(row=>row._has_compare?88:68);
+  const tableHeight=46+rowHeights.reduce((sum,h)=>sum+h,0);
   const footerHeight=34;
   const height=headerHeight+tableHeight+footerHeight;
   const scale=rows.length>20?1.5:2;
@@ -1701,8 +1701,10 @@ async function buildPendentesShareBlob(rows){
   ctx.fillText('DIAS',diasX,tableTop+28);
   ctx.textAlign='left';
 
+  let rowY=tableTop+46;
   rows.forEach((row,idx)=>{
-    const y=tableTop+46+(idx*rowHeight);
+    const rowHeight=row._has_compare?88:68;
+    const y=rowY;
     if(idx%2===0){
       ctx.fillStyle='#fcfdff';
       ctx.fillRect(24,y,width-48,rowHeight);
@@ -1718,7 +1720,7 @@ async function buildPendentesShareBlob(rows){
     const metaLine=`${row.empenho||'—'} • UASG ${row.uasg||'—'} • Prev. ${(!row.prev_ent||String(row.prev_ent).trim()==='?')?'—':row.prev_ent} • ${itensLabel}`;
     const compareLine=row._has_compare
       ? `Comparado: ${row._compare_items_count} item${row._compare_items_count!==1?'s':''} • ${row._compare_label}`
-      : 'Comparado: base atual';
+      : '';
 
     ctx.fillStyle=risco.color;
     ctx.beginPath();
@@ -1736,7 +1738,7 @@ async function buildPendentesShareBlob(rows){
     ctx.font='500 12px DM Sans, sans-serif';
     ctx.fillStyle='#5c6578';
     ctx.fillText(clipCanvasText(ctx,metaLine,valueX-(tableLeft+24)),tableLeft+24,y+49);
-    if(hasCompareGlobal){
+    if(row._has_compare){
       ctx.fillStyle=row._has_compare?C.gold:'#97a3b7';
       ctx.fillText(clipCanvasText(ctx,compareLine,valueX-(tableLeft+24)),tableLeft+24,y+66);
     }
@@ -1744,14 +1746,14 @@ async function buildPendentesShareBlob(rows){
     ctx.textAlign='right';
     ctx.font='700 15px DM Sans, sans-serif';
     ctx.fillStyle=C.navy;
-    ctx.fillText(fmt(row._valor),valueX,y+(hasCompareGlobal?25:28));
+    ctx.fillText(fmt(row._valor),valueX,y+(row._has_compare?25:28));
     ctx.fillStyle=row._mc_valor<0?C.red:C.navy;
-    ctx.fillText(fmt(row._mc_valor),mcX,y+(hasCompareGlobal?25:28));
+    ctx.fillText(fmt(row._mc_valor),mcX,y+(row._has_compare?25:28));
     ctx.fillStyle=mcMeta.color;
-    ctx.fillText(pct(mcPctRow),pctX,y+(hasCompareGlobal?25:28));
+    ctx.fillText(pct(mcPctRow),pctX,y+(row._has_compare?25:28));
     ctx.fillStyle=risco.color;
-    ctx.fillText(`${row.dias||0}d`,diasX,y+(hasCompareGlobal?25:28));
-    if(hasCompareGlobal){
+    ctx.fillText(`${row.dias||0}d`,diasX,y+(row._has_compare?25:28));
+    if(row._has_compare){
       ctx.font='700 12px DM Sans, sans-serif';
       ctx.fillStyle=row._has_compare?C.gold:'#97a3b7';
       ctx.fillText(`Cen. ${fmt(compareValor)}`,valueX,y+46);
@@ -1767,6 +1769,7 @@ async function buildPendentesShareBlob(rows){
     ctx.moveTo(24,y+rowHeight);
     ctx.lineTo(width-24,y+rowHeight);
     ctx.stroke();
+    rowY+=rowHeight;
   });
 
   ctx.font='500 11px DM Sans, sans-serif';
@@ -1821,8 +1824,6 @@ function renderPendentesTable(data,keepSort){
   if(count) count.textContent=sorted.length+' pedido'+(sorted.length!==1?'s':'');
   const shareBtn=document.getElementById('btnPendentesImage');
   if(shareBtn) shareBtn.disabled=!sorted.length;
-  const hasCompareGlobal=sorted.some(r=>r._has_compare);
-
   const mcBadgeCls=p=>p>=20?'badge-green':p>=10?'badge-orange':'badge-red';
 
   tbody.innerHTML=sorted.map((r,idx)=>{
@@ -1848,13 +1849,13 @@ function renderPendentesTable(data,keepSort){
     html+=`<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.cliente}">${r.cliente}</td>`;
     html+=`<td style="font-size:11px;color:var(--gray-600)">${r.empenho}</td>`;
     html+=`<td style="font-size:11px;color:var(--gray-600)">${r.uasg||'—'}</td>`;
-    html+=hasCompareGlobal
+    html+=r._has_compare
       ? `<td style="text-align:right"><div class="metric-stack end"><div class="metric-current">${fmt(r._valor)}</div><div class="metric-compare ${r._has_compare?'pos':''}">Cen. ${fmt(compareValor)}</div></div></td>`
       : `<td style="text-align:right"><strong>${fmt(r._valor)}</strong></td>`;
-    html+=hasCompareGlobal
+    html+=r._has_compare
       ? `<td style="text-align:right"><div class="metric-stack end"><div class="metric-current" style="color:${r._mc_valor<0?'var(--red)':'var(--navy)'}">${fmt(r._mc_valor)}</div><div class="metric-compare ${compareMc<0?'neg':'pos'}">Cen. ${fmt(compareMc)}</div></div></td>`
       : `<td style="text-align:right;color:${r._mc_valor<0?'var(--red)':'var(--navy)'}">${fmt(r._mc_valor)}</td>`;
-    html+=hasCompareGlobal
+    html+=r._has_compare
       ? `<td style="text-align:center"><div class="metric-stack center"><div class="metric-current"><span class="badge ${mcBadgeCls(mcPct)}">${mcPct.toFixed(1)}%</span></div><div class="metric-compare ${comparePct>=20?'good':comparePct>=10?'warn':'neg'}">Cen. ${comparePct.toFixed(1)}%</div></div></td>`
       : `<td style="text-align:center"><span class="badge ${mcBadgeCls(mcPct)}">${mcPct.toFixed(1)}%</span></td>`;
     html+=`<td style="text-align:center"><span class="badge ${db}">${r.dias}d</span></td>`;
