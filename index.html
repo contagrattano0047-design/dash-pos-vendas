@@ -233,6 +233,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .expand-detail{display:none}
 .expand-detail.open{display:table-row}
 .expand-detail td{padding:0!important;border-bottom:2px solid var(--gold)!important}
+.contract-pv-wrap{padding:14px 18px;background:linear-gradient(180deg,#f9fbfe 0%,#ffffff 100%)}
+.contract-pv-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.contract-pv-title{font-size:13px;font-weight:700;color:var(--navy)}
+.contract-pv-count{font-size:11px;color:var(--gray-500);white-space:nowrap}
+.contract-pv-table{width:100%;border-collapse:collapse}
+.contract-pv-table th{text-align:left;padding:7px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--gray-400);background:#f2f5fa;border-bottom:1px solid var(--gray-200)}
+.contract-pv-table td{padding:8px 10px;border-bottom:1px solid var(--gray-100);font-size:12px;color:var(--navy)}
+.contract-pv-table tr:last-child td{border-bottom:none}
+.contract-pv-empty{padding:18px 10px;text-align:center;font-size:13px;color:var(--gray-400)}
+.contract-cell-main{font-weight:700;color:var(--navy)}
+.contract-cell-sub{font-size:10px;color:var(--gray-400);margin-top:3px}
 .itens-wrapper{padding:8px 12px 12px 40px;background:var(--gray-50)}
 .itens-table{width:100%;border-collapse:collapse;font-size:12px}
 .itens-table th{text-align:left;padding:5px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gray-400);background:var(--gray-100);border-bottom:1px solid var(--gray-200)}
@@ -712,6 +723,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
         <div class="card-subtitle" id="subtitleContratosTabela">—</div>
       </div>
       <div class="header-tools">
+        <select id="filterContratosStatus" onchange="filterContratosStatus(this.value)"
+          style="padding:6px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none">
+          <option value="todos">Status: Todos</option>
+          <option value="vigente">Ata Vigente</option>
+          <option value="encerrada">Ata Encerrada</option>
+        </select>
         <input id="searchContratos" type="text" placeholder="Buscar contrato ou cliente..." oninput="filterContratos(this.value)"
           style="padding:6px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none;width:230px">
         <span id="contratosCount" style="font-size:12px;color:var(--gray-400);white-space:nowrap"></span>
@@ -719,7 +736,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
     </div>
     <div style="overflow-x:auto">
       <table class="data-table">
-        <thead><tr><th>Contrato</th><th>Cliente Principal</th><th>Faturamento</th><th>MC (R$)</th><th>MC (%)</th><th>PVs</th><th>Status</th><th>Situação</th></tr></thead>
+        <thead><tr><th style="width:30px"></th><th>Contrato</th><th>Cliente Principal</th><th>Valor do Contrato</th><th>Consumo</th><th>Saldo</th><th>Faturamento</th><th>MC (R$)</th><th>MC (%)</th><th>PVs</th><th>Ata</th><th>Situação</th></tr></thead>
         <tbody id="contratosTbody"></tbody>
       </table>
     </div>
@@ -882,6 +899,8 @@ let _panoramaAno = '2026';
 let _statusAno   = '2026';
 let _clientesAno = '2026';
 let _contratosAno = '2026';
+let _contratosStatus = 'todos';
+let _contratosExpanded = new Set();
 let _pendentesData = [];
 let _pendentesSort = {col:'dias',asc:false};
 let _pendentesFilter = {produto:'',categoria:'',marca:'',tipo:''};
@@ -951,6 +970,28 @@ function recorteTag(txt){return `<div class="recorte-tag">📅 Recorte: ${txt}</
 function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function normTxt(v){return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
 function hasContractId(v){return /\d/.test(String(v??'').trim());}
+function contratoLinkPart(v){return String(v??'').trim().toUpperCase().replace(/\s+/g,'');}
+function contratoKeyVariants(contrato,uasg,item){
+  const c=contratoLinkPart(contrato);
+  const u=contratoLinkPart(uasg).replace(/\.0+$/,'');
+  const i=contratoLinkPart(item).replace(/\.0+$/,'');
+  if(!c||!u||!i) return [];
+  return [...new Set([
+    c+u+i,
+    c.replace(/\//g,'')+u+i,
+    c.replace(/[^\d.]/g,'')+u+i,
+    c.replace(/[^\d]/g,'')+u+i,
+  ].filter(Boolean))];
+}
+function contratoAnoCodigo(v){
+  const s=String(v??'').trim();
+  const m4=s.match(/(20\d{2})(?:\.\d+)?$/);
+  if(m4) return m4[1];
+  const m2=s.match(/\/(\d{2})(?:[^\d].*)?$/);
+  if(m2) return '20'+m2[1];
+  return '';
+}
+function contratoDomId(v){return String(v??'').replace(/[^\w.-]+/g,'_');}
 function simValue(field,val){
   if(field.pct) return roundN(num(val)*100,4);
   return roundN(val,4);
@@ -2410,16 +2451,33 @@ function filterContratos(q){
   _contratosSearch = q||'';
   renderContratos();
 }
+function filterContratosStatus(v){
+  _contratosStatus = v||'todos';
+  renderContratos();
+}
 function getContratoSituacaoMeta(mc){
   if(mc<0) return {label:'Prejuízo',cls:'badge-red',color:C.red};
   if(mc>0) return {label:'Lucro',cls:'badge-green',color:C.green};
   return {label:'Neutro',cls:'badge-navy',color:C.navy};
+}
+function getContratoAtaMeta(key){
+  if(key==='todos') return {label:'Todos',cls:'badge-navy',key};
+  if(key==='vigente') return {label:'Ata Vigente',cls:'badge-green',key};
+  if(key==='encerrada') return {label:'Ata Encerrada',cls:'badge-red',key};
+  if(key==='misto') return {label:'Misto',cls:'badge-orange',key};
+  return {label:'Sem cadastro',cls:'badge-navy',key:'sem_cadastro'};
 }
 function getContratoExecucaoMeta(row){
   if((row.valor_entregue||0)>0&&(row.valor_pendente||0)>0) return {label:'Misto',cls:'badge-orange'};
   if((row.valor_pendente||0)>0) return {label:'Pendente',cls:'badge-red'};
   if((row.valor_entregue||0)>0) return {label:'Entregue',cls:'badge-green'};
   return {label:'Sem movimento',cls:'badge-navy'};
+}
+function getMcBadgeCls(v){
+  if(num(v)<0) return 'badge-red';
+  if(num(v)>=20) return 'badge-green';
+  if(num(v)>=10) return 'badge-orange';
+  return 'badge-navy';
 }
 function summarizeContratoRows(rows){
   const resumo={total:rows.length,lucro:0,prejuizo:0,neutro:0,faturamento:0,mc_total:0,mc_pct:0,pvs:0};
@@ -2451,13 +2509,62 @@ function renderContratoHighlights(rows,kind){
     </div>`;
   }).join('');
 }
+function renderContratoPvDetail(row){
+  const pvs=Array.isArray(row.pv_rows)?row.pv_rows:[];
+  if(!pvs.length) return `<div class="contract-pv-wrap"><div class="contract-pv-empty">Nenhum PV encontrado para este contrato neste recorte.</div></div>`;
+  return `<div class="contract-pv-wrap">
+    <div class="contract-pv-head">
+      <div class="contract-pv-title">PVs vinculados ao contrato ${esc(row.contrato)}</div>
+      <div class="contract-pv-count">${pvs.length} PV${pvs.length!==1?'s':''} no recorte atual</div>
+    </div>
+    <table class="contract-pv-table">
+      <thead><tr><th>PV</th><th>Cliente</th><th>Empenho</th><th>Valor</th><th>MC (R$)</th><th>MC (%)</th><th>Status Ent.</th></tr></thead>
+      <tbody>${pvs.map(pv=>{
+        const statusTxt=String(pv.status_ent||'').trim();
+        const entCls=statusTxt==='Entregue'?'badge-green':statusTxt==='Pendente'?'badge-red':'badge-navy';
+        return `<tr>
+          <td><strong>${esc(pv.pv||'—')}</strong></td>
+          <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(pv.cliente||'—')}">${esc(pv.cliente||'—')}</td>
+          <td>${esc(pv.empenho||'—')}</td>
+          <td><strong>${fmt(pv.valor)}</strong></td>
+          <td style="color:${num(pv.mc_valor||0)<0?C.red:C.navy}">${fmt(pv.mc_valor)}</td>
+          <td><span class="badge ${getMcBadgeCls(pv.mc_pct)}">${pct(pv.mc_pct)}</span></td>
+          <td><span class="badge ${entCls}">${esc(statusTxt||'—')}</span></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+  </div>`;
+}
+function toggleContratoItems(id,row){
+  const detail=document.getElementById(id);
+  const tog=document.getElementById('tog-'+id);
+  if(!detail||!tog) return;
+  if(detail.classList.contains('open')){
+    detail.classList.remove('open');
+    tog.classList.remove('open');
+    _contratosExpanded.delete(id);
+  }else{
+    detail.classList.add('open');
+    tog.classList.add('open');
+    _contratosExpanded.add(id);
+  }
+  if(row) row.classList.toggle('row-open',detail.classList.contains('open'));
+}
 function renderContratos(){
   const ano=_contratosAno;
   const lbl=LABEL[ano];
   const baseRows=Array.isArray(D.contratos?.[ano]?.rows)?D.contratos[ano].rows:[];
+  const statusCounts=D.contratos?.[ano]?.total_por_status||{todos:baseRows.length,vigente:0,encerrada:0,misto:0,sem_cadastro:0};
+  const portfolioStatusCounts=D.contratos?.total?.total_por_status||statusCounts;
   const q=normTxt(_contratosSearch);
-  const rows=q?baseRows.filter(r=>normTxt(r.contrato).includes(q)||normTxt(r.cliente_principal).includes(q)):baseRows;
+  const rows=baseRows.filter(r=>{
+    const statusOk=_contratosStatus==='todos'||r.status_ata_key===_contratosStatus;
+    const textOk=!q||normTxt(r.contrato).includes(q)||normTxt(r.cliente_principal).includes(q);
+    return statusOk&&textOk;
+  });
   const resumo=summarizeContratoRows(rows);
+  const totalContratos=portfolioStatusCounts[_contratosStatus]??portfolioStatusCounts.todos??0;
+  const statusLabel=getContratoAtaMeta(_contratosStatus).label;
   const mcConsolidadoMeta=getContratoSituacaoMeta(resumo.mc_total);
   const shareLucro=resumo.total>0?(resumo.lucro/resumo.total*100):0;
   const sharePrejuizo=resumo.total>0?(resumo.prejuizo/resumo.total*100):0;
@@ -2466,13 +2573,16 @@ function renderContratos(){
   ['ContratosMix','ContratosHighlights','ContratosTabela'].forEach(id=>{
     const tag=document.getElementById('tag'+id); if(tag) tag.textContent='📅 '+lbl;
   });
-  document.getElementById('subtitleContratosMix').textContent=(q?'Filtro aplicado':'Contratos com número identificado')+' · '+lbl;
+  const statusSel=document.getElementById('filterContratosStatus');
+  if(statusSel && statusSel.value!==_contratosStatus) statusSel.value=_contratosStatus;
+  document.getElementById('subtitleContratosMix').textContent=`Contratos com movimento · ${statusLabel} · ${lbl}`;
   document.getElementById('subtitleContratosHighlights').textContent='Melhores e piores resultados do recorte · '+lbl;
-  document.getElementById('subtitleContratosTabela').textContent=(q?'Busca ativa em contratos':'Todos os contratos com movimento')+' · '+lbl;
-  document.getElementById('contratosCount').textContent=`${rows.length} contrato${rows.length!==1?'s':''} · ${resumo.pvs} PV${resumo.pvs!==1?'s':''}`;
+  document.getElementById('subtitleContratosTabela').textContent=`Ranking detalhado dos contratos com movimento · ${statusLabel} · ${lbl}`;
+  document.getElementById('contratosCount').textContent=`${rows.length} com movimento · ${totalContratos} contrato${totalContratos!==1?'s':''} na carteira`;
 
   document.getElementById('kpiContratos').innerHTML=
-    kpiCard('navy','🧾','Contratos com Movimento',String(resumo.total),`${resumo.pvs} PVs vinculados`,'badge-navy',String(resumo.total))+
+    kpiCard('navy','🧾','Total na Carteira',String(totalContratos),`${rows.length} com movimento neste recorte`,'badge-navy',String(totalContratos))+
+    kpiCard('gold','📌','Com Movimento',String(resumo.total),`${resumo.pvs} PVs vinculados`,'badge-navy',String(resumo.total))+
     kpiCard('green','📈','Com Lucro',String(resumo.lucro),`${pct(shareLucro)} dos contratos no recorte`,'badge-pos',pct(shareLucro))+
     kpiCard('red','📉','Com Prejuízo',String(resumo.prejuizo),`${pct(sharePrejuizo)} exigem revisão`,'badge-danger',pct(sharePrejuizo))+
     kpiCard('teal','💰','Margem Consolidada',pct(resumo.mc_pct),`MC total ${fmtS(resumo.mc_total)}`,mcConsolidadoMeta.cls,pct(resumo.mc_pct));
@@ -2498,20 +2608,29 @@ function renderContratos(){
   document.getElementById('contratosPrejuizoPanel').innerHTML=renderContratoHighlights(prejuizoRows,'prejuizo');
 
   document.getElementById('contratosTbody').innerHTML=rows.length?rows.map(row=>{
+    const rid='ctr-'+ano+'-'+contratoDomId(row.contrato);
+    const opened=_contratosExpanded.has(rid);
     const situacao=getContratoSituacaoMeta(row.mc_valor);
-    const execucao=getContratoExecucaoMeta(row);
+    const ataMeta=getContratoAtaMeta(row.status_ata_key);
     const clienteLabel=(row.clientes_count||0)>1?`${row.cliente_principal} +${row.clientes_count-1}`:row.cliente_principal;
-    return `<tr>
+    return `<tr class="expand-row" onclick="toggleContratoItems('${rid}',this)">
+      <td><span class="expand-toggle${opened?' open':''}" id="tog-${rid}">▶</span></td>
       <td><strong>${esc(row.contrato)}</strong></td>
       <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(row.cliente_principal||'—')}">${esc(clienteLabel||'—')}</td>
+      <td><div class="contract-cell-main">${row.total_contrato>0?fmt(row.total_contrato):'—'}</div><div class="contract-cell-sub">${row.total_contrato>0?`${row.itens_vinculados} item${row.itens_vinculados!==1?'s':''} vinculado${row.itens_vinculados!==1?'s':''}`:'Sem cadastro na aba de contratos'}</div></td>
+      <td><div class="contract-cell-main">${row.total_contrato>0?fmt(row.consumo_valor):'—'}</div><div class="contract-cell-sub">${row.total_contrato>0?pct(row.consumo_pct):'—'}</div></td>
+      <td><div class="contract-cell-main">${row.total_contrato>0?fmt(row.saldo_consumir):'—'}</div><div class="contract-cell-sub">${row.total_contrato>0?pct(row.saldo_pct):'—'}</div></td>
       <td><strong>${fmt(row.faturamento)}</strong></td>
       <td style="color:${num(row.mc_valor||0)<0?C.red:C.navy}">${fmt(row.mc_valor)}</td>
-      <td><span class="badge ${num(row.mc_pct||0)<0?'badge-red':num(row.mc_pct||0)>=20?'badge-green':num(row.mc_pct||0)>=10?'badge-orange':'badge-navy'}">${pct(num(row.mc_pct||0))}</span></td>
+      <td><span class="badge ${getMcBadgeCls(row.mc_pct)}">${pct(num(row.mc_pct||0))}</span></td>
       <td>${row.pvs}</td>
-      <td><span class="badge ${execucao.cls}">${execucao.label}</span></td>
+      <td><span class="badge ${ataMeta.cls}">${ataMeta.label}</span></td>
       <td><span class="badge ${situacao.cls}">${situacao.label}</span></td>
+    </tr>
+    <tr class="expand-detail${opened?' open':''}" id="${rid}">
+      <td colspan="12">${renderContratoPvDetail(row)}</td>
     </tr>`;
-  }).join(''):`<tr><td colspan="8" style="text-align:center;color:var(--gray-400);padding:24px">Nenhum contrato encontrado neste recorte.</td></tr>`;
+  }).join(''):`<tr><td colspan="12" style="text-align:center;color:var(--gray-400);padding:24px">Nenhum contrato encontrado neste recorte.</td></tr>`;
 }
 
 // --------------------------------------------
@@ -2994,11 +3113,13 @@ async function readAndRender(){
     const buf = await dlResp.arrayBuffer();
     const wb = XLSX.read(buf,{type:'array',cellDates:true,cellNF:false});
     const sn = wb.SheetNames.find(n=>/resultado\s*vend/i.test(n)) || wb.SheetNames[0];
+    const snContratos = wb.SheetNames.find(n=>/tela\s*-\s*contratos/i.test(n));
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn],{defval:null,raw:true});
+    const contratosRows = snContratos ? XLSX.utils.sheet_to_json(wb.Sheets[snContratos],{defval:null,raw:true}) : [];
     if(!rows.length) throw new Error('Aba "Resultado Vendas" nao encontrada ou vazia.');
 
     setLoading(true,'Calculando indicadores...');
-    D = parseSheet(rows);
+    D = parseSheet(rows, contratosRows);
     closeSimModal();
     renderAll();
     setLinked(fileName);
@@ -3109,7 +3230,7 @@ function printAll(){
 
 // PARSE SHEET
 // --------------------------------------------
-function parseSheet(rows){
+function parseSheet(rows, contratosRows=[]){
   const today=new Date();
   const toN=v=>{
     if(v===null||v===undefined||v==='') return 0;
@@ -3202,27 +3323,93 @@ function parseSheet(rows){
     return {nomes:sorted.map(([n])=>n),faturamento:sorted.map(([,v])=>round(v.f)),mc:sorted.map(([,v])=>round(v.mc))};
   }
 
-  function contratosAno(subset){
+  function getAtaStatusKey(statuses){
+    const arr=[...statuses].map(s=>String(s||'').toUpperCase());
+    const hasV=arr.some(s=>s.includes('VIGENTE'));
+    const hasE=arr.some(s=>s.includes('ENCERRADA'));
+    if(hasV&&hasE) return 'misto';
+    if(hasV) return 'vigente';
+    if(hasE) return 'encerrada';
+    return 'sem_cadastro';
+  }
+  function telaContratoStats(rowsTela){
+    const itemMap={};
+    const contractMap={};
+    rowsTela.forEach(r=>{
+      const key=contratoLinkPart(r['Chave']||'');
+      const status=String(r['STATUS']||'').trim()||'Sem cadastro';
+      if(key){
+        itemMap[key]={
+          key,
+          total:toN(r['R$ TOTAL']||0),
+          consumo:toN(r['CONSUMO (R$)']||0),
+          saldo:toN(r['Saldo a Empenhar R$']||0),
+          status,
+        };
+      }
+      const contractCode=String(r['PREGÃO']||r['Nª DA ATA']||'').trim();
+      if(!hasContractId(contractCode)) return;
+      const contractKey=contratoLinkPart(contractCode);
+      if(!contractMap[contractKey]) contractMap[contractKey]={statuses:new Set(),ano:contratoAnoCodigo(contractCode)||contratoAnoCodigo(String(r['Nª DA ATA']||''))};
+      contractMap[contractKey].statuses.add(status);
+    });
+    const blank=()=>({todos:0,vigente:0,encerrada:0,misto:0,sem_cadastro:0});
+    const counts={'2025':blank(),'2026':blank(),'total':blank()};
+    Object.values(contractMap).forEach(entry=>{
+      const statusKey=getAtaStatusKey(entry.statuses);
+      counts.total.todos+=1;
+      counts.total[statusKey]+=1;
+      if(entry.ano==='2025'||entry.ano==='2026'){
+        counts[entry.ano].todos+=1;
+        counts[entry.ano][statusKey]+=1;
+      }
+    });
+    return {itemMap,counts};
+  }
+  const telaStats=telaContratoStats(contratosRows||[]);
+
+  function contratosAno(subset,anoKey){
     const cMap={};
     subset.forEach(r=>{
       const contrato=String(r['Contrato']||r['DV']||'').trim();
       if(!hasContractId(contrato)) return;
-      if(!cMap[contrato]) cMap[contrato]={contrato,faturamento:0,mc_valor:0,pvs:new Set(),clientes:{},valor_entregue:0,valor_pendente:0};
+      if(!cMap[contrato]) cMap[contrato]={contrato,faturamento:0,mc_valor:0,pvs:new Set(),clientes:{},valor_entregue:0,valor_pendente:0,total_contrato:0,consumo_valor:0,saldo_consumir:0,statuses:new Set(),itemLinks:new Set(),pvMap:{}};
       const val=toN(r['Total']||0);
       const mc=toN(r['MC ($)']||0);
       const cliente=String(r['Cliente']||'—').trim()||'—';
       cMap[contrato].faturamento+=val;
       cMap[contrato].mc_valor+=mc;
-      cMap[contrato].pvs.add(String(r['PV']||''));
+      const pv=String(r['PV']||'').trim()||'—';
+      cMap[contrato].pvs.add(pv);
       cMap[contrato].clientes[cliente]=(cMap[contrato].clientes[cliente]||0)+val;
       if(String(r['Status Ent']||'').trim()==='Entregue') cMap[contrato].valor_entregue+=val;
       if(String(r['Status Ent']||'').trim()==='Pendente') cMap[contrato].valor_pendente+=val;
+      if(!cMap[contrato].pvMap[pv]) cMap[contrato].pvMap[pv]={pv,cliente,empenho:String(r['Empenho']||'—').trim()||'—',status_ent:String(r['Status Ent']||'').trim()||'—',valor:0,mc_valor:0};
+      cMap[contrato].pvMap[pv].valor+=val;
+      cMap[contrato].pvMap[pv].mc_valor+=mc;
+      const linked = contratoKeyVariants(contrato,r['UASG']||'',r['Item PE']||r['ITEM']||'').map(k=>telaStats.itemMap[k]).find(Boolean);
+      if(linked && !cMap[contrato].itemLinks.has(linked.key)){
+        cMap[contrato].itemLinks.add(linked.key);
+        cMap[contrato].statuses.add(linked.status);
+        cMap[contrato].total_contrato+=linked.total;
+        cMap[contrato].consumo_valor+=linked.consumo;
+        cMap[contrato].saldo_consumir+=linked.saldo;
+      }
     });
     const rows=Object.values(cMap).map(row=>{
       const clienteEntries=Object.entries(row.clientes).sort((a,b)=>b[1]-a[1]);
       const clientePrincipal=clienteEntries[0]?.[0]||'—';
       const faturamento=round(row.faturamento);
       const mcValor=round(row.mc_valor);
+      const totalContrato=round(row.total_contrato);
+      const consumoValor=round(row.consumo_valor);
+      const saldoConsumir=round(row.saldo_consumir);
+      const pvRows=Object.values(row.pvMap).map(pv=>{
+        const pvValor=round(pv.valor);
+        const pvMc=round(pv.mc_valor);
+        return {...pv,valor:pvValor,mc_valor:pvMc,mc_pct:pvValor>0?round(pvMc/pvValor*100,1):0};
+      }).sort((a,b)=>b.valor-a.valor);
+      const statusAtaKey=getAtaStatusKey(row.statuses);
       return {
         contrato:row.contrato,
         cliente_principal:clientePrincipal,
@@ -3233,6 +3420,14 @@ function parseSheet(rows){
         pvs:row.pvs.size,
         valor_entregue:round(row.valor_entregue),
         valor_pendente:round(row.valor_pendente),
+        total_contrato:totalContrato,
+        consumo_valor:consumoValor,
+        saldo_consumir:saldoConsumir,
+        consumo_pct:totalContrato>0?round(consumoValor/totalContrato*100,1):0,
+        saldo_pct:totalContrato>0?round(saldoConsumir/totalContrato*100,1):0,
+        status_ata_key:statusAtaKey,
+        itens_vinculados:row.itemLinks.size,
+        pv_rows:pvRows,
       };
     }).sort((a,b)=>b.faturamento-a.faturamento);
     const resumo=rows.reduce((acc,row)=>{
@@ -3248,7 +3443,7 @@ function parseSheet(rows){
     resumo.faturamento=round(resumo.faturamento);
     resumo.mc_total=round(resumo.mc_total);
     resumo.mc_pct=resumo.faturamento>0?round(resumo.mc_total/resumo.faturamento*100,1):0;
-    return {resumo,rows};
+    return {resumo,rows,total_contratos:telaStats.counts[anoKey]?.todos||0,total_por_status:telaStats.counts[anoKey]||{todos:0,vigente:0,encerrada:0,misto:0,sem_cadastro:0}};
   }
 
   // Envelhecimento pendentes
@@ -3345,7 +3540,7 @@ function parseSheet(rows){
     mensal:{'2025':mensalAno(all,2025),'2026':m26},
     status:{'2025':statusAno(all25),'2026':statusAno(all26),'total':statusAno(all)},
     empresas:{'2025':empresasAno(all25),'2026':empresasAno(all26),'total':empresasAno(all)},
-    contratos:{'2025':contratosAno(all25),'2026':contratosAno(all26),'total':contratosAno(all)},
+    contratos:{'2025':contratosAno(all25,'2025'),'2026':contratosAno(all26,'2026'),'total':contratosAno(all,'total')},
     envelhecimento,criticos,pendentes_list,previsao_semana,
     clientes:{'2025':topClientes(all25),'2026':topClientes(all26),'total':topClientes(all)},
     vendedores:{'2025':topVendedores(all25),'2026':topVendedores(all26),'total':topVendedores(all)},
