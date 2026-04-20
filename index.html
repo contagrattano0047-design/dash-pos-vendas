@@ -910,6 +910,7 @@ let _pendentesImageStatusTimer = null;
 let _contratosSearch = '';
 let _prodCatalog = {};
 let _simModalState = {item:null,itemRef:null,baseInputs:null,scenarios:[],seq:0,activeId:''};
+const SIM_STORAGE_KEY = 'dashPosVendas.simulacoes.v1';
 
 // -------------------------------------------------------
 // FORMATTERS
@@ -939,7 +940,7 @@ const LABEL = {'2026':'Pedidos 2026','2025':'Pedidos 2025','total':'Toda a carte
 const SIM_INPUT_SECTIONS = [
   {title:'Comercial',fields:[
     {key:'preco_venda_un',label:'Venda un.',hint:'Valor unitário bruto',step:'0.01',pct:false},
-    {key:'qtd',label:'Quantidade',hint:'Mesma lógica da planilha',step:'1',pct:false},
+    {key:'qtd',label:'Quantidade',hint:'Recalculada para manter o total',step:'0.0001',pct:false},
     {key:'custo_un',label:'Custo un.',hint:'Custo base de compra',step:'0.01',pct:false},
   ]},
   {title:'Impostos venda',fields:[
@@ -1003,6 +1004,7 @@ function deriveSimInputs(item){
   const custoUn=num(sim.custo_un||0);
   const total=precoVendaUn*qtd;
   const custoTotal=custoUn*qtd;
+  const fixedTotal=Math.max(0,num(item?.valor||total));
   const credIcms=num(sim.cred_icms||0);
   const credBase=Math.max(custoTotal-credIcms,0);
   const pickPct=(direct,fallback) => {
@@ -1010,6 +1012,7 @@ function deriveSimInputs(item){
     return fallback;
   };
   return {
+    fixed_total:roundN(fixedTotal,4),
     preco_venda_un:precoVendaUn,
     qtd,
     custo_un:custoUn,
@@ -1064,6 +1067,7 @@ function calcSimScenario(inputs){
   const custoLiqUnit=qtd>0?custoLiqTotal/qtd:0;
   const mcValor=totalLiq-custoLiqTotal-difalValor;
   return {
+    fixedTotal:num(inputs.fixed_total||0),
     qtd,precoVendaUn,custoUn,total,unitSemIcms,totalSemIcms,unitLiq,totalLiq,custoTotal,custoLiqTotal,custoLiqUnit,
     credIcmsValor,credPisValor,credCofinsValor,ipiValor,icmsStValor,freteCompraValor,freteVendaValor,difalValor,
     icmsVendaValor,pisVendaValor,cofinsVendaValor,
@@ -1084,6 +1088,57 @@ function getScenarioSeq(id){
 }
 function cloneScenarioData(scenario){
   return {id:String(scenario?.id||''),name:String(scenario?.name||'Cenário'),inputs:clone(scenario?.inputs||{})};
+}
+function getSimStorage(){
+  try{
+    const raw=localStorage.getItem(SIM_STORAGE_KEY);
+    if(!raw) return {};
+    const parsed=JSON.parse(raw);
+    return parsed&&typeof parsed==='object'?parsed:{};
+  }catch(e){
+    return {};
+  }
+}
+function saveSimStorage(store){
+  try{
+    localStorage.setItem(SIM_STORAGE_KEY, JSON.stringify(store||{}));
+  }catch(e){}
+}
+function getSimItemStorageKey(item){
+  if(!item) return '';
+  return [
+    item.pv,
+    item.empenho,
+    item.uasg,
+    item.chave||item.desc||'',
+    item.und||''
+  ].map(v=>String(v||'').trim()).join('||');
+}
+function persistItemSimStorage(item){
+  const key=getSimItemStorageKey(item);
+  if(!key) return;
+  const store=getSimStorage();
+  const saved=Array.isArray(item?.sim_saved)?item.sim_saved.map(cloneScenarioData):[];
+  const activeId=String(item?.sim_active_id||'');
+  if(saved.length||activeId){
+    store[key]={sim_saved:saved,sim_active_id:activeId};
+  }else{
+    delete store[key];
+  }
+  saveSimStorage(store);
+}
+function hydratePersistedSimulations(data){
+  const store=getSimStorage();
+  (data?.pendentes_list||[]).forEach(row=>{
+    (row?.itens||[]).forEach(item=>{
+      const key=getSimItemStorageKey({...item,pv:row.pv,empenho:row.empenho,uasg:row.uasg});
+      const saved=store[key];
+      if(!saved) return;
+      item.sim_saved=Array.isArray(saved.sim_saved)?saved.sim_saved.map(cloneScenarioData):[];
+      item.sim_active_id=String(saved.sim_active_id||'');
+    });
+  });
+  return data;
 }
 function getItemSavedScenarios(item){
   return Array.isArray(item?.sim_saved)?item.sim_saved.map(cloneScenarioData):[];
@@ -1137,6 +1192,14 @@ function syncSimScenariosToItem(){
 }
 function persistSimModalState(renderTable){
   syncSimScenariosToItem();
+  if(_simModalState.itemRef){
+    persistItemSimStorage({
+      ..._simModalState.itemRef,
+      pv:_simModalState.item?.pv,
+      empenho:_simModalState.item?.empenho,
+      uasg:_simModalState.item?.uasg
+    });
+  }
   if(renderTable) renderPendentesTable(_pendentesData,true);
 }
 function createSimScenario(inputs,name,id){
@@ -1215,6 +1278,11 @@ function updateSimScenarioField(id,key,value,isPct){
   const scenario=getSimScenario(id);
   if(!scenario) return;
   scenario.inputs[key]=isPct?num(value)/100:num(value);
+  if(key==='preco_venda_un'){
+    const fixedTotal=Math.max(0,num(scenario.inputs.fixed_total||_simModalState.baseInputs?.fixed_total||_simModalState.item?.valor||0));
+    const precoVendaUn=Math.max(0,num(scenario.inputs.preco_venda_un));
+    scenario.inputs.qtd=precoVendaUn>0?roundN(fixedTotal/precoVendaUn,4):0;
+  }
   persistSimModalState(_simModalState.activeId===id);
   renderSimScenarioOutputs(id);
 }
@@ -1259,6 +1327,8 @@ function renderSimScenarioOutputs(id){
   const scenario=getSimScenario(id);
   if(!scenario) return;
   const calc=calcSimScenario(scenario.inputs);
+  const qtdInput=document.getElementById(`qtd-${id}`);
+  if(qtdInput) qtdInput.value=simValue({pct:false},scenario.inputs.qtd);
   const mount=document.getElementById(`sim-outputs-${id}`);
   if(mount) mount.innerHTML=renderSimDelta(calc,original)+renderSimOutputsBlock(calc);
 }
@@ -1271,7 +1341,7 @@ function renderSimModal(){
     `<span class="sim-chip">PV ${esc(item.pv)}</span>`+
     `<span class="sim-chip">${esc(item.cliente||'—')}</span>`+
     `<span class="sim-chip">${num(item.qtd).toLocaleString('pt-BR')} ${esc(item.und||'und')}</span>`;
-  document.getElementById('simToolbarCopy').textContent='A base usa a lógica da planilha: Total, Total Líq., créditos, IPI/ST, fretes e DIFAL são recalculados a cada cenário. Escolha um cenário para aparecer na linha e entrar na imagem comparativa.';
+  document.getElementById('simToolbarCopy').textContent='A base usa a lógica da planilha: o total do item fica travado, então ao mexer na Venda un. a quantidade é recalculada automaticamente. Escolha um cenário para aparecer na linha e entrar na imagem comparativa.';
   const clearBtn=document.getElementById('btnClearSimApplied');
   if(clearBtn) clearBtn.disabled=!(_simModalState.activeId||_simModalState.itemRef?.sim_active_id);
 
@@ -3119,7 +3189,7 @@ async function readAndRender(){
     if(!rows.length) throw new Error('Aba "Resultado Vendas" nao encontrada ou vazia.');
 
     setLoading(true,'Calculando indicadores...');
-    D = parseSheet(rows, contratosRows);
+    D = hydratePersistedSimulations(parseSheet(rows, contratosRows));
     closeSimModal();
     renderAll();
     setLinked(fileName);
@@ -3135,7 +3205,7 @@ async function readAndRender(){
 
 function usePreloaded(){
   closeSimModal();
-  D=JSON.parse(JSON.stringify(DEFAULT_DATA));renderAll();
+  D=hydratePersistedSimulations(JSON.parse(JSON.stringify(DEFAULT_DATA)));renderAll();
   document.getElementById('firstRun').classList.add('hidden');
   document.getElementById('fileDot').className='file-dot none';
   document.getElementById('fileStatusText').innerHTML='Dados pr?-carregados';
@@ -3579,7 +3649,7 @@ document.addEventListener('DOMContentLoaded', async()=>{
     _prodCatalog={};
   }
 
-  D = JSON.parse(JSON.stringify(DEFAULT_DATA));
+  D = hydratePersistedSimulations(JSON.parse(JSON.stringify(DEFAULT_DATA)));
   renderAll();
 
   try{
