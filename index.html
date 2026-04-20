@@ -1090,7 +1090,7 @@ function getScenarioSeq(id){
   return m?num(m[1]):0;
 }
 function cloneScenarioData(scenario){
-  return {id:String(scenario?.id||''),name:String(scenario?.name||'Cenário'),inputs:clone(scenario?.inputs||{})};
+  return {id:String(scenario?.id||''),name:String(scenario?.name||'Cenário'),inputs:clone(scenario?.inputs||{}),raw_inputs:clone(scenario?.raw_inputs||{})};
 }
 function getSimStorage(){
   try{
@@ -1208,10 +1208,10 @@ function persistSimModalState(renderTable){
 function createSimScenario(inputs,name,id){
   if(id){
     _simModalState.seq=Math.max(_simModalState.seq,getScenarioSeq(id));
-    return {id:String(id),name:name||(`Cenário ${getScenarioSeq(id)||1}`),inputs:clone(inputs)};
+    return {id:String(id),name:name||(`Cenário ${getScenarioSeq(id)||1}`),inputs:clone(inputs),raw_inputs:{}};
   }
   _simModalState.seq+=1;
-  return {id:'sim-'+_simModalState.seq,name:name||('Cenário '+_simModalState.seq),inputs:clone(inputs)};
+  return {id:'sim-'+_simModalState.seq,name:name||('Cenário '+_simModalState.seq),inputs:clone(inputs),raw_inputs:{}};
 }
 function applySimScenarioToItem(id){
   if(!_simModalState.itemRef) return;
@@ -1277,7 +1277,11 @@ function removeSimScenario(id){
   persistSimModalState(wasActive);
   renderSimModal();
 }
-function updateSimScenarioField(id,key,value,isPct){
+function isIncompleteSimNumber(value){
+  const txt=String(value??'').trim();
+  return !txt || /^[+-]$/.test(txt) || /[.,]$/.test(txt);
+}
+function applySimScenarioFieldValue(id,key,value,isPct){
   const scenario=getSimScenario(id);
   if(!scenario) return;
   scenario.inputs[key]=isPct?num(value)/100:num(value);
@@ -1291,6 +1295,29 @@ function updateSimScenarioField(id,key,value,isPct){
       scenario.inputs.preco_venda_un=qtd>0?roundN(fixedTotal/qtd,4):0;
     }
   }
+}
+function updateSimScenarioField(id,key,value,isPct){
+  const scenario=getSimScenario(id);
+  if(!scenario) return;
+  scenario.raw_inputs=scenario.raw_inputs||{};
+  scenario.raw_inputs[key]=value;
+  if(isIncompleteSimNumber(value)) return;
+  applySimScenarioFieldValue(id,key,value,isPct);
+  delete scenario.raw_inputs[key];
+  persistSimModalState(_simModalState.activeId===id);
+  renderSimScenarioOutputs(id);
+}
+function commitSimScenarioField(id,key,value,isPct){
+  const scenario=getSimScenario(id);
+  if(!scenario) return;
+  scenario.raw_inputs=scenario.raw_inputs||{};
+  if(isIncompleteSimNumber(value)){
+    delete scenario.raw_inputs[key];
+    renderSimScenarioOutputs(id);
+    return;
+  }
+  applySimScenarioFieldValue(id,key,value,isPct);
+  delete scenario.raw_inputs[key];
   persistSimModalState(_simModalState.activeId===id);
   renderSimScenarioOutputs(id);
 }
@@ -1335,10 +1362,11 @@ function renderSimScenarioOutputs(id){
   const scenario=getSimScenario(id);
   if(!scenario) return;
   const calc=calcSimScenario(scenario.inputs);
+  const rawInputs=scenario.raw_inputs||{};
   const precoInput=document.getElementById(`preco_venda_un-${id}`);
-  if(precoInput) precoInput.value=simValue({pct:false},scenario.inputs.preco_venda_un);
+  if(precoInput) precoInput.value=rawInputs.preco_venda_un??simValue({pct:false},scenario.inputs.preco_venda_un);
   const qtdInput=document.getElementById(`qtd-${id}`);
-  if(qtdInput) qtdInput.value=simValue({pct:false},scenario.inputs.qtd);
+  if(qtdInput) qtdInput.value=rawInputs.qtd??simValue({pct:false},scenario.inputs.qtd);
   const mount=document.getElementById(`sim-outputs-${id}`);
   if(mount) mount.innerHTML=renderSimDelta(calc,original)+renderSimOutputsBlock(calc);
 }
@@ -1403,8 +1431,9 @@ function renderSimModal(){
               id="${field.key}-${scenario.id}"
               type="text"
               inputmode="decimal"
-              value="${simValue(field,scenario.inputs[field.key])}"
+              value="${(scenario.raw_inputs&&scenario.raw_inputs[field.key]!==undefined)?scenario.raw_inputs[field.key]:simValue(field,scenario.inputs[field.key])}"
               oninput="updateSimScenarioField('${scenario.id}','${field.key}',this.value,${field.pct?'true':'false'})"
+              onblur="commitSimScenarioField('${scenario.id}','${field.key}',this.value,${field.pct?'true':'false'})"
             >
             <span class="hint">${field.hint}</span>
           </div>
