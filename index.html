@@ -1401,8 +1401,8 @@ function renderSimModal(){
             <label for="${field.key}-${scenario.id}">${field.label}</label>
             <input
               id="${field.key}-${scenario.id}"
-              type="number"
-              step="${field.step}"
+              type="text"
+              inputmode="decimal"
               value="${simValue(field,scenario.inputs[field.key])}"
               oninput="updateSimScenarioField('${scenario.id}','${field.key}',this.value,${field.pct?'true':'false'})"
             >
@@ -3451,22 +3451,38 @@ function parseSheet(rows, contratosRows=[]){
     if(hasE) return 'encerrada';
     return 'sem_cadastro';
   }
+  function getAtaNumero(row){
+    return String(
+      row?.['N da Ata']||
+      row?.['N DA ATA']||
+      row?.['Nª DA ATA']||
+      row?.['Nº DA ATA']||
+      row?.['Nr da Ata']||
+      row?.['Nr. da Ata']||
+      row?.['Ata']||
+      row?.['ATA']||
+      row?.['Contrato']||
+      row?.['DV']||
+      ''
+    ).trim();
+  }
   function telaContratoStats(rowsTela){
     const itemMap={};
     const contractMap={};
     rowsTela.forEach(r=>{
       const key=contratoLinkPart(r['Chave']||'');
       const status=String(r['STATUS']||'').trim()||'Sem cadastro';
+      const contractCode=getAtaNumero(r);
       if(key){
         itemMap[key]={
           key,
+          ata_numero:contractCode,
           total:toN(r['R$ TOTAL']||0),
           consumo:toN(r['CONSUMO (R$)']||0),
           saldo:toN(r['Saldo a Empenhar R$']||0),
           status,
         };
       }
-      const contractCode=String(r['PREGÃO']||r['Nª DA ATA']||'').trim();
       if(!hasContractId(contractCode)) return;
       const contractKey=contratoLinkPart(contractCode);
       if(!contractMap[contractKey]) contractMap[contractKey]={statuses:new Set(),ano:contratoAnoCodigo(contractCode)||contratoAnoCodigo(String(r['Nª DA ATA']||''))};
@@ -3490,8 +3506,10 @@ function parseSheet(rows, contratosRows=[]){
   function contratosAno(subset,anoKey){
     const cMap={};
     subset.forEach(r=>{
-      const contrato=String(r['Contrato']||r['DV']||'').trim();
-      if(!hasContractId(contrato)) return;
+      const rawContrato=getAtaNumero(r);
+      if(!hasContractId(rawContrato)) return;
+      const linked = contratoKeyVariants(rawContrato,r['UASG']||'',r['Item PE']||r['ITEM']||'').map(k=>telaStats.itemMap[k]).find(Boolean);
+      const contrato=(linked?.ata_numero && hasContractId(linked.ata_numero)) ? String(linked.ata_numero).trim() : rawContrato;
       if(!cMap[contrato]) cMap[contrato]={contrato,faturamento:0,mc_valor:0,pvs:new Set(),clientes:{},valor_entregue:0,valor_pendente:0,total_contrato:0,consumo_valor:0,saldo_consumir:0,statuses:new Set(),itemLinks:new Set(),pvMap:{}};
       const val=toN(r['Total']||0);
       const mc=toN(r['MC ($)']||0);
@@ -3506,7 +3524,6 @@ function parseSheet(rows, contratosRows=[]){
       if(!cMap[contrato].pvMap[pv]) cMap[contrato].pvMap[pv]={pv,cliente,empenho:String(r['Empenho']||'—').trim()||'—',status_ent:String(r['Status Ent']||'').trim()||'—',valor:0,mc_valor:0};
       cMap[contrato].pvMap[pv].valor+=val;
       cMap[contrato].pvMap[pv].mc_valor+=mc;
-      const linked = contratoKeyVariants(contrato,r['UASG']||'',r['Item PE']||r['ITEM']||'').map(k=>telaStats.itemMap[k]).find(Boolean);
       if(linked && !cMap[contrato].itemLinks.has(linked.key)){
         cMap[contrato].itemLinks.add(linked.key);
         cMap[contrato].statuses.add(linked.status);
