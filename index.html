@@ -1278,10 +1278,15 @@ function updateSimScenarioField(id,key,value,isPct){
   const scenario=getSimScenario(id);
   if(!scenario) return;
   scenario.inputs[key]=isPct?num(value)/100:num(value);
-  if(key==='preco_venda_un'){
+  if(key==='preco_venda_un' || key==='qtd'){
     const fixedTotal=Math.max(0,num(scenario.inputs.fixed_total||_simModalState.baseInputs?.fixed_total||_simModalState.item?.valor||0));
-    const precoVendaUn=Math.max(0,num(scenario.inputs.preco_venda_un));
-    scenario.inputs.qtd=precoVendaUn>0?roundN(fixedTotal/precoVendaUn,4):0;
+    if(key==='preco_venda_un'){
+      const precoVendaUn=Math.max(0,num(scenario.inputs.preco_venda_un));
+      scenario.inputs.qtd=precoVendaUn>0?roundN(fixedTotal/precoVendaUn,4):0;
+    }else{
+      const qtd=Math.max(0,num(scenario.inputs.qtd));
+      scenario.inputs.preco_venda_un=qtd>0?roundN(fixedTotal/qtd,4):0;
+    }
   }
   persistSimModalState(_simModalState.activeId===id);
   renderSimScenarioOutputs(id);
@@ -1327,6 +1332,8 @@ function renderSimScenarioOutputs(id){
   const scenario=getSimScenario(id);
   if(!scenario) return;
   const calc=calcSimScenario(scenario.inputs);
+  const precoInput=document.getElementById(`preco_venda_un-${id}`);
+  if(precoInput) precoInput.value=simValue({pct:false},scenario.inputs.preco_venda_un);
   const qtdInput=document.getElementById(`qtd-${id}`);
   if(qtdInput) qtdInput.value=simValue({pct:false},scenario.inputs.qtd);
   const mount=document.getElementById(`sim-outputs-${id}`);
