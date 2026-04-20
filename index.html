@@ -437,8 +437,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   <div class="tab" onclick="switchTab('envelhecimento',this)">2. Envelhecimento</div>
   <div class="tab" onclick="switchTab('status',this)">3. Status dos Empenhos</div>
   <div class="tab" onclick="switchTab('clientes',this)">4. Clientes &amp; Vendedores</div>
-  <div class="tab" onclick="switchTab('gargalos',this)">5. Gargalos &amp; Risco</div>
-  <div class="tab" onclick="switchTab('previsao',this)">6. Previsão da Semana</div>
+  <div class="tab" onclick="switchTab('contratos',this)">5. Contratos</div>
+  <div class="tab" onclick="switchTab('gargalos',this)">6. Gargalos &amp; Risco</div>
+  <div class="tab" onclick="switchTab('previsao',this)">7. Previsão da Semana</div>
 </div>
 
 <div class="main">
@@ -658,7 +659,75 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 </div>
 
 <!-- --------------------------------------------------
-     5. GARGALOS
+     5. CONTRATOS
+-------------------------------------------------- -->
+<div class="view" id="view-contratos">
+  <div class="section-header">
+    <div>
+      <div class="section-title">Contratos</div>
+      <div class="section-subtitle">Rentabilidade por contrato com base no Resultado Vendas</div>
+    </div>
+    <div class="pill-group" id="pillsContratos">
+      <button class="pill active" onclick="setContratosAno('2026',this)">2026</button>
+      <button class="pill" onclick="setContratosAno('2025',this)">2025</button>
+      <button class="pill" onclick="setContratosAno('total',this)">Toda a carteira</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid" id="kpiContratos"></div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Distribuição Lucro / Prejuízo</div><div class="card-subtitle" id="subtitleContratosMix">Contratos com número identificado</div></div>
+        <div class="recorte-tag" id="tagContratosMix">—</div>
+      </div>
+      <div class="chart-wrap" style="height:250px;padding-bottom:0"><canvas id="chartContratosMix"></canvas></div>
+      <div class="donut-legend" id="contratosLegend"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Contratos em Destaque</div><div class="card-subtitle" id="subtitleContratosHighlights">Melhores e piores resultados do recorte</div></div>
+        <div class="recorte-tag" id="tagContratosHighlights">—</div>
+      </div>
+      <div class="card-body">
+        <div class="grid-2" style="gap:14px">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--green-light);margin-bottom:10px;text-transform:uppercase;letter-spacing:.7px">🏆 Com lucro</div>
+            <div id="contratosLucroPanel"></div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--red);margin-bottom:10px;text-transform:uppercase;letter-spacing:.7px">⚠️ Com prejuízo</div>
+            <div id="contratosPrejuizoPanel"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">📑 Ranking Detalhado — Contratos</div>
+        <div class="card-subtitle" id="subtitleContratosTabela">—</div>
+      </div>
+      <div class="header-tools">
+        <input id="searchContratos" type="text" placeholder="Buscar contrato ou cliente..." oninput="filterContratos(this.value)"
+          style="padding:6px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none;width:230px">
+        <span id="contratosCount" style="font-size:12px;color:var(--gray-400);white-space:nowrap"></span>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="data-table">
+        <thead><tr><th>Contrato</th><th>Cliente Principal</th><th>Faturamento</th><th>MC (R$)</th><th>MC (%)</th><th>PVs</th><th>Status</th><th>Situação</th></tr></thead>
+        <tbody id="contratosTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- --------------------------------------------------
+     6. GARGALOS
 -------------------------------------------------- -->
 <div class="view" id="view-gargalos">
   <div class="section-header">
@@ -785,6 +854,11 @@ const DEFAULT_DATA = {
     {pv:'6165',cliente:'FUNDO MUNICIPAL DE SAUDE DE DUQUE DE CAXIAS',empenho:'2026NE000258',uasg:'927845',valor:41372.93,dias:20,prev_fat_date:'2026-04-03T00:00:00.000Z',itens:[{desc:'Luva procedimento nitrilo M',qtd:10000,und:'UN',valor:41372.93}]},
     {pv:'6126',cliente:'INST. NACIONAL DE CANCER',empenho:'2026NE000178',uasg:'250052',valor:9937.92,dias:38,prev_fat_date:'2026-05-15T00:00:00.000Z',itens:[{desc:'Compressa gaze estéril',qtd:4000,und:'UN',valor:7242.90},{desc:'Atadura elástica',qtd:1500,und:'UN',valor:2695.02}]},
   ],
+  contratos:{
+    '2026':{resumo:{total:0,lucro:0,prejuizo:0,neutro:0,faturamento:0,mc_total:0,mc_pct:0,pvs:0},rows:[]},
+    '2025':{resumo:{total:0,lucro:0,prejuizo:0,neutro:0,faturamento:0,mc_total:0,mc_pct:0,pvs:0},rows:[]},
+    'total':{resumo:{total:0,lucro:0,prejuizo:0,neutro:0,faturamento:0,mc_total:0,mc_pct:0,pvs:0},rows:[]},
+  },
   pendentes_list:[{"pv":"1080","dias":0,"cliente":"PRIMEIRO BATALHAO DE POLICIA DO EXERCITO","empenho":"2026NE000003","uasg":"160255","valor":452.69,"mc_valor":82.13,"prev_ent":"23/02/2026","n_itens":2,"itens":[{"chave":"8203039346","desc":"LUVA DESC PROC NITRÍLICA HD TAM M","marca":"LUVIX","categoria":"LUVAS NITRÍLICAS","tipo":"LUVAS","qtd":19,"und":"CX100","valor":356.44,"mc_valor":63.51,"sim":{"preco_venda_un":18.76,"custo_un":15.95,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":66.671,"cred_pis":3.9002535000000007,"cred_cofins":17.964804,"frete_entrada":0,"frete_c":0}},{"chave":"8203039354","desc":"LUVA DESC PROC NITRÍLICA HD TAM G","marca":"LUVIX","categoria":"LUVAS NITRÍLICAS","tipo":"LUVAS","qtd":5,"und":"CX100","valor":96.25,"mc_valor":18.62,"sim":{"preco_venda_un":19.25,"custo_un":15.95,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":17.545,"cred_pis":1.0263825,"cred_cofins":4.72758,"frete_entrada":0,"frete_c":0}}]},{"pv":"1089","dias":0,"cliente":"9 GRUPAMENTO LOGISTICO","empenho":"2026NE000023","uasg":"160136","valor":760.2,"mc_valor":-147.07,"prev_ent":"—","n_itens":2,"itens":[{"chave":"8203039346","desc":"LUVA DESC PROC NITRÍLICA HD TAM M","marca":"LUVIX","categoria":"LUVAS NITRÍLICAS","tipo":"LUVAS","qtd":20,"und":"CX100","valor":375.2,"mc_valor":-75.5,"sim":{"preco_venda_un":18.76,"custo_un":15.95,"icms_pct":0.04,"pis_pct":1e-8,"cofins_pct":1e-8,"ipi_pct":0,"icms_st_pct":0,"difal_valor":37.52,"cred_icms":70.18,"cred_pis":4.10553,"cred_cofins":18.91032,"frete_entrada":172.36688,"frete_c":0}},{"chave":"8203039354","desc":"LUVA DESC PROC NITRÍLICA HD TAM G","marca":"LUVIX","categoria":"LUVAS NITRÍLICAS","tipo":"LUVAS","qtd":20,"und":"CX100","valor":385,"mc_valor":-71.57,"sim":{"preco_venda_un":19.25,"custo_un":15.95,"icms_pct":0.04,"pis_pct":1e-9,"cofins_pct":1e-9,"ipi_pct":0,"icms_st_pct":0,"difal_valor":38.5,"cred_icms":70.18,"cred_pis":4.10553,"cred_cofins":18.91032,"frete_entrada":176.869,"frete_c":0}}]},{"pv":"1101","dias":0,"cliente":"PRIMEIRO BATALHAO DE POLICIA DO EXERCITO","empenho":"2026NE000029","uasg":"160255","valor":2385.81,"mc_valor":438.37,"prev_ent":"31/03/2026","n_itens":2,"itens":[{"chave":"8203039346","desc":"LUVA DESC PROC NITRÍLICA HD TAM M","marca":"LUVIX","categoria":"LUVAS NITRÍLICAS","tipo":"LUVAS","qtd":81,"und":"CX100","valor":1519.56,"mc_valor":270.75,"sim":{"preco_venda_un":18.76,"custo_un":15.95,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":284.229,"cred_pis":16.6273965,"cred_cofins":76.58679599999999,"frete_entrada":0,"frete_c":0}},{"chave":"8203039354","desc":"LUVA DESC PROC NITRÍLICA HD TAM G","marca":"LUVIX","categoria":"LUVAS NITRÍLICAS","tipo":"LUVAS","qtd":45,"und":"CX100","valor":866.25,"mc_valor":167.62,"sim":{"preco_venda_un":19.25,"custo_un":15.95,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":157.905,"cred_pis":9.2374425,"cred_cofins":42.54822,"frete_entrada":0,"frete_c":0}}]},{"pv":"1126","dias":0,"cliente":"ESSLOG / CMVM","empenho":"2026NE000012","uasg":"160255","valor":1900.5,"mc_valor":101.17,"prev_ent":"27/03/2026","n_itens":2,"itens":[{"chave":"8203039346","desc":"LUVA DESC PROC NITRÍLICA HD TAM M","marca":"LUVIX","categoria":"LUVAS NITRÍLICAS","tipo":"LUVAS","qtd":50,"und":"CX100","valor":938,"mc_valor":41.91,"sim":{"preco_venda_un":18.76,"custo_un":15.95,"icms_pct":0.22,"pis_pct":0.0165,"cofins_pct":0.076,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":175.45,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}},{"chave":"8203039354","desc":"LUVA DESC PROC NITRÍLICA HD TAM G","marca":"LUVIX","categoria":"LUVAS NITRÍLICAS","tipo":"LUVAS","qtd":50,"und":"CX100","valor":962.5,"mc_valor":59.26,"sim":{"preco_venda_un":19.25,"custo_un":15.95,"icms_pct":0.22,"pis_pct":0.0165,"cofins_pct":0.076,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":175.45,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]},{"pv":"5799","dias":0,"cliente":"HOSPITAL MUNICIPAL BARATA RIBEIRO","empenho":"2025NE000167","uasg":"986001","valor":41047,"mc_valor":5934.24,"prev_ent":"22/05/2025","n_itens":2,"itens":[{"chave":"6560847376","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM G","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":600,"und":"CX100","valor":12150,"mc_valor":1614.6,"sim":{"preco_venda_un":20.25,"custo_un":16.8,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":2217.6,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}},{"chave":"6562987881","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM M","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":1420,"und":"CX100","valor":28897,"mc_valor":4319.64,"sim":{"preco_venda_un":20.35,"custo_un":16.45,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":5138.9800000000005,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]},{"pv":"5812","dias":0,"cliente":"INSTITUTO PHILIPE PINEL","empenho":"2025NE000077","uasg":"986001","valor":3963.75,"mc_valor":577.4,"prev_ent":"21/05/2025","n_itens":2,"itens":[{"chave":"6560847376","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM G","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":45,"und":"CX100","valor":911.25,"mc_valor":121.09,"sim":{"preco_venda_un":20.25,"custo_un":16.8,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":166.32,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}},{"chave":"6562987881","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM M","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":150,"und":"CX100","valor":3052.5,"mc_valor":456.3,"sim":{"preco_venda_un":20.35,"custo_un":16.45,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":542.85,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]},{"pv":"5813","dias":0,"cliente":"MATERNIDADE FERNANDO MAGALHÃES","empenho":"2025NE000184","uasg":"986001","valor":25140,"mc_valor":3011.64,"prev_ent":"03/06/2025","n_itens":3,"itens":[{"chave":"6560847376","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM G","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":240,"und":"CX100","valor":4860,"mc_valor":645.84,"sim":{"preco_venda_un":20.25,"custo_un":16.8,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":887.04,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}},{"chave":"6813855187","desc":"LUVA LÁTEX COM PÓ UG T: P","marca":"UNIGLOVES","categoria":"—","tipo":"—","qtd":200,"und":"CX100","valor":4000,"mc_valor":-67.8,"sim":{"preco_venda_un":20,"custo_un":16.1,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":128.8,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":96.60000000000001}},{"chave":"6562987881","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM M","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":800,"und":"CX100","valor":16280,"mc_valor":2433.6,"sim":{"preco_venda_un":20.35,"custo_un":16.45,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":2895.2,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]},{"pv":"5828","dias":0,"cliente":"IMAS NISE DA SILVEIRA","empenho":"2025NE000105","uasg":"986001","valor":4070,"mc_valor":608.4,"prev_ent":"14/06/2025","n_itens":1,"itens":[{"chave":"6562987881","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM M","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":200,"und":"CX100","valor":4070,"mc_valor":608.4,"sim":{"preco_venda_un":20.35,"custo_un":16.45,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":723.8,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]},{"pv":"5829","dias":0,"cliente":"HOSPITAL FEDERAL DO ANDARAÍ","empenho":"2025NE000185","uasg":"986001","valor":4282.2,"mc_valor":419.8,"prev_ent":"17/06/2025","n_itens":1,"itens":[{"chave":"6560863103","desc":"LUVA CIRÚRGICA S/ LÁTEX S/ PÓ MS TAM 7,0","marca":"LUVIX","categoria":"LUVAS CIRÚRGICAS S/PO","tipo":"LUVAS","qtd":1170,"und":"PR","valor":4282.2,"mc_valor":419.8,"sim":{"preco_venda_un":3.66,"custo_un":3.2,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":823.68,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]},{"pv":"5847","dias":0,"cliente":"HOSPITAL MUNICIPAL ROCHA MAIA","empenho":"2025NE000216","uasg":"986001","valor":14155,"mc_valor":795.03,"prev_ent":"20/06/2025","n_itens":3,"itens":[{"chave":"6721093224","desc":"LUVA DESC PROC LÁTEX C/ PÓ LB TAM P","marca":"LEMGRUBER","categoria":"—","tipo":"—","qtd":200,"und":"CX100","valor":4000,"mc_valor":-655.77,"sim":{"preco_venda_un":20,"custo_un":17.5,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0.0587927619047619,"difal_valor":0,"cred_icms":0,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":70}},{"chave":"6560847376","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM G","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":200,"und":"CX100","valor":4050,"mc_valor":538.2,"sim":{"preco_venda_un":20.25,"custo_un":16.8,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":739.2,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}},{"chave":"6562987881","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM M","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":300,"und":"CX100","valor":6105,"mc_valor":912.6,"sim":{"preco_venda_un":20.35,"custo_un":16.45,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":1085.7,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]},{"pv":"5878","dias":0,"cliente":"HOSPITAL PEDRO ERNESTO","empenho":"2025NE03620","uasg":"31545","valor":63150,"mc_valor":10764,"prev_ent":"18/07/2025","n_itens":1,"itens":[{"chave":"6562987881","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM M","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":3000,"und":"CX100","valor":63150,"mc_valor":10764,"sim":{"preco_venda_un":21.05,"custo_un":16.45,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":10857,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]},{"pv":"5902","dias":0,"cliente":"INSTITUTO MUNICIPAL DE VIGILÂNCIA SANITÁRIA","empenho":"2025NE000387","uasg":"986001","valor":407,"mc_valor":66.14,"prev_ent":"08/08/2025","n_itens":1,"itens":[{"chave":"6562987881","desc":"LUVA DESC PROC LÁTEX C/ PÓ UT TAM M","marca":"LUVIX","categoria":"LUVAS C/PO","tipo":"LUVAS","qtd":20,"und":"CX100","valor":407,"mc_valor":66.14,"sim":{"preco_venda_un":20.35,"custo_un":16.11,"icms_pct":0.22,"pis_pct":0,"cofins_pct":0,"ipi_pct":0,"icms_st_pct":0,"difal_valor":0,"cred_icms":70.884,"cred_pis":0,"cred_cofins":0,"frete_entrada":0,"frete_c":0}}]}],
   clientes:{
     '2026':{nomes:['FUNDO MUN. DE SAUDE DE MACAE','COMPLEXO HOSPITALAR DA UFRJ','FUNDAÇÃO SAUDE DO ESTADO DO RJ','SOUZA AGUIAR','HOSP. UNIVERSITARIO ANTONIO PEDRO','INST. DE INFECTOLOGIA E.CHAGAS','CENTRO DE OBTENÇÃO MARINHA RJ','LOURENÇO JORGE'],faturamento:[673493.98,605328.50,400873.20,327605.00,277720.20,195233.77,60918.00,40540.50],mc:[27984.26,49426.42,109145.14,59391.28,6782.57,-2522.18,11716.05,4043.69]},
@@ -807,12 +881,14 @@ let fileHandle = null;
 let _panoramaAno = '2026';
 let _statusAno   = '2026';
 let _clientesAno = '2026';
+let _contratosAno = '2026';
 let _pendentesData = [];
 let _pendentesSort = {col:'dias',asc:false};
 let _pendentesFilter = {produto:'',categoria:'',marca:'',tipo:''};
 let _pendentesSearch = '';
 let _pendentesVisible = [];
 let _pendentesImageStatusTimer = null;
+let _contratosSearch = '';
 let _prodCatalog = {};
 let _simModalState = {item:null,itemRef:null,baseInputs:null,scenarios:[],seq:0,activeId:''};
 
@@ -873,6 +949,8 @@ function kpiCard(accent,icon,label,value,sub,bClass='',bText=''){
 }
 function recorteTag(txt){return `<div class="recorte-tag">📅 Recorte: ${txt}</div>`;}
 function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function normTxt(v){return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
+function hasContractId(v){return /\d/.test(String(v??'').trim());}
 function simValue(field,val){
   if(field.pct) return roundN(num(val)*100,4);
   return roundN(val,4);
@@ -1245,6 +1323,7 @@ function renderAll(){
   renderEnvelhecimento();
   renderStatus();
   renderClientes();
+  renderContratos();
   renderGargalos();
   renderPrevisao();
 }
@@ -1570,10 +1649,13 @@ function getPendentesFilterSummary(rows){
 }
 function clipCanvasText(ctx,text,maxWidth){
   const raw=String(text==null?'—':text);
+  if(maxWidth<=0) return '';
+  const ellipsis='…';
+  if(ctx.measureText(ellipsis).width>maxWidth) return '';
   if(ctx.measureText(raw).width<=maxWidth) return raw;
   let out=raw;
-  while(out.length>1&&ctx.measureText(out+'…').width>maxWidth) out=out.slice(0,-1);
-  return out+'…';
+  while(out.length>1&&ctx.measureText(out+ellipsis).width>maxWidth) out=out.slice(0,-1);
+  return out+ellipsis;
 }
 function wrapCanvasText(ctx,text,maxWidth){
   const words=String(text||'').split(/\s+/).filter(Boolean);
@@ -1681,6 +1763,7 @@ function buildPendentesShareCanvas(rows){
   canvas.height=Math.round(height*scale);
   const ctx=canvas.getContext('2d');
   ctx.scale(scale,scale);
+  const valueLeftX=getPendentesCanvasValueLeftX(ctx,rows,valueX);
 
   ctx.fillStyle='#eef2f8';
   ctx.fillRect(0,0,width,height);
@@ -1766,14 +1849,16 @@ function buildPendentesShareCanvas(rows){
     ctx.fillText(pvLabel,tableLeft+24,y+28);
     const pvWidth=ctx.measureText(pvLabel).width;
     ctx.font='600 15px DM Sans, sans-serif';
-    ctx.fillText(clipCanvasText(ctx,row.cliente||'—',Math.max(180,valueX-(tableLeft+pvWidth+56))),tableLeft+pvWidth+38,y+28);
+    const clienteStartX=tableLeft+pvWidth+38;
+    const clienteMaxWidth=getTextMaxWidth(valueLeftX,clienteStartX,18);
+    ctx.fillText(clipCanvasText(ctx,row.cliente||'—',clienteMaxWidth),clienteStartX,y+28);
 
     ctx.font='500 12px DM Sans, sans-serif';
     ctx.fillStyle='#5c6578';
-    ctx.fillText(clipCanvasText(ctx,metaLine,valueX-(tableLeft+24)),tableLeft+24,y+49);
+    ctx.fillText(clipCanvasText(ctx,metaLine,getTextMaxWidth(valueLeftX,tableLeft+24,14)),tableLeft+24,y+49);
     if(row._has_compare){
       ctx.fillStyle=row._has_compare?C.gold:'#97a3b7';
-      ctx.fillText(clipCanvasText(ctx,compareLine,valueX-(tableLeft+24)),tableLeft+24,y+66);
+      ctx.fillText(clipCanvasText(ctx,compareLine,getTextMaxWidth(valueLeftX,tableLeft+24,14)),tableLeft+24,y+66);
     }
 
     ctx.textAlign='right';
@@ -1935,10 +2020,45 @@ function setPdfDrawColor(doc,hex){
 }
 function clipPdfText(doc,text,maxWidth){
   const raw=String(text==null?'—':text);
+  if(maxWidth<=0) return '';
+  const ellipsis='…';
+  if(doc.getTextWidth(ellipsis)>maxWidth) return '';
   if(doc.getTextWidth(raw)<=maxWidth) return raw;
   let out=raw;
-  while(out.length>1&&doc.getTextWidth(out+'…')>maxWidth) out=out.slice(0,-1);
-  return out+'…';
+  while(out.length>1&&doc.getTextWidth(out+ellipsis)>maxWidth) out=out.slice(0,-1);
+  return out+ellipsis;
+}
+function getTextMaxWidth(rightLimitX,leftStartX,extraGap){
+  return Math.max(0,(rightLimitX-leftStartX)-extraGap);
+}
+function getPendentesCanvasValueLeftX(ctx,rows,valueX){
+  let maxWidth=ctx.measureText('VALOR').width;
+  ctx.save();
+  ctx.font='700 15px DM Sans, sans-serif';
+  rows.forEach(row=>{
+    maxWidth=Math.max(maxWidth,ctx.measureText(fmt(row._valor)).width);
+  });
+  ctx.font='700 12px DM Sans, sans-serif';
+  rows.forEach(row=>{
+    if(row._has_compare) maxWidth=Math.max(maxWidth,ctx.measureText(`Cen. ${fmt(row._compare_valor)}`).width);
+  });
+  ctx.restore();
+  return valueX-maxWidth-18;
+}
+function getPendentesPdfValueLeftX(doc,rows,valueX){
+  let maxWidth=0;
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9);
+  maxWidth=Math.max(maxWidth,doc.getTextWidth('VALOR'));
+  doc.setFontSize(10);
+  rows.forEach(row=>{
+    maxWidth=Math.max(maxWidth,doc.getTextWidth(fmt(row._valor)));
+  });
+  doc.setFontSize(8.5);
+  rows.forEach(row=>{
+    if(row._has_compare) maxWidth=Math.max(maxWidth,doc.getTextWidth(`Cen. ${fmt(row._compare_valor)}`));
+  });
+  return valueX-maxWidth-14;
 }
 function chunkPendentesPdfRows(rows,maxBodyHeight,layout){
   const chunks=[]; let current=[]; let currentHeight=0;
@@ -1957,6 +2077,7 @@ function chunkPendentesPdfRows(rows,maxBodyHeight,layout){
   return chunks.length?chunks:[[]];
 }
 function drawPendentesPdfPage(doc,allRows,pageRows,pageIndex,pageCount,layout,metrics){
+  const valueLeftX=getPendentesPdfValueLeftX(doc,allRows,layout.valueX);
   setPdfFillColor(doc,'#eef2f8');
   doc.rect(0,0,layout.width,layout.height,'F');
   setPdfFillColor(doc,'#ffffff');
@@ -2051,19 +2172,21 @@ function drawPendentesPdfPage(doc,allRows,pageRows,pageIndex,pageCount,layout,me
     const pvWidth=doc.getTextWidth(pvLabel);
     doc.setFont('helvetica','bold');
     doc.setFontSize(layout.orientation==='landscape'?11:10);
+    const clienteStartX=layout.tableLeft+pvWidth+28;
+    const clienteMaxWidth=getTextMaxWidth(valueLeftX,clienteStartX,16);
     doc.text(
-      clipPdfText(doc,row.cliente||'—',Math.max(140,layout.valueX-(layout.tableLeft+pvWidth+42))),
-      layout.tableLeft+pvWidth+28,
+      clipPdfText(doc,row.cliente||'—',clienteMaxWidth),
+      clienteStartX,
       y+24
     );
 
     doc.setFont('helvetica','normal');
     doc.setFontSize(8.5);
     setPdfTextColor(doc,'#5c6578');
-    doc.text(clipPdfText(doc,metaLine,layout.valueX-(layout.tableLeft+16)),layout.tableLeft+16,y+39);
+    doc.text(clipPdfText(doc,metaLine,getTextMaxWidth(valueLeftX,layout.tableLeft+16,12)),layout.tableLeft+16,y+39);
     if(row._has_compare){
       setPdfTextColor(doc,C.gold);
-      doc.text(clipPdfText(doc,compareLine,layout.valueX-(layout.tableLeft+16)),layout.tableLeft+16,y+53);
+      doc.text(clipPdfText(doc,compareLine,getTextMaxWidth(valueLeftX,layout.tableLeft+16,12)),layout.tableLeft+16,y+53);
     }
 
     doc.setFont('helvetica','bold');
@@ -2275,7 +2398,124 @@ function renderClientes(){
 }
 
 // --------------------------------------------
-// 5. GARGALOS
+// 5. CONTRATOS
+// --------------------------------------------
+function setContratosAno(ano,el){
+  _contratosAno = ano;
+  document.querySelectorAll('#pillsContratos .pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  renderContratos();
+}
+function filterContratos(q){
+  _contratosSearch = q||'';
+  renderContratos();
+}
+function getContratoSituacaoMeta(mc){
+  if(mc<0) return {label:'Prejuízo',cls:'badge-red',color:C.red};
+  if(mc>0) return {label:'Lucro',cls:'badge-green',color:C.green};
+  return {label:'Neutro',cls:'badge-navy',color:C.navy};
+}
+function getContratoExecucaoMeta(row){
+  if((row.valor_entregue||0)>0&&(row.valor_pendente||0)>0) return {label:'Misto',cls:'badge-orange'};
+  if((row.valor_pendente||0)>0) return {label:'Pendente',cls:'badge-red'};
+  if((row.valor_entregue||0)>0) return {label:'Entregue',cls:'badge-green'};
+  return {label:'Sem movimento',cls:'badge-navy'};
+}
+function summarizeContratoRows(rows){
+  const resumo={total:rows.length,lucro:0,prejuizo:0,neutro:0,faturamento:0,mc_total:0,mc_pct:0,pvs:0};
+  rows.forEach(row=>{
+    resumo.faturamento+=num(row.faturamento||0);
+    resumo.mc_total+=num(row.mc_valor||0);
+    resumo.pvs+=num(row.pvs||0);
+    if(num(row.mc_valor||0)<0) resumo.prejuizo+=1;
+    else if(num(row.mc_valor||0)>0) resumo.lucro+=1;
+    else resumo.neutro+=1;
+  });
+  resumo.mc_pct=resumo.faturamento>0?(resumo.mc_total/resumo.faturamento*100):0;
+  return resumo;
+}
+function renderContratoHighlights(rows,kind){
+  if(!rows.length) return `<div style="color:var(--gray-400);font-size:13px;text-align:center;padding:18px 8px">Nenhum contrato ${kind==='lucro'?'lucrativo':'em prejuízo'} neste recorte</div>`;
+  return rows.map(row=>{
+    const color=kind==='prejuizo'?C.red:C.green;
+    const extraClientes=(row.clientes_count||0)>1?` +${row.clientes_count-1} cliente${row.clientes_count-1!==1?'s':''}`:'';
+    return `<div class="aging-row ${kind==='prejuizo'?'danger':''}" style="margin-bottom:8px">
+      <div>
+        <div class="aging-label">Contrato ${esc(row.contrato)}</div>
+        <div class="aging-count" title="${esc(row.cliente_principal||'—')}">${esc(String(row.cliente_principal||'—').substring(0,34))}${extraClientes}</div>
+      </div>
+      <div class="aging-value">
+        <div class="val" style="font-size:13px;color:${color}">${fmt(row.mc_valor)}</div>
+        <div class="sub">${pct(num(row.mc_pct||0))}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function renderContratos(){
+  const ano=_contratosAno;
+  const lbl=LABEL[ano];
+  const baseRows=Array.isArray(D.contratos?.[ano]?.rows)?D.contratos[ano].rows:[];
+  const q=normTxt(_contratosSearch);
+  const rows=q?baseRows.filter(r=>normTxt(r.contrato).includes(q)||normTxt(r.cliente_principal).includes(q)):baseRows;
+  const resumo=summarizeContratoRows(rows);
+  const mcConsolidadoMeta=getContratoSituacaoMeta(resumo.mc_total);
+  const shareLucro=resumo.total>0?(resumo.lucro/resumo.total*100):0;
+  const sharePrejuizo=resumo.total>0?(resumo.prejuizo/resumo.total*100):0;
+  const shareNeutro=resumo.total>0?(resumo.neutro/resumo.total*100):0;
+
+  ['ContratosMix','ContratosHighlights','ContratosTabela'].forEach(id=>{
+    const tag=document.getElementById('tag'+id); if(tag) tag.textContent='📅 '+lbl;
+  });
+  document.getElementById('subtitleContratosMix').textContent=(q?'Filtro aplicado':'Contratos com número identificado')+' · '+lbl;
+  document.getElementById('subtitleContratosHighlights').textContent='Melhores e piores resultados do recorte · '+lbl;
+  document.getElementById('subtitleContratosTabela').textContent=(q?'Busca ativa em contratos':'Todos os contratos com movimento')+' · '+lbl;
+  document.getElementById('contratosCount').textContent=`${rows.length} contrato${rows.length!==1?'s':''} · ${resumo.pvs} PV${resumo.pvs!==1?'s':''}`;
+
+  document.getElementById('kpiContratos').innerHTML=
+    kpiCard('navy','🧾','Contratos com Movimento',String(resumo.total),`${resumo.pvs} PVs vinculados`,'badge-navy',String(resumo.total))+
+    kpiCard('green','📈','Com Lucro',String(resumo.lucro),`${pct(shareLucro)} dos contratos no recorte`,'badge-pos',pct(shareLucro))+
+    kpiCard('red','📉','Com Prejuízo',String(resumo.prejuizo),`${pct(sharePrejuizo)} exigem revisão`,'badge-danger',pct(sharePrejuizo))+
+    kpiCard('teal','💰','Margem Consolidada',pct(resumo.mc_pct),`MC total ${fmtS(resumo.mc_total)}`,mcConsolidadoMeta.cls,pct(resumo.mc_pct));
+
+  killChart('chartContratosMix');
+  if(resumo.total>0){
+    charts.chartContratosMix = new Chart(document.getElementById('chartContratosMix'),{
+      type:'doughnut',
+      data:{labels:['Lucro','Prejuízo','Neutro'],datasets:[{data:[resumo.lucro,resumo.prejuizo,resumo.neutro],backgroundColor:[C.green,C.red,C.navy],borderWidth:3,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.label+': '+ctx.raw+' contrato'+(ctx.raw!==1?'s':'')+' ('+pct(resumo.total>0?ctx.raw/resumo.total*100:0)+')'}}}}
+    });
+  }
+  document.getElementById('contratosLegend').innerHTML=[
+    {l:'Lucro',v:resumo.lucro,p:shareLucro,c:C.green},
+    {l:'Prejuízo',v:resumo.prejuizo,p:sharePrejuizo,c:C.red},
+    {l:'Neutro',v:resumo.neutro,p:shareNeutro,c:C.navy},
+  ].map(x=>`<div class="legend-item"><div class="legend-dot" style="background:${x.c}"></div><div class="legend-label">${x.l}</div><div class="legend-val">${x.v} contrato${x.v!==1?'s':''}</div><div class="legend-pct">${pct(x.p)}</div></div>`).join('');
+
+  const lucroRows=rows.filter(r=>num(r.mc_valor||0)>0).sort((a,b)=>num(b.mc_valor||0)-num(a.mc_valor||0)).slice(0,6);
+  const prejuizoRows=rows.filter(r=>num(r.mc_valor||0)<0).sort((a,b)=>num(a.mc_valor||0)-num(b.mc_valor||0)).slice(0,6);
+  document.getElementById('contratosLucroPanel').innerHTML=renderContratoHighlights(lucroRows,'lucro');
+  document.getElementById('contratosPrejuizoPanel').innerHTML=renderContratoHighlights(prejuizoRows,'prejuizo');
+
+  document.getElementById('contratosTbody').innerHTML=rows.length?rows.map(row=>{
+    const situacao=getContratoSituacaoMeta(row.mc_valor);
+    const execucao=getContratoExecucaoMeta(row);
+    const clienteLabel=(row.clientes_count||0)>1?`${row.cliente_principal} +${row.clientes_count-1}`:row.cliente_principal;
+    return `<tr>
+      <td><strong>${esc(row.contrato)}</strong></td>
+      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(row.cliente_principal||'—')}">${esc(clienteLabel||'—')}</td>
+      <td><strong>${fmt(row.faturamento)}</strong></td>
+      <td style="color:${num(row.mc_valor||0)<0?C.red:C.navy}">${fmt(row.mc_valor)}</td>
+      <td><span class="badge ${num(row.mc_pct||0)<0?'badge-red':num(row.mc_pct||0)>=20?'badge-green':num(row.mc_pct||0)>=10?'badge-orange':'badge-navy'}">${pct(num(row.mc_pct||0))}</span></td>
+      <td>${row.pvs}</td>
+      <td><span class="badge ${execucao.cls}">${execucao.label}</span></td>
+      <td><span class="badge ${situacao.cls}">${situacao.label}</span></td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="8" style="text-align:center;color:var(--gray-400);padding:24px">Nenhum contrato encontrado neste recorte.</td></tr>`;
+}
+
+// --------------------------------------------
+// 6. GARGALOS
 // --------------------------------------------
 function renderGargalos(){
   // Gargalos sempre usa TODA a carteira (sem filtro de ano)
@@ -2962,6 +3202,55 @@ function parseSheet(rows){
     return {nomes:sorted.map(([n])=>n),faturamento:sorted.map(([,v])=>round(v.f)),mc:sorted.map(([,v])=>round(v.mc))};
   }
 
+  function contratosAno(subset){
+    const cMap={};
+    subset.forEach(r=>{
+      const contrato=String(r['Contrato']||r['DV']||'').trim();
+      if(!hasContractId(contrato)) return;
+      if(!cMap[contrato]) cMap[contrato]={contrato,faturamento:0,mc_valor:0,pvs:new Set(),clientes:{},valor_entregue:0,valor_pendente:0};
+      const val=toN(r['Total']||0);
+      const mc=toN(r['MC ($)']||0);
+      const cliente=String(r['Cliente']||'—').trim()||'—';
+      cMap[contrato].faturamento+=val;
+      cMap[contrato].mc_valor+=mc;
+      cMap[contrato].pvs.add(String(r['PV']||''));
+      cMap[contrato].clientes[cliente]=(cMap[contrato].clientes[cliente]||0)+val;
+      if(String(r['Status Ent']||'').trim()==='Entregue') cMap[contrato].valor_entregue+=val;
+      if(String(r['Status Ent']||'').trim()==='Pendente') cMap[contrato].valor_pendente+=val;
+    });
+    const rows=Object.values(cMap).map(row=>{
+      const clienteEntries=Object.entries(row.clientes).sort((a,b)=>b[1]-a[1]);
+      const clientePrincipal=clienteEntries[0]?.[0]||'—';
+      const faturamento=round(row.faturamento);
+      const mcValor=round(row.mc_valor);
+      return {
+        contrato:row.contrato,
+        cliente_principal:clientePrincipal,
+        clientes_count:clienteEntries.length,
+        faturamento,
+        mc_valor:mcValor,
+        mc_pct:faturamento>0?round(mcValor/faturamento*100,1):0,
+        pvs:row.pvs.size,
+        valor_entregue:round(row.valor_entregue),
+        valor_pendente:round(row.valor_pendente),
+      };
+    }).sort((a,b)=>b.faturamento-a.faturamento);
+    const resumo=rows.reduce((acc,row)=>{
+      acc.total+=1;
+      acc.faturamento+=row.faturamento;
+      acc.mc_total+=row.mc_valor;
+      acc.pvs+=row.pvs;
+      if(row.mc_valor<0) acc.prejuizo+=1;
+      else if(row.mc_valor>0) acc.lucro+=1;
+      else acc.neutro+=1;
+      return acc;
+    },{total:0,lucro:0,prejuizo:0,neutro:0,faturamento:0,mc_total:0,mc_pct:0,pvs:0});
+    resumo.faturamento=round(resumo.faturamento);
+    resumo.mc_total=round(resumo.mc_total);
+    resumo.mc_pct=resumo.faturamento>0?round(resumo.mc_total/resumo.faturamento*100,1):0;
+    return {resumo,rows};
+  }
+
   // Envelhecimento pendentes
   const penD=pen.map(r=>({...r,dias:days(toD(r['Data Ped']))}));
   const pvEnvMap={};
@@ -3056,6 +3345,7 @@ function parseSheet(rows){
     mensal:{'2025':mensalAno(all,2025),'2026':m26},
     status:{'2025':statusAno(all25),'2026':statusAno(all26),'total':statusAno(all)},
     empresas:{'2025':empresasAno(all25),'2026':empresasAno(all26),'total':empresasAno(all)},
+    contratos:{'2025':contratosAno(all25),'2026':contratosAno(all26),'total':contratosAno(all)},
     envelhecimento,criticos,pendentes_list,previsao_semana,
     clientes:{'2025':topClientes(all25),'2026':topClientes(all26),'total':topClientes(all)},
     vendedores:{'2025':topVendedores(all25),'2026':topVendedores(all26),'total':topVendedores(all)},
@@ -3066,11 +3356,12 @@ function parseSheet(rows){
 document.addEventListener('DOMContentLoaded', async()=>{
   Chart.defaults.font.family='DM Sans';
 
-  // Catálogo de produtos + sample de pendentes com base de simulação
+  // Catálogo de produtos + samples do modo pré-carregado
   try{
-    const [prodResult,pendResult] = await Promise.allSettled([
+    const [prodResult,pendResult,contratosResult] = await Promise.allSettled([
       fetch('produtos.json',{cache:'no-store'}),
       fetch('_pendentes_sim.json',{cache:'no-store'}),
+      fetch('_contratos_sim.json',{cache:'no-store'}),
     ]);
     if(prodResult.status==='fulfilled'){
       _prodCatalog=prodResult.value.ok?await prodResult.value.json():{};
@@ -3081,6 +3372,12 @@ document.addEventListener('DOMContentLoaded', async()=>{
       const pendentesSample = await pendResult.value.json();
       if(Array.isArray(pendentesSample) && pendentesSample.length){
         DEFAULT_DATA.pendentes_list = pendentesSample;
+      }
+    }
+    if(contratosResult.status==='fulfilled' && contratosResult.value.ok){
+      const contratosSample = await contratosResult.value.json();
+      if(contratosSample && contratosSample['2025'] && contratosSample['2026'] && contratosSample['total']){
+        DEFAULT_DATA.contratos = contratosSample;
       }
     }
   }catch(e){
