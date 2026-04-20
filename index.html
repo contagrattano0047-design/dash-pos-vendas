@@ -687,7 +687,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
       <select id="filterContratosStatus" onchange="filterContratosStatus(this.value)"
         style="padding:6px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none">
         <option value="todos">Status: Todos</option>
-        <option value="vigente">Ata Vigente</option>
+        <option value="vigente" selected>Ata Vigente</option>
         <option value="encerrada">Ata Encerrada</option>
       </select>
     </div>
@@ -901,7 +901,7 @@ let _panoramaAno = '2026';
 let _statusAno   = '2026';
 let _clientesAno = '2026';
 let _contratosAno = '2026';
-let _contratosStatus = 'todos';
+let _contratosStatus = 'vigente';
 let _contratosExpanded = new Set();
 let _contratosSort = {col:'faturamento',asc:false};
 let _pendentesData = [];
