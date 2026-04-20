@@ -678,10 +678,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
       <div class="section-title">Contratos</div>
       <div class="section-subtitle">Rentabilidade por contrato com base no Resultado Vendas</div>
     </div>
-    <div class="pill-group" id="pillsContratos">
-      <button class="pill active" onclick="setContratosAno('2026',this)">2026</button>
-      <button class="pill" onclick="setContratosAno('2025',this)">2025</button>
-      <button class="pill" onclick="setContratosAno('total',this)">Toda a carteira</button>
+    <div class="header-tools">
+      <div class="pill-group" id="pillsContratos">
+        <button class="pill active" onclick="setContratosAno('2026',this)">2026</button>
+        <button class="pill" onclick="setContratosAno('2025',this)">2025</button>
+        <button class="pill" onclick="setContratosAno('total',this)">Toda a carteira</button>
+      </div>
+      <select id="filterContratosStatus" onchange="filterContratosStatus(this.value)"
+        style="padding:6px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none">
+        <option value="todos">Status: Todos</option>
+        <option value="vigente">Ata Vigente</option>
+        <option value="encerrada">Ata Encerrada</option>
+      </select>
     </div>
   </div>
 
@@ -723,12 +731,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
         <div class="card-subtitle" id="subtitleContratosTabela">—</div>
       </div>
       <div class="header-tools">
-        <select id="filterContratosStatus" onchange="filterContratosStatus(this.value)"
-          style="padding:6px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none">
-          <option value="todos">Status: Todos</option>
-          <option value="vigente">Ata Vigente</option>
-          <option value="encerrada">Ata Encerrada</option>
-        </select>
         <input id="searchContratos" type="text" placeholder="Buscar contrato ou cliente..." oninput="filterContratos(this.value)"
           style="padding:6px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none;width:230px">
         <span id="contratosCount" style="font-size:12px;color:var(--gray-400);white-space:nowrap"></span>
@@ -736,7 +738,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
     </div>
     <div style="overflow-x:auto">
       <table class="data-table">
-        <thead><tr><th style="width:30px"></th><th>Contrato</th><th>Cliente Principal</th><th>Valor do Contrato</th><th>Consumo</th><th>Saldo</th><th>Faturamento</th><th>MC (R$)</th><th>MC (%)</th><th>PVs</th><th>Ata</th><th>Situação</th></tr></thead>
+        <thead><tr><th style="width:30px"></th><th style="cursor:pointer" onclick="sortContratos('contrato')">Contrato <span id="sortContratos-contrato">↕</span></th><th style="cursor:pointer" onclick="sortContratos('cliente_principal')">Cliente Principal <span id="sortContratos-cliente_principal">↕</span></th><th style="cursor:pointer" onclick="sortContratos('total_contrato')">Valor do Contrato <span id="sortContratos-total_contrato">↕</span></th><th style="cursor:pointer" onclick="sortContratos('consumo_valor')">Consumo <span id="sortContratos-consumo_valor">↕</span></th><th style="cursor:pointer" onclick="sortContratos('saldo_consumir')">Saldo <span id="sortContratos-saldo_consumir">↕</span></th><th style="cursor:pointer" onclick="sortContratos('faturamento')">Faturamento <span id="sortContratos-faturamento">↕</span></th><th style="cursor:pointer" onclick="sortContratos('mc_valor')">MC (R$) <span id="sortContratos-mc_valor">↕</span></th><th style="cursor:pointer" onclick="sortContratos('mc_pct')">MC (%) <span id="sortContratos-mc_pct">↕</span></th><th style="cursor:pointer" onclick="sortContratos('pvs')">PVs <span id="sortContratos-pvs">↕</span></th><th style="cursor:pointer" onclick="sortContratos('status_ata_key')">Ata <span id="sortContratos-status_ata_key">↕</span></th><th style="cursor:pointer" onclick="sortContratos('situacao')">Situação <span id="sortContratos-situacao">↕</span></th></tr></thead>
         <tbody id="contratosTbody"></tbody>
       </table>
     </div>
@@ -901,6 +903,7 @@ let _clientesAno = '2026';
 let _contratosAno = '2026';
 let _contratosStatus = 'todos';
 let _contratosExpanded = new Set();
+let _contratosSort = {col:'faturamento',asc:false};
 let _pendentesData = [];
 let _pendentesSort = {col:'dias',asc:false};
 let _pendentesFilter = {produto:'',categoria:'',marca:'',tipo:''};
@@ -2532,6 +2535,43 @@ function filterContratosStatus(v){
   _contratosStatus = v||'todos';
   renderContratos();
 }
+function sortContratos(col){
+  if(_contratosSort.col===col) _contratosSort.asc=!_contratosSort.asc;
+  else _contratosSort={col,asc:(col==='contrato'||col==='cliente_principal'||col==='status_ata_key'||col==='situacao')};
+  renderContratos();
+}
+function getContratoSituacaoSort(row){
+  if(num(row.mc_valor||0)<0) return '1-prejuizo';
+  if(num(row.mc_valor||0)>0) return '3-lucro';
+  return '2-neutro';
+}
+function sortContratoRows(rows){
+  const {col,asc}=_contratosSort;
+  const sorted=[...rows].sort((a,b)=>{
+    let va, vb;
+    if(col==='situacao'){
+      va=getContratoSituacaoSort(a);
+      vb=getContratoSituacaoSort(b);
+      return asc?va.localeCompare(vb,'pt-BR'):vb.localeCompare(va,'pt-BR');
+    }
+    if(col==='contrato'||col==='cliente_principal'||col==='status_ata_key'){
+      va=String(a[col]??'');
+      vb=String(b[col]??'');
+      return asc?va.localeCompare(vb,'pt-BR'):vb.localeCompare(va,'pt-BR');
+    }
+    va=num(a[col]||0);
+    vb=num(b[col]||0);
+    return asc?va-vb:vb-va;
+  });
+  return sorted;
+}
+function syncContratosSortIndicators(){
+  ['contrato','cliente_principal','total_contrato','consumo_valor','saldo_consumir','faturamento','mc_valor','mc_pct','pvs','status_ata_key','situacao'].forEach(col=>{
+    const el=document.getElementById(`sortContratos-${col}`);
+    if(!el) return;
+    el.textContent=_contratosSort.col===col?(_contratosSort.asc?'↑':'↓'):'↕';
+  });
+}
 function getContratoSituacaoMeta(mc){
   if(mc<0) return {label:'Prejuízo',cls:'badge-red',color:C.red};
   if(mc>0) return {label:'Lucro',cls:'badge-green',color:C.green};
@@ -2639,6 +2679,7 @@ function renderContratos(){
     const textOk=!q||normTxt(r.contrato).includes(q)||normTxt(r.cliente_principal).includes(q);
     return statusOk&&textOk;
   });
+  const sortedRows=sortContratoRows(rows);
   const resumo=summarizeContratoRows(rows);
   const totalContratos=portfolioStatusCounts[_contratosStatus]??portfolioStatusCounts.todos??0;
   const statusLabel=getContratoAtaMeta(_contratosStatus).label;
@@ -2652,10 +2693,11 @@ function renderContratos(){
   });
   const statusSel=document.getElementById('filterContratosStatus');
   if(statusSel && statusSel.value!==_contratosStatus) statusSel.value=_contratosStatus;
+  syncContratosSortIndicators();
   document.getElementById('subtitleContratosMix').textContent=`Contratos com movimento · ${statusLabel} · ${lbl}`;
   document.getElementById('subtitleContratosHighlights').textContent='Melhores e piores resultados do recorte · '+lbl;
   document.getElementById('subtitleContratosTabela').textContent=`Ranking detalhado dos contratos com movimento · ${statusLabel} · ${lbl}`;
-  document.getElementById('contratosCount').textContent=`${rows.length} com movimento · ${totalContratos} contrato${totalContratos!==1?'s':''} na carteira`;
+  document.getElementById('contratosCount').textContent=`${sortedRows.length} com movimento · ${totalContratos} contrato${totalContratos!==1?'s':''} na carteira`;
 
   document.getElementById('kpiContratos').innerHTML=
     kpiCard('navy','🧾','Total na Carteira',String(totalContratos),`${rows.length} com movimento neste recorte`,'badge-navy',String(totalContratos))+
@@ -2684,7 +2726,7 @@ function renderContratos(){
   document.getElementById('contratosLucroPanel').innerHTML=renderContratoHighlights(lucroRows,'lucro');
   document.getElementById('contratosPrejuizoPanel').innerHTML=renderContratoHighlights(prejuizoRows,'prejuizo');
 
-  document.getElementById('contratosTbody').innerHTML=rows.length?rows.map(row=>{
+  document.getElementById('contratosTbody').innerHTML=sortedRows.length?sortedRows.map(row=>{
     const rid='ctr-'+ano+'-'+contratoDomId(row.contrato);
     const opened=_contratosExpanded.has(rid);
     const situacao=getContratoSituacaoMeta(row.mc_valor);
