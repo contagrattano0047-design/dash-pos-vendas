@@ -3502,10 +3502,12 @@ function parseSheet(rows, contratosRows=[]){
       const key=contratoLinkPart(r['Chave']||'');
       const status=String(r['STATUS']||'').trim()||'Sem cadastro';
       const contractCode=getAtaNumero(r);
+      const contractKey=hasContractId(contractCode)?contratoLinkPart(contractCode):'';
       if(key){
         itemMap[key]={
           key,
           ata_numero:contractCode,
+          ata_key:contractKey,
           total:toN(r['R$ TOTAL']||0),
           consumo:toN(r['CONSUMO (R$)']||0),
           saldo:toN(r['Saldo a Empenhar R$']||0),
@@ -3513,8 +3515,19 @@ function parseSheet(rows, contratosRows=[]){
         };
       }
       if(!hasContractId(contractCode)) return;
-      const contractKey=contratoLinkPart(contractCode);
-      if(!contractMap[contractKey]) contractMap[contractKey]={statuses:new Set(),ano:contratoAnoCodigo(contractCode)||contratoAnoCodigo(String(r['Nª DA ATA']||''))};
+      if(!contractMap[contractKey]) contractMap[contractKey]={
+        ata_numero:contractCode,
+        total:0,
+        consumo:0,
+        saldo:0,
+        statuses:new Set(),
+        itens_total:0,
+        ano:contratoAnoCodigo(contractCode)||contratoAnoCodigo(String(r['Nª DA ATA']||''))
+      };
+      contractMap[contractKey].total+=toN(r['R$ TOTAL']||0);
+      contractMap[contractKey].consumo+=toN(r['CONSUMO (R$)']||0);
+      contractMap[contractKey].saldo+=toN(r['Saldo a Empenhar R$']||0);
+      contractMap[contractKey].itens_total+=1;
       contractMap[contractKey].statuses.add(status);
     });
     const blank=()=>({todos:0,vigente:0,encerrada:0,misto:0,sem_cadastro:0});
@@ -3528,7 +3541,7 @@ function parseSheet(rows, contratosRows=[]){
         counts[entry.ano][statusKey]+=1;
       }
     });
-    return {itemMap,counts};
+    return {itemMap,contractMap,counts};
   }
   const telaStats=telaContratoStats(contratosRows||[]);
 
@@ -3539,6 +3552,8 @@ function parseSheet(rows, contratosRows=[]){
       if(!hasContractId(rawContrato)) return;
       const linked = contratoKeyVariants(rawContrato,r['UASG']||'',r['Item PE']||r['ITEM']||'').map(k=>telaStats.itemMap[k]).find(Boolean);
       const contrato=(linked?.ata_numero && hasContractId(linked.ata_numero)) ? String(linked.ata_numero).trim() : rawContrato;
+      const contratoKey=contratoLinkPart(contrato);
+      const ataSummary=telaStats.contractMap?.[contratoKey]||null;
       if(!cMap[contrato]) cMap[contrato]={contrato,faturamento:0,mc_valor:0,pvs:new Set(),clientes:{},valor_entregue:0,valor_pendente:0,total_contrato:0,consumo_valor:0,saldo_consumir:0,statuses:new Set(),itemLinks:new Set(),pvMap:{}};
       const val=toN(r['Total']||0);
       const mc=toN(r['MC ($)']||0);
@@ -3556,9 +3571,12 @@ function parseSheet(rows, contratosRows=[]){
       if(linked && !cMap[contrato].itemLinks.has(linked.key)){
         cMap[contrato].itemLinks.add(linked.key);
         cMap[contrato].statuses.add(linked.status);
-        cMap[contrato].total_contrato+=linked.total;
-        cMap[contrato].consumo_valor+=linked.consumo;
-        cMap[contrato].saldo_consumir+=linked.saldo;
+      }
+      if(ataSummary){
+        cMap[contrato].statuses=new Set([...(cMap[contrato].statuses||[]), ...ataSummary.statuses]);
+        cMap[contrato].total_contrato=ataSummary.total;
+        cMap[contrato].consumo_valor=ataSummary.consumo;
+        cMap[contrato].saldo_consumir=ataSummary.saldo;
       }
     });
     const rows=Object.values(cMap).map(row=>{
