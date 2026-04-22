@@ -1180,13 +1180,21 @@ function getItemActiveScenario(item){
 }
 function getItemComparedMetrics(item){
   const activeScenario=getItemActiveScenario(item);
+  const baseInputs=deriveSimInputs(item);
   if(!activeScenario){
-    return {valor:num(item?.valor||0),mc_valor:num(item?.mc_valor||0),has_compare:false,scenario_name:''};
+    return {
+      valor:num(item?.valor||0),
+      mc_valor:num(item?.mc_valor||0),
+      custo_un:num(baseInputs.custo_un||0),
+      has_compare:false,
+      scenario_name:''
+    };
   }
-  const calc=calcSimScenario(activeScenario.inputs||deriveSimInputs(item));
+  const calc=calcSimScenario(activeScenario.inputs||baseInputs);
   return {
     valor:roundN(calc.total),
     mc_valor:roundN(calc.mcValor),
+    custo_un:roundN(calc.custoUn),
     has_compare:true,
     scenario_name:activeScenario.name||'Cenário'
   };
@@ -2486,13 +2494,16 @@ function renderPendentesTable(data,keepSort){
     html+=`<td style="text-align:center;font-size:11px;color:var(--gray-400)"><span class="compare-note ${r._has_compare?'active':''}">${compareNote}</span></td></tr>`;
 
     html+=`<tr class="expand-detail" id="${rid}"><td colspan="12"><div class="itens-wrapper">`;
-    html+=`<table class="itens-table"><thead><tr><th>Descrição</th><th>Marca</th><th>Categoria</th><th>Tipo</th><th style="text-align:center">Qtd</th><th>Und</th><th style="text-align:right">Valor</th><th style="text-align:right">MC $</th><th style="text-align:center">MC %</th><th style="text-align:center">Simulação</th></tr></thead><tbody>`;
+    html+=`<table class="itens-table"><thead><tr><th>Descrição</th><th>Marca</th><th>Categoria</th><th>Tipo</th><th style="text-align:center">Qtd</th><th>Und</th><th style="text-align:right">Custo un.</th><th style="text-align:right">Valor</th><th style="text-align:right">MC $</th><th style="text-align:center">MC %</th><th style="text-align:center">Simulação</th></tr></thead><tbody>`;
     r._itens.forEach(it=>{
       const iPct=it.valor>0?(it.mc_valor/it.valor*100):0;
       const originalIdx=(r.itens||[]).indexOf(it);
       const canSim=canSimulateItem(it) && originalIdx>=0;
       const activeScenario=getItemActiveScenario(it);
       const comparedItem=getItemComparedMetrics(it);
+      const itemBaseInputs=deriveSimInputs(it);
+      const itemBaseCustoUn=num(itemBaseInputs.custo_un||0);
+      const itemCompareCustoUn=comparedItem.has_compare?comparedItem.custo_un:itemBaseCustoUn;
       const itemCompareValor=comparedItem.has_compare?comparedItem.valor:it.valor;
       const itemCompareMc=comparedItem.has_compare?comparedItem.mc_valor:it.mc_valor;
       const itemComparePct=itemCompareValor>0?(itemCompareMc/itemCompareValor*100):0;
@@ -2505,6 +2516,9 @@ function renderPendentesTable(data,keepSort){
       html+=`<td style="text-align:center">${it.qtd>0?it.qtd.toLocaleString('pt-BR'):'—'}</td>`;
       html+=`<td>${it.und||'—'}</td>`;
       html+=comparedItem.has_compare
+        ? `<td style="text-align:right"><div class="metric-stack end"><div class="metric-current">${fmt(itemBaseCustoUn)}</div><div class="metric-compare pos">Cen. ${fmt(itemCompareCustoUn)}</div></div></td>`
+        : `<td style="text-align:right">${fmt(itemBaseCustoUn)}</td>`;
+      html+=comparedItem.has_compare
         ? `<td style="text-align:right"><div class="metric-stack end"><div class="metric-current" style="font-weight:600">${fmt(it.valor)}</div><div class="metric-compare pos">Cen. ${fmt(itemCompareValor)}</div></div></td>`
         : `<td style="text-align:right;font-weight:600">${fmt(it.valor)}</td>`;
       html+=comparedItem.has_compare
@@ -2516,7 +2530,7 @@ function renderPendentesTable(data,keepSort){
       html+=`<td style="text-align:center"><button class="sim-btn" type="button" ${canSim?'':"disabled title=\"Requer base da planilha\""} title="${activeScenario?`Comparando com ${activeScenario.name}`:'Abrir simulador'}" onclick='event.stopPropagation();openItemSimulator(${pvArg},${originalIdx})'>${activeScenario?'🧮 Ativo':'🧮 Simular'}</button></td>`;
       html+=`</tr>`;
     });
-    if(!r._itens.length) html+=`<tr><td colspan="10" style="text-align:center;color:var(--gray-400);padding:12px">Sem itens correspondentes ao filtro</td></tr>`;
+    if(!r._itens.length) html+=`<tr><td colspan="11" style="text-align:center;color:var(--gray-400);padding:12px">Sem itens correspondentes ao filtro</td></tr>`;
     html+=`</tbody></table></div></td></tr>`;
     return html;
   }).join('');
