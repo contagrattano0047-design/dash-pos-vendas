@@ -979,6 +979,15 @@ let _contratosSearch = '';
 let _prodCatalog = {};
 let _simModalState = {item:null,itemRef:null,baseInputs:null,scenarios:[],seq:0,activeId:''};
 const SIM_STORAGE_KEY = 'dashPosVendas.simulacoes.v1';
+const SIM_SHARED_FILE = 'dash-pos-vendas-simulacoes.json';
+let _simSharedStore = {};
+let _simSharedTarget = null;
+let _simSharedSyncTimer = null;
+let _simSharedPendingItem = null;
+let _simSharedSyncBusy = false;
+let _simSharedSyncQueued = false;
+let _simSharedRefreshTimer = null;
+let _simSharedWarned = false;
 
 // -------------------------------------------------------
 // FORMATTERS
@@ -1198,6 +1207,55 @@ function saveSimStorage(store){
     localStorage.setItem(SIM_STORAGE_KEY, JSON.stringify(store||{}));
   }catch(e){}
 }
+function getSimEntryUpdatedMs(entry){
+  const raw=entry?.updated_at||entry?.updatedAt||'';
+  const parsed=Date.parse(raw);
+  return isNaN(parsed)?0:parsed;
+}
+function normalizeSimEntry(entry){
+  return {
+    sim_saved:Array.isArray(entry?.sim_saved)?entry.sim_saved.map(cloneScenarioData):[],
+    sim_active_id:String(entry?.sim_active_id||''),
+    updated_at:String(entry?.updated_at||entry?.updatedAt||''),
+    updated_by:String(entry?.updated_by||entry?.updatedBy||'')
+  };
+}
+function hasSimEntry(entry){
+  return !!(entry?.sim_active_id || (Array.isArray(entry?.sim_saved)&&entry.sim_saved.length));
+}
+function mergeSimStores(...stores){
+  const merged={};
+  stores.forEach(store=>{
+    Object.entries(store||{}).forEach(([key,entry])=>{
+      const normalized=normalizeSimEntry(entry);
+      if(!hasSimEntry(normalized)) return;
+      const current=merged[key];
+      if(!current || getSimEntryUpdatedMs(normalized)>=getSimEntryUpdatedMs(current)){
+        merged[key]=normalized;
+      }
+    });
+  });
+  return merged;
+}
+function getEffectiveSimStore(){
+  return mergeSimStores(_simSharedStore,getSimStorage());
+}
+function getSimUserLabel(){
+  try{
+    const account=msalInstance?getActiveMsalAccount(msalInstance):null;
+    return account?.username||account?.name||'';
+  }catch(e){
+    return '';
+  }
+}
+function buildSimStorageEntry(item){
+  return {
+    sim_saved:Array.isArray(item?.sim_saved)?item.sim_saved.map(cloneScenarioData):[],
+    sim_active_id:String(item?.sim_active_id||''),
+    updated_at:new Date().toISOString(),
+    updated_by:getSimUserLabel()
+  };
+}
 function getSimItemStorageKey(item){
   if(!item) return '';
   return [
@@ -1212,27 +1270,148 @@ function persistItemSimStorage(item){
   const key=getSimItemStorageKey(item);
   if(!key) return;
   const store=getSimStorage();
-  const saved=Array.isArray(item?.sim_saved)?item.sim_saved.map(cloneScenarioData):[];
-  const activeId=String(item?.sim_active_id||'');
-  if(saved.length||activeId){
-    store[key]={sim_saved:saved,sim_active_id:activeId};
+  const entry=buildSimStorageEntry(item);
+  if(hasSimEntry(entry)){
+    store[key]=entry;
   }else{
     delete store[key];
   }
   saveSimStorage(store);
 }
 function hydratePersistedSimulations(data){
-  const store=getSimStorage();
+  const store=getEffectiveSimStore();
   (data?.pendentes_list||[]).forEach(row=>{
     (row?.itens||[]).forEach(item=>{
       const key=getSimItemStorageKey({...item,pv:row.pv,empenho:row.empenho,uasg:row.uasg});
-      const saved=store[key];
+      const saved=store[key]?normalizeSimEntry(store[key]):null;
       if(!saved) return;
-      item.sim_saved=Array.isArray(saved.sim_saved)?saved.sim_saved.map(cloneScenarioData):[];
-      item.sim_active_id=String(saved.sim_active_id||'');
+      item.sim_saved=saved.sim_saved;
+      item.sim_active_id=saved.sim_active_id;
     });
   });
   return data;
+}
+function configureSimShareTarget(meta,graphBase){
+  const parent=meta?.parentReference||{};
+  if(!parent.driveId||!parent.id){
+    _simSharedTarget=null;
+    return;
+  }
+  _simSharedTarget={graphBase,driveId:parent.driveId,parentId:parent.id,fileName:SIM_SHARED_FILE};
+}
+function getSimSharedFileUrl(){
+  if(!_simSharedTarget) return '';
+  const t=_simSharedTarget;
+  return `${t.graphBase}/drives/${encodeURIComponent(t.driveId)}/items/${encodeURIComponent(t.parentId)}:/${encodeURIComponent(t.fileName)}:/content`;
+}
+async function loadSharedSimStore(headers){
+  if(!_simSharedTarget||!headers){
+    _simSharedStore={};
+    return _simSharedStore;
+  }
+  try{
+    const resp=await fetch(getSimSharedFileUrl(),{headers,cache:'no-store'});
+    if(resp.status===404){
+      _simSharedStore={};
+      return _simSharedStore;
+    }
+    if(!resp.ok){
+      console.warn('Nao foi possivel ler simulacoes compartilhadas:', resp.status);
+      return _simSharedStore;
+    }
+    const payload=await resp.json().catch(()=>({}));
+    const store=payload?.items&&typeof payload.items==='object'?payload.items:payload;
+    _simSharedStore=mergeSimStores(store);
+    return _simSharedStore;
+  }catch(e){
+    console.warn('Falha ao ler simulacoes compartilhadas:', e);
+    return _simSharedStore;
+  }
+}
+async function saveSharedSimStore(store){
+  if(!_simSharedTarget) return false;
+  const token=await getToken();
+  const resp=await fetch(getSimSharedFileUrl(),{
+    method:'PUT',
+    headers:{
+      Authorization:'Bearer '+token,
+      'Content-Type':'application/json'
+    },
+    body:JSON.stringify({version:1,updated_at:new Date().toISOString(),items:store||{}})
+  });
+  if(!resp.ok){
+    const err=await resp.json().catch(()=>({}));
+    throw new Error(err.error?.message||('Erro ao sincronizar simulacao: '+resp.status));
+  }
+  return true;
+}
+function markSharedSimWarning(error){
+  console.warn('Simulacao salva localmente, mas nao sincronizada:', error);
+  if(_simSharedWarned) return;
+  _simSharedWarned=true;
+  const hint=document.getElementById('statusHint');
+  if(hint){
+    hint.textContent='Simulacao salva neste navegador, mas ainda nao sincronizou no SharePoint. Reconecte e aceite a permissao de edicao se solicitado.';
+  }
+}
+function queueSharedSimSync(item,delay=900){
+  if(!_simSharedTarget) return;
+  _simSharedPendingItem=clone(item);
+  if(_simSharedSyncTimer) window.clearTimeout(_simSharedSyncTimer);
+  _simSharedSyncTimer=window.setTimeout(flushSharedSimSync,delay);
+}
+async function flushSharedSimSync(){
+  if(_simSharedSyncBusy){
+    _simSharedSyncQueued=true;
+    return;
+  }
+  const item=_simSharedPendingItem;
+  if(!item) return;
+  _simSharedPendingItem=null;
+  _simSharedSyncBusy=true;
+  try{
+    const key=getSimItemStorageKey(item);
+    if(!key) return;
+    const token=await getToken();
+    const headers={Authorization:'Bearer '+token};
+    const remote=await loadSharedSimStore(headers);
+    const next=mergeSimStores(remote,getSimStorage());
+    const entry=buildSimStorageEntry(item);
+    if(hasSimEntry(entry)) next[key]=entry;
+    else delete next[key];
+    await saveSharedSimStore(next);
+    _simSharedStore=next;
+    saveSimStorage(next);
+    _simSharedWarned=false;
+  }catch(e){
+    markSharedSimWarning(e);
+  }finally{
+    _simSharedSyncBusy=false;
+    if(_simSharedSyncQueued||_simSharedPendingItem){
+      _simSharedSyncQueued=false;
+      flushSharedSimSync();
+    }
+  }
+}
+async function refreshSharedSimulationsFromSharePoint(){
+  if(!_simSharedTarget||!_msalToken||_simModalState.itemRef) return;
+  try{
+    _msalToken=await getToken();
+    const before=JSON.stringify(_simSharedStore||{});
+    await loadSharedSimStore({Authorization:'Bearer '+_msalToken});
+    if(JSON.stringify(_simSharedStore||{})!==before){
+      D=hydratePersistedSimulations(D);
+      if(_pendentesData.length) renderPendentesTable(_pendentesData,true);
+    }
+  }catch(e){
+    console.warn('Falha ao atualizar simulacoes compartilhadas:', e);
+  }
+}
+function scheduleSharedSimRefresh(){
+  if(_simSharedRefreshTimer) window.clearInterval(_simSharedRefreshTimer);
+  _simSharedRefreshTimer=null;
+  if(!_simSharedTarget) return;
+  _simSharedRefreshTimer=window.setInterval(refreshSharedSimulationsFromSharePoint,60000);
 }
 function getItemSavedScenarios(item){
   return Array.isArray(item?.sim_saved)?item.sim_saved.map(cloneScenarioData):[];
@@ -1296,15 +1475,17 @@ function syncSimScenariosToItem(){
   const hasActive=!!(activeId&&_simModalState.itemRef.sim_saved.some(s=>s.id===activeId));
   _simModalState.itemRef.sim_active_id=hasActive?activeId:'';
 }
-function persistSimModalState(renderTable){
+function persistSimModalState(renderTable,sharedDelay=900){
   syncSimScenariosToItem();
   if(_simModalState.itemRef){
-    persistItemSimStorage({
+    const itemForStorage={
       ..._simModalState.itemRef,
       pv:_simModalState.item?.pv,
       empenho:_simModalState.item?.empenho,
       uasg:_simModalState.item?.uasg
-    });
+    };
+    persistItemSimStorage(itemForStorage);
+    queueSharedSimSync(itemForStorage,sharedDelay);
   }
   if(renderTable) renderPendentesTable(_pendentesData,true);
 }
@@ -1319,13 +1500,13 @@ function createSimScenario(inputs,name,id){
 function applySimScenarioToItem(id){
   if(!_simModalState.itemRef) return;
   _simModalState.activeId=id;
-  persistSimModalState(true);
+  persistSimModalState(true,0);
   renderSimModal();
 }
 function clearSimAppliedScenario(){
   if(!_simModalState.itemRef) return;
   _simModalState.activeId='';
-  persistSimModalState(true);
+  persistSimModalState(true,0);
   renderSimModal();
 }
 function openItemSimulator(pv,itemIdx){
@@ -1362,14 +1543,14 @@ function addSimScenario(){
   if(!_simModalState.baseInputs) return;
   const last=_simModalState.scenarios[_simModalState.scenarios.length-1];
   _simModalState.scenarios.push(createSimScenario(last?last.inputs:_simModalState.baseInputs));
-  persistSimModalState(false);
+  persistSimModalState(false,900);
   renderSimModal();
 }
 function resetSimScenario(id){
   const scenario=getSimScenario(id);
   if(!scenario||!_simModalState.baseInputs) return;
   scenario.inputs=clone(_simModalState.baseInputs);
-  persistSimModalState(_simModalState.activeId===id);
+  persistSimModalState(_simModalState.activeId===id,_simModalState.activeId===id?0:900);
   renderSimModal();
 }
 function removeSimScenario(id){
@@ -1377,7 +1558,7 @@ function removeSimScenario(id){
   const wasActive=_simModalState.activeId===id;
   _simModalState.scenarios=_simModalState.scenarios.filter(s=>s.id!==id);
   if(_simModalState.activeId===id) _simModalState.activeId='';
-  persistSimModalState(wasActive);
+  persistSimModalState(wasActive,wasActive?0:900);
   renderSimModal();
 }
 function isIncompleteSimNumber(value){
@@ -1406,7 +1587,7 @@ function updateSimScenarioField(id,key,value,isPct){
   scenario.raw_inputs[key]=value;
   if(isIncompleteSimNumber(value)) return;
   applySimScenarioFieldValue(id,key,value,isPct);
-  persistSimModalState(_simModalState.activeId===id);
+  persistSimModalState(_simModalState.activeId===id,900);
   renderSimScenarioOutputs(id);
 }
 function commitSimScenarioField(id,key,value,isPct){
@@ -1420,7 +1601,7 @@ function commitSimScenarioField(id,key,value,isPct){
   }
   applySimScenarioFieldValue(id,key,value,isPct);
   delete scenario.raw_inputs[key];
-  persistSimModalState(_simModalState.activeId===id);
+  persistSimModalState(_simModalState.activeId===id,_simModalState.activeId===id?0:900);
   renderSimScenarioOutputs(id);
 }
 function renderSimDelta(calc,base){
@@ -3184,7 +3365,7 @@ const msalConfig = {
   },
 };
 
-const GRAPH_SCOPES = ['Files.Read', 'Sites.Read.All'];
+const GRAPH_SCOPES = ['Files.ReadWrite.All', 'Sites.Read.All'];
 const SHARE_URL = 'https://grattanomarck.sharepoint.com/:x:/s/SistemadeArquivosGrattanoMarck/IQDOUFT6aPpnSao_qNNOh008AeAyg0tqNPcoI8_c_6pNrQ4?e=DO0hdT';
 
 let msalInstance = null;
@@ -3230,7 +3411,7 @@ function needsMsalInteraction(error){
 
 function getFriendlyAuthError(error){
   if(needsMsalInteraction(error)){
-    return 'Sua sessao expirou. Clique novamente para entrar com Microsoft.';
+    return 'Entre novamente com Microsoft e aceite a permissao solicitada para ler a planilha e sincronizar simulacoes.';
   }
   return error?.message || 'Nao foi possivel concluir o login.';
 }
@@ -3411,6 +3592,8 @@ async function readAndRender(){
     }
     const meta = await metaResp.json();
     const fileName = meta.name || 'Controle Geral.xlsx';
+    configureSimShareTarget(meta, graphBase);
+    const sharedSimPromise = loadSharedSimStore(headers);
 
     let dlResp;
     if(meta['@microsoft.graph.downloadUrl']){
@@ -3429,9 +3612,11 @@ async function readAndRender(){
     if(!rows.length) throw new Error('Aba "Resultado Vendas" nao encontrada ou vazia.');
 
     setLoading(true,'Calculando indicadores...');
+    await sharedSimPromise;
     D = hydratePersistedSimulations(parseSheet(rows, contratosRows));
     closeSimModal();
     renderAll();
+    scheduleSharedSimRefresh();
     setLinked(fileName);
     document.getElementById('firstRun').classList.add('hidden');
     try{localStorage.setItem('dashLastFile', fileName);}catch(e){}
@@ -3445,6 +3630,9 @@ async function readAndRender(){
 
 function usePreloaded(){
   closeSimModal();
+  _simSharedTarget=null;
+  _simSharedStore={};
+  scheduleSharedSimRefresh();
   D=hydratePersistedSimulations(JSON.parse(JSON.stringify(DEFAULT_DATA)));renderAll();
   document.getElementById('firstRun').classList.add('hidden');
   document.getElementById('fileDot').className='file-dot none';
