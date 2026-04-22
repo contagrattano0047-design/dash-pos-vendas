@@ -26,12 +26,12 @@
 body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--navy);min-height:100vh}
 
 /* HEADER */
-.header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,var(--navy-light) 100%);padding:20px 36px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--gold);position:sticky;top:0;z-index:100;box-shadow:var(--shadow-lg)}
-.header-left{display:flex;align-items:center;gap:14px}
+.header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,var(--navy-light) 100%);padding:20px 36px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:3px solid var(--gold);position:sticky;top:0;z-index:100;box-shadow:var(--shadow-lg)}
+.header-left{display:flex;align-items:center;gap:14px;min-width:0}
 .logo-mark{width:42px;height:42px;background:var(--gold);border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);font-weight:bold;flex-shrink:0}
-.header-title h1{font-family:'DM Serif Display',serif;font-size:19px;font-weight:400;color:var(--white)}
+.header-title h1{font-family:'DM Serif Display',serif;font-size:19px;font-weight:400;color:var(--white);line-height:1.1}
 .header-title p{font-size:11px;color:var(--gold-light);margin-top:2px;letter-spacing:1px;text-transform:uppercase}
-.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header-right{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 .last-update{font-size:12px;color:var(--gray-400)}
 #lastUpdateTime{color:var(--gold-light);font-weight:600}
 
@@ -69,8 +69,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .status-hint{font-size:11px;color:var(--gray-600);font-style:italic}
 
 /* TABS */
-.tabs-wrapper{background:var(--navy-mid);padding:0 36px;display:flex;gap:2px;border-top:1px solid rgba(255,255,255,.05)}
-.tab{padding:12px 20px;font-size:13px;font-weight:500;color:var(--gray-400);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap}
+.tabs-wrapper{background:var(--navy-mid);padding:0 36px;display:flex;gap:2px;border-top:1px solid rgba(255,255,255,.05);overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.tab{padding:12px 20px;font-size:13px;font-weight:500;color:var(--gray-400);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap;flex:0 0 auto;scroll-snap-align:start}
 .tab:hover{color:var(--white)}
 .tab.active{color:var(--gold-light);border-bottom-color:var(--gold);font-weight:600}
 
@@ -81,7 +81,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .section-header{margin-bottom:20px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .section-title{font-family:'DM Serif Display',serif;font-size:24px;font-weight:400;color:var(--navy)}
 .section-subtitle{font-size:13px;color:var(--gray-600);margin-top:3px}
-.header-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.header-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;min-width:0}
 .micro-status{font-size:11px;color:var(--gray-400);white-space:nowrap}
 
 /* RECORTE TAG */
@@ -129,6 +129,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .data-table td{padding:9px 12px;border-bottom:1px solid var(--gray-100);color:var(--navy);vertical-align:middle}
 .data-table tr:last-child td{border-bottom:none}
 .data-table tr:hover td{background:var(--gray-50)}
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.table-scroll.tall{max-height:520px;overflow-y:auto}
+.table-scroll.compact>.data-table{min-width:620px}
+.table-scroll.wide>.data-table{min-width:940px}
+.table-scroll.xwide>.data-table{min-width:1280px}
+.table-scroll th{white-space:nowrap}
+.table-scroll::-webkit-scrollbar,.tabs-wrapper::-webkit-scrollbar,.pill-group::-webkit-scrollbar,.contract-pv-wrap::-webkit-scrollbar,.itens-wrapper::-webkit-scrollbar,.header-right::-webkit-scrollbar{height:8px;width:8px}
+.table-scroll::-webkit-scrollbar-thumb,.tabs-wrapper::-webkit-scrollbar-thumb,.pill-group::-webkit-scrollbar-thumb,.contract-pv-wrap::-webkit-scrollbar-thumb,.itens-wrapper::-webkit-scrollbar-thumb,.header-right::-webkit-scrollbar-thumb{background:rgba(19,34,64,.26);border-radius:999px}
 
 /* INLINE BADGES */
 .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
@@ -192,8 +200,64 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 @media(max-width:1100px){
   .main{padding:18px}.header{padding:16px 18px}.status-bar{padding:9px 18px}.tabs-wrapper{padding:0 18px}
   .grid-2{grid-template-columns:1fr}.grid-3{grid-template-columns:1fr 1fr}.grid-2-1,.grid-1-2{grid-template-columns:1fr}
+  .cal-nav{flex-wrap:wrap}
 }
-@media(max-width:700px){.grid-3{grid-template-columns:1fr}.kpi-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){
+  .header{position:static;align-items:flex-start}
+  .header-left,.header-right{width:100%}
+  .header-right{justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}
+  .last-update,.header-right .btn{flex:0 0 auto}
+  .status-bar{flex-direction:column;align-items:flex-start}
+  .section-header{gap:10px}
+  .section-header>*{max-width:100%}
+  .header-tools{width:100%;justify-content:flex-start}
+  .header-tools>*{max-width:100%}
+  #searchPendentes,#searchContratos,#filterContratosStatus{width:100%!important}
+  .pend-filter-bar input,.pend-filter-bar select{min-width:0;width:100%}
+  .pend-filter-bar .btn-clear-filters{width:100%}
+  .cal-nav{width:100%;justify-content:flex-start;gap:8px}
+  .cal-month-label{order:-1;flex:1 0 100%;min-width:0;text-align:left}
+  .cal-nav-btn{flex:1 1 calc(33.333% - 8px);text-align:center}
+  .table-scroll.tall{max-height:none;overflow-y:visible}
+  .contract-pv-wrap,.itens-wrapper{padding-left:12px;padding-right:12px}
+}
+@media(max-width:700px){
+  .main{padding:14px 12px}
+  .header,.status-bar{padding-left:12px;padding-right:12px}
+  .tabs-wrapper{padding:0 12px}
+  .header-left{gap:12px}
+  .logo-mark{width:38px;height:38px;font-size:17px}
+  .header-title h1{font-size:17px}
+  .header-title p{font-size:10px;line-height:1.4}
+  .btn{padding:8px 12px}
+  .section-title{font-size:20px}
+  .section-subtitle{font-size:12px}
+  .kpi-grid,.grid-3{grid-template-columns:1fr}
+  .kpi-card{padding:16px}
+  .card-header{padding:14px 16px 0}
+  .card-body{padding:14px 16px}
+  .chart-wrap{padding:10px 16px 16px}
+  .compare-row{flex-direction:column}
+  .stat-row{flex-direction:column}
+  .stat-item{border-right:none;border-bottom:1px solid var(--gray-200)}
+  .stat-item:last-child{border-bottom:none}
+  .pill-group{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .pill{flex:0 0 auto}
+  .data-table{font-size:12px}
+  .data-table th,.data-table td{padding:8px 10px}
+  .table-scroll.compact>.data-table{min-width:640px}
+  .table-scroll.wide>.data-table{min-width:880px}
+  .table-scroll.xwide>.data-table{min-width:1280px}
+  .contract-pv-table{min-width:760px}
+  .itens-table{min-width:920px}
+  .itens-wrapper{padding-left:0;padding-right:0}
+  .micro-status{white-space:normal}
+}
+@media(max-width:520px){
+  .first-run-box{padding:28px 22px}
+  .sim-modal{padding:8px}
+  .cal-nav-btn{flex:1 1 calc(50% - 8px)}
+}
 
 /* CALENDAR */
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:16px}
@@ -233,19 +297,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .expand-detail{display:none}
 .expand-detail.open{display:table-row}
 .expand-detail td{padding:0!important;border-bottom:2px solid var(--gold)!important}
-.contract-pv-wrap{padding:14px 18px;background:linear-gradient(180deg,#f9fbfe 0%,#ffffff 100%)}
+.contract-pv-wrap{padding:14px 18px;background:linear-gradient(180deg,#f9fbfe 0%,#ffffff 100%);overflow-x:auto;-webkit-overflow-scrolling:touch}
 .contract-pv-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
 .contract-pv-title{font-size:13px;font-weight:700;color:var(--navy)}
 .contract-pv-count{font-size:11px;color:var(--gray-500);white-space:nowrap}
-.contract-pv-table{width:100%;border-collapse:collapse}
+.contract-pv-table{width:100%;min-width:780px;border-collapse:collapse}
 .contract-pv-table th{text-align:left;padding:7px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--gray-400);background:#f2f5fa;border-bottom:1px solid var(--gray-200)}
 .contract-pv-table td{padding:8px 10px;border-bottom:1px solid var(--gray-100);font-size:12px;color:var(--navy)}
 .contract-pv-table tr:last-child td{border-bottom:none}
 .contract-pv-empty{padding:18px 10px;text-align:center;font-size:13px;color:var(--gray-400)}
 .contract-cell-main{font-weight:700;color:var(--navy)}
 .contract-cell-sub{font-size:10px;color:var(--gray-400);margin-top:3px}
-.itens-wrapper{padding:8px 12px 12px 40px;background:var(--gray-50)}
-.itens-table{width:100%;border-collapse:collapse;font-size:12px}
+.itens-wrapper{padding:8px 12px 12px 40px;background:var(--gray-50);overflow-x:auto;-webkit-overflow-scrolling:touch}
+.itens-table{width:100%;min-width:960px;border-collapse:collapse;font-size:12px}
 .itens-table th{text-align:left;padding:5px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gray-400);background:var(--gray-100);border-bottom:1px solid var(--gray-200)}
 .itens-table td{padding:6px 10px;border-bottom:1px solid var(--gray-200);color:var(--gray-600)}
 .itens-table tr:last-child td{border-bottom:none}
@@ -529,7 +593,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   </div>
   <div class="card">
     <div class="card-header"><div class="card-title">🚨 Empenhos Críticos — Mais Antigos</div><div class="card-subtitle">Por que ainda está na casa?</div></div>
-    <div style="overflow-x:auto">
+    <div class="table-scroll compact">
       <table class="data-table">
         <thead><tr><th>PV</th><th>Cliente</th><th>Nº Empenho</th><th>UASG</th><th>Valor</th><th>Dias na Casa</th><th>Prev. Entrega</th><th>Risco</th></tr></thead>
         <tbody id="criticosTbody"></tbody>
@@ -606,7 +670,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
       <button class="btn-clear-filters" onclick="clearPendentesFilters()">Limpar</button>
     </div>
 
-    <div style="overflow-x:auto;max-height:520px;overflow-y:auto">
+    <div class="table-scroll tall wide">
       <table class="data-table">
         <thead style="position:sticky;top:0;z-index:1">
           <tr>
@@ -660,7 +724,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   </div>
   <div class="card">
     <div class="card-header"><div class="card-title">Ranking Detalhado — Top Clientes</div><div class="card-subtitle" id="subtitleClientesTabela">—</div></div>
-    <div style="overflow-x:auto">
+    <div class="table-scroll compact">
       <table class="data-table">
         <thead><tr><th>#</th><th>Cliente</th><th>Faturamento</th><th>MC (R$)</th><th>MC (%)</th><th>Part.</th></tr></thead>
         <tbody id="clientesTbody"></tbody>
@@ -736,7 +800,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
         <span id="contratosCount" style="font-size:12px;color:var(--gray-400);white-space:nowrap"></span>
       </div>
     </div>
-    <div style="overflow-x:auto">
+    <div class="table-scroll xwide">
       <table class="data-table">
         <thead><tr><th style="width:30px"></th><th style="cursor:pointer" onclick="sortContratos('contrato')">Contrato <span id="sortContratos-contrato">↕</span></th><th style="cursor:pointer" onclick="sortContratos('cliente_principal')">Cliente Principal <span id="sortContratos-cliente_principal">↕</span></th><th style="cursor:pointer" onclick="sortContratos('total_contrato')">Valor do Contrato <span id="sortContratos-total_contrato">↕</span></th><th style="cursor:pointer" onclick="sortContratos('consumo_valor')">Consumo <span id="sortContratos-consumo_valor">↕</span></th><th style="cursor:pointer" onclick="sortContratos('saldo_consumir')">Saldo <span id="sortContratos-saldo_consumir">↕</span></th><th style="cursor:pointer" onclick="sortContratos('faturamento')">Faturamento <span id="sortContratos-faturamento">↕</span></th><th style="cursor:pointer" onclick="sortContratos('mc_valor')">MC (R$) <span id="sortContratos-mc_valor">↕</span></th><th style="cursor:pointer" onclick="sortContratos('mc_pct')">MC (%) <span id="sortContratos-mc_pct">↕</span></th><th style="cursor:pointer" onclick="sortContratos('pvs')">PVs <span id="sortContratos-pvs">↕</span></th><th style="cursor:pointer" onclick="sortContratos('status_ata_key')">Ata <span id="sortContratos-status_ata_key">↕</span></th><th style="cursor:pointer" onclick="sortContratos('situacao')">Situação <span id="sortContratos-situacao">↕</span></th></tr></thead>
         <tbody id="contratosTbody"></tbody>
@@ -798,7 +862,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
       </div>
       <span id="previsaoWeekCount" style="font-size:12px;color:var(--gray-400);white-space:nowrap"></span>
     </div>
-    <div style="overflow-x:auto;max-height:520px;overflow-y:auto">
+    <div class="table-scroll tall wide">
       <table class="data-table" id="previsaoWeekTable">
         <thead style="position:sticky;top:0;z-index:1">
           <tr>
@@ -3398,7 +3462,18 @@ function setLinked(name){
   document.getElementById('lastUpdateTime').textContent=new Date().toLocaleString('pt-BR');
 }
 function setError(msg){document.getElementById('fileDot').className='file-dot error';document.getElementById('fileStatusText').innerHTML='Erro ao ler arquivo';document.getElementById('statusHint').textContent=msg;}
-function switchTab(view,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));el.classList.add('active');document.getElementById('view-'+view).classList.add('active');}
+function switchTab(view,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('view-'+view).classList.add('active');
+  if(window.matchMedia('(max-width:900px)').matches){
+    try{
+      el.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+      window.scrollTo({top:0,behavior:'smooth'});
+    }catch(e){}
+  }
+}
 let _printingAll = false;
 
 function syncChartsForPrint(){
