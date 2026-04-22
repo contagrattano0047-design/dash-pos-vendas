@@ -1299,7 +1299,7 @@ function configureSimShareTarget(meta,graphBase){
     _simSharedTarget=null;
     return;
   }
-  _simSharedTarget={graphBase,driveId:parent.driveId,parentId:parent.id,fileName:SIM_SHARED_FILE};
+  _simSharedTarget={graphBase,driveId:parent.driveId,parentId:parent.id,fileName:SIM_SHARED_FILE,fileId:''};
 }
 function getSimSharedFileUrl(){
   if(!_simSharedTarget) return '';
@@ -1310,6 +1310,11 @@ function getSimSharedItemUrl(){
   if(!_simSharedTarget) return '';
   const t=_simSharedTarget;
   return `${t.graphBase}/drives/${encodeURIComponent(t.driveId)}/items/${encodeURIComponent(t.parentId)}:/${encodeURIComponent(t.fileName)}:`;
+}
+function getSimSharedExactContentUrl(){
+  if(!_simSharedTarget?.fileId) return '';
+  const t=_simSharedTarget;
+  return `${t.graphBase}/drives/${encodeURIComponent(t.driveId)}/items/${encodeURIComponent(t.fileId)}/content`;
 }
 function updateSimSyncButtonState(isBusy=false,label){
   const btn=document.getElementById('btnForceSimSync');
@@ -1334,6 +1339,7 @@ async function loadSharedSimStore(headers){
       return _simSharedStore;
     }
     const meta=await metaResp.json();
+    if(_simSharedTarget) _simSharedTarget.fileId=String(meta?.id||_simSharedTarget.fileId||'');
     let resp;
     if(meta['@microsoft.graph.downloadUrl']){
       resp=await fetch(meta['@microsoft.graph.downloadUrl'],{cache:'no-store'});
@@ -1357,7 +1363,8 @@ async function loadSharedSimStore(headers){
 async function saveSharedSimStore(store,token){
   if(!_simSharedTarget) return false;
   token=token||await getToken();
-  const resp=await fetch(getSimSharedFileUrl(),{
+  const saveUrl=getSimSharedExactContentUrl()||getSimSharedFileUrl();
+  const resp=await fetch(saveUrl,{
     method:'PUT',
     headers:{
       Authorization:'Bearer '+token,
@@ -1368,6 +1375,10 @@ async function saveSharedSimStore(store,token){
   if(!resp.ok){
     const err=await resp.json().catch(()=>({}));
     throw new Error(err.error?.message||('Erro ao sincronizar simulacao: '+resp.status));
+  }
+  const payload=await resp.json().catch(()=>null);
+  if(payload?.id && _simSharedTarget){
+    _simSharedTarget.fileId=String(payload.id);
   }
   return true;
 }
