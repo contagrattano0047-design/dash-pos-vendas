@@ -2492,6 +2492,10 @@ function renderPendentesTable(data,keepSort){
       const originalIdx=(r.itens||[]).indexOf(it);
       const canSim=canSimulateItem(it) && originalIdx>=0;
       const activeScenario=getItemActiveScenario(it);
+      const comparedItem=getItemComparedMetrics(it);
+      const itemCompareValor=comparedItem.has_compare?comparedItem.valor:it.valor;
+      const itemCompareMc=comparedItem.has_compare?comparedItem.mc_valor:it.mc_valor;
+      const itemComparePct=itemCompareValor>0?(itemCompareMc/itemCompareValor*100):0;
       const pvArg=JSON.stringify(String(r.pv));
       html+=`<tr>`;
       html+=`<td class="item-desc" title="${(it.desc||'').replace(/"/g,'&quot;')}">${it.desc||'—'}</td>`;
@@ -2500,9 +2504,15 @@ function renderPendentesTable(data,keepSort){
       html+=`<td style="font-size:11px;color:var(--gray-600)">${it.tipo||'—'}</td>`;
       html+=`<td style="text-align:center">${it.qtd>0?it.qtd.toLocaleString('pt-BR'):'—'}</td>`;
       html+=`<td>${it.und||'—'}</td>`;
-      html+=`<td style="text-align:right;font-weight:600">${fmt(it.valor)}</td>`;
-      html+=`<td style="text-align:right;color:${it.mc_valor<0?'var(--red)':'var(--navy)'}">${fmt(it.mc_valor)}</td>`;
-      html+=`<td style="text-align:center"><span class="badge ${mcBadgeCls(iPct)}">${iPct.toFixed(1)}%</span></td>`;
+      html+=comparedItem.has_compare
+        ? `<td style="text-align:right"><div class="metric-stack end"><div class="metric-current" style="font-weight:600">${fmt(it.valor)}</div><div class="metric-compare pos">Cen. ${fmt(itemCompareValor)}</div></div></td>`
+        : `<td style="text-align:right;font-weight:600">${fmt(it.valor)}</td>`;
+      html+=comparedItem.has_compare
+        ? `<td style="text-align:right"><div class="metric-stack end"><div class="metric-current" style="color:${it.mc_valor<0?'var(--red)':'var(--navy)'}">${fmt(it.mc_valor)}</div><div class="metric-compare ${itemCompareMc<0?'neg':'pos'}">Cen. ${fmt(itemCompareMc)}</div></div></td>`
+        : `<td style="text-align:right;color:${it.mc_valor<0?'var(--red)':'var(--navy)'}">${fmt(it.mc_valor)}</td>`;
+      html+=comparedItem.has_compare
+        ? `<td style="text-align:center"><div class="metric-stack center"><div class="metric-current"><span class="badge ${mcBadgeCls(iPct)}">${iPct.toFixed(1)}%</span></div><div class="metric-compare ${itemComparePct>=20?'good':itemComparePct>=10?'warn':'neg'}">Cen. ${itemComparePct.toFixed(1)}%</div></div></td>`
+        : `<td style="text-align:center"><span class="badge ${mcBadgeCls(iPct)}">${iPct.toFixed(1)}%</span></td>`;
       html+=`<td style="text-align:center"><button class="sim-btn" type="button" ${canSim?'':"disabled title=\"Requer base da planilha\""} title="${activeScenario?`Comparando com ${activeScenario.name}`:'Abrir simulador'}" onclick='event.stopPropagation();openItemSimulator(${pvArg},${originalIdx})'>${activeScenario?'🧮 Ativo':'🧮 Simular'}</button></td>`;
       html+=`</tr>`;
     });
