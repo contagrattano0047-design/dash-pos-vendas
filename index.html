@@ -903,6 +903,7 @@ let _clientesAno = '2026';
 let _contratosAno = '2026';
 let _contratosStatus = 'vigente';
 let _contratosExpanded = new Set();
+let _contratoPvExpanded = new Set();
 let _contratosSort = {col:'faturamento',asc:false};
 let _pendentesData = [];
 let _pendentesSort = {col:'dias',asc:false};
@@ -997,8 +998,8 @@ function contratoAnoCodigo(v){
 }
 function contratoDomId(v){return String(v??'').replace(/[^\w.-]+/g,'_');}
 function simValue(field,val){
-  if(field.pct) return roundN(num(val)*100,4);
-  return roundN(val,4);
+  const normalized=field.pct?roundN(num(val)*100,4):roundN(val,4);
+  return normalized.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:4});
 }
 function deriveSimInputs(item){
   const sim=item?.sim||{};
@@ -2664,22 +2665,57 @@ function renderContratoPvDetail(row){
       <div class="contract-pv-count">${pvs.length} PV${pvs.length!==1?'s':''} no recorte atual</div>
     </div>
     <table class="contract-pv-table">
-      <thead><tr><th>PV</th><th>Cliente</th><th>Empenho</th><th>Valor</th><th>MC (R$)</th><th>MC (%)</th><th>Status Ent.</th></tr></thead>
+      <thead><tr><th style="width:30px"></th><th>PV</th><th>Cliente</th><th>Empenho</th><th>Valor</th><th>MC (R$)</th><th>MC (%)</th><th>Status Ent.</th></tr></thead>
       <tbody>${pvs.map(pv=>{
         const statusTxt=String(pv.status_ent||'').trim();
         const entCls=statusTxt==='Entregue'?'badge-green':statusTxt==='Pendente'?'badge-red':'badge-navy';
-        return `<tr>
-          <td><strong>${esc(pv.pv||'—')}</strong></td>
+        const rid=`ctr-pv-${contratoDomId(row.contrato)}-${contratoDomId(pv.pv)}`;
+        const opened=_contratoPvExpanded.has(rid);
+        const itens=Array.isArray(pv.itens)?pv.itens:[];
+        return `<tr class="expand-row" onclick="toggleContratoPvItems('${rid}', event)">
+          <td><span class="expand-toggle${opened?' open':''}" id="tog-${rid}">▶</span></td>
+          <td><strong>${esc(pv.pv||'—')}</strong><span class="itens-count">${itens.length} ite${itens.length!==1?'ns':'m'}</span></td>
           <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(pv.cliente||'—')}">${esc(pv.cliente||'—')}</td>
           <td>${esc(pv.empenho||'—')}</td>
           <td><strong>${fmt(pv.valor)}</strong></td>
           <td style="color:${num(pv.mc_valor||0)<0?C.red:C.navy}">${fmt(pv.mc_valor)}</td>
           <td><span class="badge ${getMcBadgeCls(pv.mc_pct)}">${pct(pv.mc_pct)}</span></td>
           <td><span class="badge ${entCls}">${esc(statusTxt||'—')}</span></td>
+        </tr>
+        <tr class="expand-detail${opened?' open':''}" id="${rid}">
+          <td colspan="8"><div class="itens-wrapper" style="padding-left:24px">
+            <table class="itens-table">
+              <thead><tr><th>Descrição</th><th style="text-align:center">Qtd</th><th>Und</th><th style="text-align:right">Valor</th><th style="text-align:right">MC $</th></tr></thead>
+              <tbody>
+                ${itens.length?itens.map(it=>`<tr>
+                  <td class="item-desc" title="${esc(it.desc||'—')}">${esc(it.desc||'—')}</td>
+                  <td style="text-align:center">${num(it.qtd||0)>0?num(it.qtd).toLocaleString('pt-BR'):'—'}</td>
+                  <td>${esc(it.und||'—')}</td>
+                  <td style="text-align:right">${fmt(num(it.valor||0))}</td>
+                  <td style="text-align:right;color:${num(it.mc_valor||0)<0?C.red:'var(--gray-600)'}">${fmt(num(it.mc_valor||0))}</td>
+                </tr>`).join(''):`<tr><td colspan="5" style="text-align:center;color:var(--gray-400)">Sem itens detalhados para este PV</td></tr>`}
+              </tbody>
+            </table>
+          </div></td>
         </tr>`;
       }).join('')}</tbody>
     </table>
   </div>`;
+}
+function toggleContratoPvItems(id,ev){
+  if(ev) ev.stopPropagation();
+  const detail=document.getElementById(id);
+  const tog=document.getElementById('tog-'+id);
+  if(!detail||!tog) return;
+  if(detail.classList.contains('open')){
+    detail.classList.remove('open');
+    tog.classList.remove('open');
+    _contratoPvExpanded.delete(id);
+  }else{
+    detail.classList.add('open');
+    tog.classList.add('open');
+    _contratoPvExpanded.add(id);
+  }
 }
 function toggleContratoItems(id,row){
   const detail=document.getElementById(id);
@@ -3565,9 +3601,16 @@ function parseSheet(rows, contratosRows=[]){
       cMap[contrato].clientes[cliente]=(cMap[contrato].clientes[cliente]||0)+val;
       if(String(r['Status Ent']||'').trim()==='Entregue') cMap[contrato].valor_entregue+=val;
       if(String(r['Status Ent']||'').trim()==='Pendente') cMap[contrato].valor_pendente+=val;
-      if(!cMap[contrato].pvMap[pv]) cMap[contrato].pvMap[pv]={pv,cliente,empenho:String(r['Empenho']||'—').trim()||'—',status_ent:String(r['Status Ent']||'').trim()||'—',valor:0,mc_valor:0};
+      if(!cMap[contrato].pvMap[pv]) cMap[contrato].pvMap[pv]={pv,cliente,empenho:String(r['Empenho']||'—').trim()||'—',status_ent:String(r['Status Ent']||'').trim()||'—',valor:0,mc_valor:0,itens:[]};
       cMap[contrato].pvMap[pv].valor+=val;
       cMap[contrato].pvMap[pv].mc_valor+=mc;
+      cMap[contrato].pvMap[pv].itens.push({
+        desc:String(r['Desc. Resumida']||r['DESCRIÇÃO']||'—').substring(0,120),
+        qtd:toN(r['Qtd.']||r['QUANT']||0),
+        und:String(r['Und']||r['Un']||'—'),
+        valor:round(val),
+        mc_valor:round(mc),
+      });
       if(linked && !cMap[contrato].itemLinks.has(linked.key)){
         cMap[contrato].itemLinks.add(linked.key);
         cMap[contrato].statuses.add(linked.status);
