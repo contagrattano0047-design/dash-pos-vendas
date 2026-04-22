@@ -1001,6 +1001,32 @@ function simValue(field,val){
   const normalized=field.pct?roundN(num(val)*100,4):roundN(val,4);
   return normalized.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:4});
 }
+function parseSimInputNumber(v){
+  if(v===null||v===undefined||v==='') return 0;
+  if(typeof v==='number') return isNaN(v)?0:v;
+  if(v instanceof Date) return 0;
+  let s=String(v).trim().replace(/[R$\s]/g,'');
+  if(!s) return 0;
+  const lastComma=s.lastIndexOf(',');
+  const lastDot=s.lastIndexOf('.');
+  if(lastComma>=0&&lastDot>=0){
+    const decimalSep=lastComma>lastDot?',':'.';
+    const thousandsSep=decimalSep===','?'.':',';
+    s=s.split(thousandsSep).join('');
+    const decIdx=s.lastIndexOf(decimalSep);
+    s=s.slice(0,decIdx).replace(/[.,]/g,'')+'.'+s.slice(decIdx+1).replace(/[.,]/g,'');
+  }else if(lastComma>=0){
+    const decIdx=s.lastIndexOf(',');
+    s=s.slice(0,decIdx).replace(/[.,]/g,'')+'.'+s.slice(decIdx+1).replace(/[.,]/g,'');
+  }else if(lastDot>=0){
+    const decIdx=s.lastIndexOf('.');
+    s=s.slice(0,decIdx).replace(/[.,]/g,'')+'.'+s.slice(decIdx+1).replace(/[.,]/g,'');
+  }else{
+    s=s.replace(/[.,]/g,'');
+  }
+  const n=parseFloat(s);
+  return isNaN(n)?0:n;
+}
 function deriveSimInputs(item){
   const sim=item?.sim||{};
   const qtd=Math.max(0,num(item?.qtd||sim.qtd||0));
@@ -1285,7 +1311,7 @@ function isIncompleteSimNumber(value){
 function applySimScenarioFieldValue(id,key,value,isPct){
   const scenario=getSimScenario(id);
   if(!scenario) return;
-  scenario.inputs[key]=isPct?num(value)/100:num(value);
+  scenario.inputs[key]=isPct?parseSimInputNumber(value)/100:parseSimInputNumber(value);
   if(key==='preco_venda_un' || key==='qtd'){
     const fixedTotal=Math.max(0,num(scenario.inputs.fixed_total||_simModalState.baseInputs?.fixed_total||_simModalState.item?.valor||0));
     if(key==='preco_venda_un'){
@@ -1304,7 +1330,6 @@ function updateSimScenarioField(id,key,value,isPct){
   scenario.raw_inputs[key]=value;
   if(isIncompleteSimNumber(value)) return;
   applySimScenarioFieldValue(id,key,value,isPct);
-  delete scenario.raw_inputs[key];
   persistSimModalState(_simModalState.activeId===id);
   renderSimScenarioOutputs(id);
 }
