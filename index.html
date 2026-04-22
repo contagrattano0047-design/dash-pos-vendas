@@ -988,6 +988,7 @@ let _simSharedSyncBusy = false;
 let _simSharedSyncQueued = false;
 let _simSharedRefreshTimer = null;
 let _simSharedWarned = false;
+let _simSharedStatusMessage = '';
 
 // -------------------------------------------------------
 // FORMATTERS
@@ -1304,16 +1305,33 @@ function getSimSharedFileUrl(){
   const t=_simSharedTarget;
   return `${t.graphBase}/drives/${encodeURIComponent(t.driveId)}/items/${encodeURIComponent(t.parentId)}:/${encodeURIComponent(t.fileName)}:/content`;
 }
+function getSimSharedItemUrl(){
+  if(!_simSharedTarget) return '';
+  const t=_simSharedTarget;
+  return `${t.graphBase}/drives/${encodeURIComponent(t.driveId)}/items/${encodeURIComponent(t.parentId)}:/${encodeURIComponent(t.fileName)}:`;
+}
 async function loadSharedSimStore(headers){
   if(!_simSharedTarget||!headers){
     _simSharedStore={};
     return _simSharedStore;
   }
   try{
-    const resp=await fetch(getSimSharedFileUrl(),{headers,cache:'no-store'});
-    if(resp.status===404){
+    const metaResp=await fetch(getSimSharedItemUrl(),{headers,cache:'no-store'});
+    if(metaResp.status===404){
       _simSharedStore={};
+      _simSharedStatusMessage='Simulacoes compartilhadas: arquivo ainda sem registros.';
       return _simSharedStore;
+    }
+    if(!metaResp.ok){
+      console.warn('Nao foi possivel localizar simulacoes compartilhadas:', metaResp.status);
+      return _simSharedStore;
+    }
+    const meta=await metaResp.json();
+    let resp;
+    if(meta['@microsoft.graph.downloadUrl']){
+      resp=await fetch(meta['@microsoft.graph.downloadUrl'],{cache:'no-store'});
+    }else{
+      resp=await fetch(getSimSharedFileUrl(),{headers,cache:'no-store'});
     }
     if(!resp.ok){
       console.warn('Nao foi possivel ler simulacoes compartilhadas:', resp.status);
@@ -1322,6 +1340,7 @@ async function loadSharedSimStore(headers){
     const payload=await resp.json().catch(()=>({}));
     const store=payload?.items&&typeof payload.items==='object'?payload.items:payload;
     _simSharedStore=mergeSimStores(store);
+    _simSharedStatusMessage=`Simulacoes compartilhadas carregadas: ${countSimStoreItems(_simSharedStore)} item(ns).`;
     return _simSharedStore;
   }catch(e){
     console.warn('Falha ao ler simulacoes compartilhadas:', e);
@@ -1350,11 +1369,12 @@ function countSimStoreItems(store){
 }
 function markSharedSimWarning(error){
   console.warn('Simulacao salva localmente, mas nao sincronizada:', error);
+  _simSharedStatusMessage='Simulacao salva neste navegador, mas ainda nao sincronizou no SharePoint. Reabra/reconecte e confira a permissao.';
   if(_simSharedWarned) return;
   _simSharedWarned=true;
   const hint=document.getElementById('statusHint');
   if(hint){
-    hint.textContent='Simulacao salva neste navegador, mas ainda nao sincronizou no SharePoint. Reconecte e aceite a permissao de edicao se solicitado.';
+    hint.textContent=_simSharedStatusMessage;
   }
 }
 function queueSharedSimSync(item,delay=900){
@@ -1386,6 +1406,7 @@ async function flushSharedSimSync(){
     _simSharedStore=next;
     saveSimStorage(next);
     _simSharedWarned=false;
+    _simSharedStatusMessage=`Simulacoes sincronizadas no SharePoint: ${countSimStoreItems(next)} item(ns).`;
   }catch(e){
     markSharedSimWarning(e);
   }finally{
@@ -1404,6 +1425,7 @@ async function refreshSharedSimulationsFromSharePoint(){
     await loadSharedSimStore({Authorization:'Bearer '+_msalToken});
     if(JSON.stringify(_simSharedStore||{})!==before){
       D=hydratePersistedSimulations(D);
+      _pendentesData = [...(D.pendentes_list||[])];
       if(_pendentesData.length) renderPendentesTable(_pendentesData,true);
     }
   }catch(e){
@@ -1434,6 +1456,8 @@ async function syncLocalSimStorageToSharePoint(headers){
     await saveSharedSimStore(next);
     _simSharedStore=next;
     saveSimStorage(mergeSimStores(local,next));
+    _simSharedWarned=false;
+    _simSharedStatusMessage=`Simulacoes locais migradas para o SharePoint: ${countSimStoreItems(next)} item(ns).`;
   }catch(e){
     markSharedSimWarning(e);
   }
@@ -3692,7 +3716,7 @@ function setLoading(on,msg=''){const el=document.getElementById('loadingOverlay'
 function setLinked(name){
   document.getElementById('fileDot').className='file-dot linked';
   document.getElementById('fileStatusText').innerHTML=`Vinculado: <b>${name}</b>`;
-  document.getElementById('statusHint').textContent='Clique em Atualizar para reler';
+  document.getElementById('statusHint').textContent=_simSharedStatusMessage||'Clique em Atualizar para reler';
   document.getElementById('btnRefresh').disabled=false;
   document.getElementById('lastUpdateTime').textContent=new Date().toLocaleString('pt-BR');
 }
