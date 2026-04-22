@@ -495,6 +495,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
     <div class="last-update">Atualizado em <span id="lastUpdateTime">—</span></div>
     <button class="btn btn-success" id="btnRefresh" onclick="refresh()" disabled>🔄 Atualizar</button>
     <button class="btn btn-ghost" onclick="pickFile()">🔑 Reconectar</button>
+    <button class="btn btn-ghost" id="btnForceSimSync" onclick="forceSyncSimulations()" disabled>☁ Sincronizar simulações</button>
     <button class="btn btn-primary" onclick="printAll()">⬇ PDF</button>
   </div>
 </header>
@@ -1310,6 +1311,12 @@ function getSimSharedItemUrl(){
   const t=_simSharedTarget;
   return `${t.graphBase}/drives/${encodeURIComponent(t.driveId)}/items/${encodeURIComponent(t.parentId)}:/${encodeURIComponent(t.fileName)}:`;
 }
+function updateSimSyncButtonState(isBusy=false,label){
+  const btn=document.getElementById('btnForceSimSync');
+  if(!btn) return;
+  btn.disabled=!!isBusy||!_simSharedTarget;
+  btn.textContent=label||(isBusy?'☁ Sincronizando...':'☁ Sincronizar simulações');
+}
 async function loadSharedSimStore(headers){
   if(!_simSharedTarget||!headers){
     _simSharedStore={};
@@ -1347,9 +1354,9 @@ async function loadSharedSimStore(headers){
     return _simSharedStore;
   }
 }
-async function saveSharedSimStore(store){
+async function saveSharedSimStore(store,token){
   if(!_simSharedTarget) return false;
-  const token=await getToken();
+  token=token||await getToken();
   const resp=await fetch(getSimSharedFileUrl(),{
     method:'PUT',
     headers:{
@@ -1369,7 +1376,9 @@ function countSimStoreItems(store){
 }
 function markSharedSimWarning(error){
   console.warn('Simulacao salva localmente, mas nao sincronizada:', error);
-  _simSharedStatusMessage='Simulacao salva neste navegador, mas ainda nao sincronizou no SharePoint. Reabra/reconecte e confira a permissao.';
+  const rawMsg=String(error?.message||error?.errorMessage||'').trim();
+  const detail=rawMsg?` Detalhe: ${rawMsg}`:'';
+  _simSharedStatusMessage='Simulacao salva neste navegador, mas ainda nao sincronizou no SharePoint. Reabra/reconecte e confira a permissao.'+detail;
   if(_simSharedWarned) return;
   _simSharedWarned=true;
   const hint=document.getElementById('statusHint');
@@ -1432,8 +1441,10 @@ async function refreshSharedSimulationsFromSharePoint(){
     console.warn('Falha ao atualizar simulacoes compartilhadas:', e);
   }
 }
-async function syncLocalSimStorageToSharePoint(headers){
+async function syncLocalSimStorageToSharePoint(headers,opts={}){
   if(!_simSharedTarget||!headers) return;
+  const throwOnError=!!opts.throwOnError;
+  const saveToken=opts.saveToken||null;
   const local=getSimStorage();
   if(!countSimStoreItems(local)) return;
   try{
@@ -1453,13 +1464,50 @@ async function syncLocalSimStorageToSharePoint(headers){
       if(JSON.stringify(next[key])!==before) changed=true;
     });
     if(!changed) return;
-    await saveSharedSimStore(next);
+    await saveSharedSimStore(next,saveToken);
     _simSharedStore=next;
     saveSimStorage(mergeSimStores(local,next));
     _simSharedWarned=false;
     _simSharedStatusMessage=`Simulacoes locais migradas para o SharePoint: ${countSimStoreItems(next)} item(ns).`;
   }catch(e){
     markSharedSimWarning(e);
+    if(throwOnError) throw e;
+  }
+}
+async function forceSyncSimulations(){
+  if(!_simSharedTarget){
+    _simSharedStatusMessage='Conecte ao SharePoint para habilitar a sincronizacao manual das simulacoes.';
+    const hint=document.getElementById('statusHint');
+    if(hint) hint.textContent=_simSharedStatusMessage;
+    return;
+  }
+  try{
+    updateSimSyncButtonState(true);
+    setLoading(true,'Sincronizando simulacoes...');
+    if(_simModalState.itemRef&&_simModalState.item){
+      syncSimScenariosToItem();
+      persistItemSimStorage({
+        ..._simModalState.itemRef,
+        pv:_simModalState.item?.pv,
+        empenho:_simModalState.item?.empenho,
+        uasg:_simModalState.item?.uasg
+      });
+    }
+    _msalToken=await getToken(true);
+    const headers={Authorization:'Bearer '+_msalToken};
+    await syncLocalSimStorageToSharePoint(headers,{throwOnError:true,saveToken:_msalToken});
+    await loadSharedSimStore(headers);
+    D=hydratePersistedSimulations(D);
+    _pendentesData=[...(D.pendentes_list||[])];
+    if(_pendentesData.length) renderPendentesTable(_pendentesData,true);
+    const hint=document.getElementById('statusHint');
+    if(hint) hint.textContent=_simSharedStatusMessage||'Sincronizacao concluida.';
+    document.getElementById('lastUpdateTime').textContent=new Date().toLocaleString('pt-BR');
+  }catch(e){
+    markSharedSimWarning(e);
+  }finally{
+    setLoading(false);
+    updateSimSyncButtonState(false);
   }
 }
 function scheduleSharedSimRefresh(){
@@ -3704,6 +3752,7 @@ function usePreloaded(){
   _simSharedTarget=null;
   _simSharedStore={};
   scheduleSharedSimRefresh();
+  updateSimSyncButtonState(false);
   D=hydratePersistedSimulations(JSON.parse(JSON.stringify(DEFAULT_DATA)));renderAll();
   document.getElementById('firstRun').classList.add('hidden');
   document.getElementById('fileDot').className='file-dot none';
@@ -3718,9 +3767,10 @@ function setLinked(name){
   document.getElementById('fileStatusText').innerHTML=`Vinculado: <b>${name}</b>`;
   document.getElementById('statusHint').textContent=_simSharedStatusMessage||'Clique em Atualizar para reler';
   document.getElementById('btnRefresh').disabled=false;
+  updateSimSyncButtonState(false);
   document.getElementById('lastUpdateTime').textContent=new Date().toLocaleString('pt-BR');
 }
-function setError(msg){document.getElementById('fileDot').className='file-dot error';document.getElementById('fileStatusText').innerHTML='Erro ao ler arquivo';document.getElementById('statusHint').textContent=msg;}
+function setError(msg){document.getElementById('fileDot').className='file-dot error';document.getElementById('fileStatusText').innerHTML='Erro ao ler arquivo';document.getElementById('statusHint').textContent=msg;updateSimSyncButtonState(false);}
 function switchTab(view,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
