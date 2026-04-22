@@ -1345,6 +1345,9 @@ async function saveSharedSimStore(store){
   }
   return true;
 }
+function countSimStoreItems(store){
+  return Object.values(store||{}).filter(entry=>hasSimEntry(entry)).length;
+}
 function markSharedSimWarning(error){
   console.warn('Simulacao salva localmente, mas nao sincronizada:', error);
   if(_simSharedWarned) return;
@@ -1405,6 +1408,34 @@ async function refreshSharedSimulationsFromSharePoint(){
     }
   }catch(e){
     console.warn('Falha ao atualizar simulacoes compartilhadas:', e);
+  }
+}
+async function syncLocalSimStorageToSharePoint(headers){
+  if(!_simSharedTarget||!headers) return;
+  const local=getSimStorage();
+  if(!countSimStoreItems(local)) return;
+  try{
+    const remote=await loadSharedSimStore(headers);
+    const next=mergeSimStores(remote);
+    let changed=false;
+    Object.entries(local).forEach(([key,entry])=>{
+      const normalized=normalizeSimEntry(entry);
+      if(!hasSimEntry(normalized)) return;
+      const remoteEntry=remote[key]?normalizeSimEntry(remote[key]):null;
+      const localMs=getSimEntryUpdatedMs(normalized);
+      const remoteMs=getSimEntryUpdatedMs(remoteEntry);
+      if(remoteEntry && (!localMs || remoteMs>localMs)) return;
+      if(!normalized.updated_at) normalized.updated_at=new Date().toISOString();
+      const before=JSON.stringify(next[key]||null);
+      next[key]=normalized;
+      if(JSON.stringify(next[key])!==before) changed=true;
+    });
+    if(!changed) return;
+    await saveSharedSimStore(next);
+    _simSharedStore=next;
+    saveSimStorage(mergeSimStores(local,next));
+  }catch(e){
+    markSharedSimWarning(e);
   }
 }
 function scheduleSharedSimRefresh(){
@@ -3609,7 +3640,7 @@ async function readAndRender(){
     const meta = await metaResp.json();
     const fileName = meta.name || 'Controle Geral.xlsx';
     configureSimShareTarget(meta, graphBase);
-    const sharedSimPromise = loadSharedSimStore(headers);
+    const sharedSimPromise = loadSharedSimStore(headers).then(()=>syncLocalSimStorageToSharePoint(headers));
 
     let dlResp;
     if(meta['@microsoft.graph.downloadUrl']){
