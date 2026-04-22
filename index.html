@@ -3365,7 +3365,7 @@ const msalConfig = {
   },
 };
 
-const GRAPH_SCOPES = ['Files.ReadWrite.All', 'Sites.Read.All'];
+const GRAPH_SCOPES = ['Files.ReadWrite'];
 const SHARE_URL = 'https://grattanomarck.sharepoint.com/:x:/s/SistemadeArquivosGrattanoMarck/IQDOUFT6aPpnSao_qNNOh008AeAyg0tqNPcoI8_c_6pNrQ4?e=DO0hdT';
 
 let msalInstance = null;
@@ -3383,7 +3383,26 @@ function setLoginBusy(isBusy){
 }
 
 function isPopupFallbackError(error){
-  return error?.errorCode === 'popup_window_error' || error?.errorCode === 'empty_window_error';
+  const raw = [
+    error?.errorCode,
+    error?.subError,
+    error?.message,
+    error?.errorMessage
+  ].filter(Boolean).join(' ').toLowerCase();
+  return [
+    'popup_window_error',
+    'empty_window_error',
+    'block_nested_popups',
+    'nested popup'
+  ].some(token => raw.includes(token));
+}
+
+function isRunningInPopup(){
+  try{
+    return !!(window.opener && window.opener !== window);
+  }catch(e){
+    return false;
+  }
 }
 
 function needsMsalInteraction(error){
@@ -3450,7 +3469,25 @@ async function bootstrapMsal(){
   return {app, resp, account: getActiveMsalAccount(app)};
 }
 
+async function startMsalRedirect(app, account){
+  const request = {
+    scopes: GRAPH_SCOPES,
+    prompt: 'select_account',
+  };
+  if(account){
+    request.account = account;
+    await app.acquireTokenRedirect(request);
+  }else{
+    await app.loginRedirect(request);
+  }
+  return null;
+}
+
 async function requestInteractiveToken(app, account){
+  if(isRunningInPopup()){
+    return await startMsalRedirect(app, account);
+  }
+
   try{
     const resp = await app.acquireTokenPopup({
       scopes: GRAPH_SCOPES,
@@ -3463,22 +3500,25 @@ async function requestInteractiveToken(app, account){
     return resp?.accessToken || null;
   }catch(tokenErr){
     if(isPopupFallbackError(tokenErr)){
-      await app.acquireTokenRedirect({
-        scopes: GRAPH_SCOPES,
-        account: account || undefined,
-        prompt: 'select_account',
-      });
-      return null;
+      return await startMsalRedirect(app, account);
     }
     if(!needsMsalInteraction(tokenErr)){
       throw tokenErr;
     }
   }
 
-  const loginResp = await app.loginPopup({
-    scopes: GRAPH_SCOPES,
-    prompt: 'select_account',
-  });
+  let loginResp;
+  try{
+    loginResp = await app.loginPopup({
+      scopes: GRAPH_SCOPES,
+      prompt: 'select_account',
+    });
+  }catch(loginErr){
+    if(isPopupFallbackError(loginErr)){
+      return await startMsalRedirect(app, null);
+    }
+    throw loginErr;
+  }
   if(loginResp?.account){
     app.setActiveAccount(loginResp.account);
   }
@@ -3520,31 +3560,7 @@ async function pickFile(){
     if(account){
       _msalToken = await getToken(true);
     }else{
-      let resp;
-      try{
-        resp = await app.loginPopup({
-          scopes: GRAPH_SCOPES,
-          prompt: 'select_account',
-        });
-      }catch(loginErr){
-        if(isPopupFallbackError(loginErr)){
-          await app.loginRedirect({
-            scopes: GRAPH_SCOPES,
-            prompt: 'select_account',
-          });
-          return;
-        }
-        throw loginErr;
-      }
-
-      if(resp?.account){
-        app.setActiveAccount(resp.account);
-      }
-      if(resp?.accessToken){
-        _msalToken = resp.accessToken;
-      }else{
-        _msalToken = await getToken(true);
-      }
+      _msalToken = await requestInteractiveToken(app, null);
     }
 
     if(_msalToken){
