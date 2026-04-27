@@ -4300,8 +4300,8 @@ function formatMirrorNumberText(value,column){
   const decimalMatch=body.match(/[,.](\d+)$/);
   const sourceDecimals=decimalMatch?decimalMatch[1].length:0;
   const isMoney=!!prefix||/(r\$|valor|total|consumo|saldo|preco|custo)/.test(normTxt(column));
-  const minDigits=isMoney?2:(suffix?0:sourceDecimals);
   const maxDigits=isMoney?2:Math.min(Math.max(sourceDecimals,0),4);
+  const minDigits=isMoney?2:Math.min(suffix?0:sourceDecimals,maxDigits);
   return `${prefix}${parsed.toLocaleString('pt-BR',{minimumFractionDigits:minDigits,maximumFractionDigits:maxDigits})}${suffix}`;
 }
 function sheetMirrorData(sheet){
