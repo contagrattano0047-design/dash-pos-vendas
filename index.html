@@ -255,7 +255,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 }
 @media(max-width:520px){
   .first-run-box{padding:28px 22px}
-  .sim-modal{padding:8px}
+  .sim-modal,.contract-list-modal{padding:8px}
   .cal-nav-btn{flex:1 1 calc(50% - 8px)}
 }
 
@@ -310,8 +310,33 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .contract-match-row td:first-child{box-shadow:inset 4px 0 0 var(--gold)}
 .contract-match-cell{display:inline-flex;align-items:center;border-radius:6px;padding:1px 6px;background:rgba(201,168,76,.22);box-shadow:0 0 0 1px rgba(201,168,76,.45);font-weight:800;color:var(--navy)}
 .contract-main-match{background:rgba(201,168,76,.18)!important}
+.contract-quality-panel{margin:-6px 0 16px;padding:12px 16px;border-radius:var(--radius-sm);background:#fff8df;border:1px solid rgba(201,168,76,.55);box-shadow:var(--shadow-sm)}
+.contract-quality-panel.is-hidden{display:none}
+.contract-quality-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.contract-quality-title{font-size:12px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.6px}
+.contract-quality-summary{font-size:12px;color:var(--gray-600)}
+.contract-quality-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px}
+.contract-quality-item{padding:8px 10px;border-radius:6px;background:#fff;border-left:3px solid var(--gold);font-size:12px;color:var(--gray-600);line-height:1.35}
+.contract-quality-item strong{color:var(--navy)}
+.contract-quality-badge{display:inline-flex;align-items:center;margin-left:7px;padding:1px 6px;border-radius:20px;background:#fef3e2;color:#a86f10;font-size:10px;font-weight:800;vertical-align:middle}
 .contract-cell-main{font-weight:700;color:var(--navy)}
 .contract-cell-sub{font-size:10px;color:var(--gray-400);margin-top:3px}
+.contract-list-modal{position:fixed;inset:0;z-index:1250;display:flex;align-items:stretch;justify-content:center;padding:20px;background:rgba(10,22,40,.72);backdrop-filter:blur(6px)}
+.contract-list-modal.hidden{display:none}
+.contract-list-panel{width:min(1680px,100%);background:#fff;border-radius:18px;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;border:1px solid rgba(255,255,255,.55)}
+.contract-list-header{padding:18px 22px;background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 68%,var(--navy-light) 100%);color:#fff;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.contract-list-title{font-family:'DM Serif Display',serif;font-size:25px;line-height:1.05;font-weight:400}
+.contract-list-subtitle{margin-top:5px;font-size:12px;color:rgba(255,255,255,.76)}
+.contract-list-close{border:none;background:rgba(255,255,255,.1);color:#fff;width:38px;height:38px;border-radius:10px;font-size:21px;cursor:pointer}
+.contract-list-close:hover{background:rgba(255,255,255,.18)}
+.contract-list-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid var(--gray-200);background:#fff;flex-wrap:wrap}
+.contract-list-toolbar input{padding:7px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none;width:min(360px,100%)}
+.contract-list-meta{font-size:12px;color:var(--gray-500)}
+.contract-list-body{overflow:auto;padding:0;background:#fff}
+.contract-list-table{width:max-content;min-width:100%;border-collapse:collapse;font-size:12px}
+.contract-list-table th{position:sticky;top:0;z-index:1;text-align:left;padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.55px;color:var(--gray-500);background:#f2f5fa;border-bottom:1px solid var(--gray-200);white-space:nowrap}
+.contract-list-table td{padding:8px 10px;border-bottom:1px solid var(--gray-100);color:var(--navy);white-space:nowrap}
+.contract-list-empty{padding:28px;text-align:center;color:var(--gray-400);font-size:13px}
 .itens-wrapper{padding:8px 12px 12px 40px;background:var(--gray-50);overflow-x:auto;-webkit-overflow-scrolling:touch}
 .itens-table{width:100%;min-width:960px;border-collapse:collapse;font-size:12px}
 .itens-table th{text-align:left;padding:5px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gray-400);background:var(--gray-100);border-bottom:1px solid var(--gray-200)}
@@ -408,7 +433,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 @media(max-width:900px){.cal-grid{grid-template-columns:repeat(2,1fr)}.cal-header-cell{display:none}.cal-cell{min-height:80px}}
 @media(max-width:500px){.cal-grid{grid-template-columns:1fr}}
 @media(max-width:900px){
-  .sim-modal{padding:12px}
+  .sim-modal,.contract-list-modal{padding:12px}
   .sim-header{padding:16px 18px 14px}
   .sim-toolbar,.sim-board{padding-left:18px;padding-right:18px}
   .sim-cards{grid-auto-columns:minmax(300px,88vw)}
@@ -421,7 +446,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   body{background:#fff!important;font-size:11px}
   .tabs-wrapper,.status-bar,.first-run,.loading-overlay,.btn,
-  .pill-group,#searchPendentes,#pendentesCount,.pend-filter-bar,.sim-modal{display:none!important}
+  .pill-group,#searchPendentes,#pendentesCount,.pend-filter-bar,.sim-modal,.contract-list-modal{display:none!important}
   .header{position:static!important;padding:10px 18px!important}
   .header-title h1{font-size:14px!important}
   .main{padding:8px 14px!important}
@@ -488,6 +513,23 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
     <div class="sim-board">
       <div class="sim-cards" id="simCards"></div>
     </div>
+  </div>
+</div>
+
+<div class="contract-list-modal hidden" id="contractListModal" onclick="if(event.target===this) closeContractListModal()">
+  <div class="contract-list-panel" role="dialog" aria-modal="true" aria-labelledby="contractListTitle">
+    <div class="contract-list-header">
+      <div>
+        <div class="contract-list-title" id="contractListTitle">Lista de Contratos</div>
+        <div class="contract-list-subtitle">Espelho da aba Tela - Contratos da planilha conectada</div>
+      </div>
+      <button class="contract-list-close" type="button" aria-label="Fechar lista de contratos" onclick="closeContractListModal()">×</button>
+    </div>
+    <div class="contract-list-toolbar">
+      <input id="contractListSearch" type="text" placeholder="Buscar na lista completa..." oninput="renderContractListTable()">
+      <div class="contract-list-meta" id="contractListMeta">—</div>
+    </div>
+    <div class="contract-list-body" id="contractListBody"></div>
   </div>
 </div>
 
@@ -767,6 +809,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   </div>
 
   <div class="kpi-grid" id="kpiContratos"></div>
+  <div id="contratosQualityPanel" class="contract-quality-panel is-hidden"></div>
 
   <div class="grid-2">
     <div class="card">
@@ -804,6 +847,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
         <div class="card-subtitle" id="subtitleContratosTabela">—</div>
       </div>
       <div class="header-tools">
+        <button class="btn btn-outline" type="button" style="color:var(--navy);border-color:var(--gray-200);padding:7px 12px;font-size:12px" onclick="openContractListModal()">Lista de Contratos</button>
         <input id="searchContratos" type="text" placeholder="Buscar contrato, órgão, PV, cliente, empenho, NF-e ou produto..." oninput="filterContratos(this.value)"
           style="padding:6px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none;width:230px">
         <span id="contratosCount" style="font-size:12px;color:var(--gray-400);white-space:nowrap"></span>
@@ -1979,6 +2023,7 @@ function renderSimModal(){
 
 window.addEventListener('keydown', e=>{
   if(e.key==='Escape'&&!document.getElementById('simModal')?.classList.contains('hidden')) closeSimModal();
+  if(e.key==='Escape'&&!document.getElementById('contractListModal')?.classList.contains('hidden')) closeContractListModal();
 });
 
 // -------------------------------------------------------
@@ -3230,6 +3275,33 @@ function summarizeContratoRows(rows){
   resumo.mc_pct=resumo.faturamento>0?(resumo.mc_total/resumo.faturamento*100):0;
   return resumo;
 }
+function renderContratosQualityPanel(ano){
+  const panel=document.getElementById('contratosQualityPanel');
+  if(!panel) return;
+  const diag=D.contratos_diagnostics?.[ano]||{corrigidas:[],pendentes:[]};
+  const corrigidas=Array.isArray(diag.corrigidas)?diag.corrigidas:[];
+  const pendentes=Array.isArray(diag.pendentes)?diag.pendentes:[];
+  if(!corrigidas.length&&!pendentes.length){
+    panel.classList.add('is-hidden');
+    panel.innerHTML='';
+    return;
+  }
+  panel.classList.remove('is-hidden');
+  const sample=[...corrigidas.map(i=>({...i,status:'Corrigido'})),...pendentes.map(i=>({...i,status:'Revisar'}))].slice(0,6);
+  panel.innerHTML=`
+    <div class="contract-quality-head">
+      <div class="contract-quality-title">Qualidade da planilha</div>
+      <div class="contract-quality-summary">${corrigidas.length} linha${corrigidas.length!==1?'s':''} corrigida${corrigidas.length!==1?'s':''} automaticamente · ${pendentes.length} para revisar na origem</div>
+    </div>
+    <div class="contract-quality-list">
+      ${sample.map(i=>`<div class="contract-quality-item">
+        <strong>PV ${esc(i.pv||'—')}</strong>${i.base_pv&&i.base_pv!==i.pv?` via PV ${esc(i.base_pv)}`:''}
+        ${i.contrato&&i.contrato!=='—'?` → contrato ${esc(i.contrato)}`:''}
+        <span class="contract-quality-badge">${esc(i.status)}</span><br>
+        ${esc(i.acao||'')} ${i.campos?.length?`· Campo(s): ${esc(i.campos.join(', '))}`:''}
+      </div>`).join('')}
+    </div>`;
+}
 function renderContratoHighlights(rows,kind){
   if(!rows.length) return `<div style="color:var(--gray-400);font-size:13px;text-align:center;padding:18px 8px">Nenhum contrato ${kind==='lucro'?'lucrativo':'em prejuízo'} neste recorte</div>`;
   return rows.map(row=>{
@@ -3246,6 +3318,44 @@ function renderContratoHighlights(rows,kind){
       </div>
     </div>`;
   }).join('');
+}
+function getContractListData(){
+  return D.contratos_lista&&Array.isArray(D.contratos_lista.columns)&&Array.isArray(D.contratos_lista.rows)
+    ? D.contratos_lista
+    : {columns:[],rows:[]};
+}
+function renderContractListTable(){
+  const body=document.getElementById('contractListBody');
+  const meta=document.getElementById('contractListMeta');
+  if(!body||!meta) return;
+  const data=getContractListData();
+  const columns=data.columns||[];
+  const q=normTxt(document.getElementById('contractListSearch')?.value||'');
+  const rows=(data.rows||[]).filter(row=>!q||normTxt(row.join(' ')).includes(q));
+  meta.textContent=columns.length&&data.rows.length
+    ? `${rows.length} de ${data.rows.length} linha${data.rows.length!==1?'s':''} · ${columns.length} coluna${columns.length!==1?'s':''}`
+    : 'Aba Tela - Contratos ainda não carregada';
+  if(!columns.length||!data.rows.length){
+    body.innerHTML='<div class="contract-list-empty">Conecte a planilha para carregar o espelho completo da aba Tela - Contratos.</div>';
+    return;
+  }
+  body.innerHTML=`<table class="contract-list-table">
+    <thead><tr>${columns.map(c=>`<th>${esc(c||'—')}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(row=>`<tr>${columns.map((_,idx)=>{
+      const value=String(row[idx]??'');
+      return `<td title="${esc(value)}">${value?esc(value):'—'}</td>`;
+    }).join('')}</tr>`).join('')}</tbody>
+  </table>`;
+}
+function openContractListModal(){
+  renderContractListTable();
+  const modal=document.getElementById('contractListModal');
+  if(modal) modal.classList.remove('hidden');
+  setTimeout(()=>document.getElementById('contractListSearch')?.focus(),0);
+}
+function closeContractListModal(){
+  const modal=document.getElementById('contractListModal');
+  if(modal) modal.classList.add('hidden');
 }
 function renderContratoPvDetail(row){
   const pvs=Array.isArray(row.pv_rows)?row.pv_rows:[];
@@ -3265,9 +3375,11 @@ function renderContratoPvDetail(row){
         const itens=Array.isArray(pv.itens)?pv.itens:[];
         const match=contratoPvMatchMeta(pv,q);
         const opened=_contratoPvExpanded.has(rid)||match.item;
+        const issue=pv.data_issue||null;
+        const issueBadge=issue?`<span class="contract-quality-badge" title="${esc(issue.acao||'Corrigido automaticamente')}">Corrigido</span>`:'';
         return `<tr class="expand-row${match.any?' contract-match-row':''}" onclick="toggleContratoPvItems('${rid}', event)">
           <td><span class="expand-toggle${opened?' open':''}" id="tog-${rid}">▶</span></td>
-          <td><strong>${contratoMatchCell(pv.pv||'—',match.pv)}</strong><span class="itens-count">${itens.length} ite${itens.length!==1?'ns':'m'}</span></td>
+          <td><strong>${contratoMatchCell(pv.pv||'—',match.pv)}</strong><span class="itens-count">${itens.length} ite${itens.length!==1?'ns':'m'}</span>${issueBadge}</td>
           <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(pv.cliente||'—')}">${contratoMatchCell(pv.cliente||'—',match.cliente)}</td>
           <td>${contratoMatchCell(pv.empenho||'—',match.empenho)}</td>
           <td>${contratoMatchCell(pv.nfe||'—',match.nfe)}</td>
@@ -3350,6 +3462,7 @@ function renderContratos(){
   const shareLucro=resumo.total>0?(resumo.lucro/resumo.total*100):0;
   const sharePrejuizo=resumo.total>0?(resumo.prejuizo/resumo.total*100):0;
   const shareNeutro=resumo.total>0?(resumo.neutro/resumo.total*100):0;
+  renderContratosQualityPanel(ano);
 
   ['ContratosMix','ContratosHighlights','ContratosTabela'].forEach(id=>{
     const tag=document.getElementById('tag'+id); if(tag) tag.textContent='📅 '+lbl;
@@ -3398,9 +3511,10 @@ function renderContratos(){
     const orgaoLabel=(row.orgaos_count||0)>1?`${row.orgao} +${row.orgaos_count-1}`:row.orgao;
     const contractMatched=contratoFieldMatches(row.contrato,q);
     const orgaoMatched=contratoFieldMatches(row.orgao,q);
+    const rowIssueBadge=row.data_issues_count?`<span class="contract-quality-badge" title="${row.data_issues_count} linha${row.data_issues_count!==1?'s':''} corrigida${row.data_issues_count!==1?'s':''} automaticamente">Corrigido ${row.data_issues_count}</span>`:'';
     return `<tr class="expand-row${pvMatched||contractMatched||orgaoMatched?' contract-main-match':''}" onclick="toggleContratoItems('${rid}',this)">
       <td><span class="expand-toggle${opened?' open':''}" id="tog-${rid}">▶</span></td>
-      <td><strong>${contratoMatchCell(row.contrato,contractMatched)}</strong></td>
+      <td><strong>${contratoMatchCell(row.contrato,contractMatched)}</strong>${rowIssueBadge}</td>
       <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(row.orgao||'—')}">${contratoMatchCell(orgaoLabel||'—',orgaoMatched)}</td>
       <td><div class="contract-cell-main">${row.total_contrato>0?fmt(row.total_contrato):'—'}</div><div class="contract-cell-sub">${row.total_contrato>0?`${row.itens_vinculados} item${row.itens_vinculados!==1?'s':''} vinculado${row.itens_vinculados!==1?'s':''}`:'Sem cadastro na aba de contratos'}</div></td>
       <td><div class="contract-cell-main">${row.total_contrato>0?fmt(row.consumo_valor):'—'}</div><div class="contract-cell-sub">${row.total_contrato>0?pct(row.consumo_pct):'—'}</div></td>
@@ -3883,6 +3997,20 @@ async function refresh(){
   await readAndRender();
 }
 
+function sheetMirrorData(sheet){
+  if(!sheet) return {columns:[],rows:[]};
+  const aoa=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false});
+  const headerIdx=aoa.findIndex(row=>(row||[]).some(v=>String(v??'').trim()));
+  if(headerIdx<0) return {columns:[],rows:[]};
+  const maxCols=aoa.reduce((max,row)=>Math.max(max,(row||[]).length),0);
+  const header=aoa[headerIdx]||[];
+  const columns=Array.from({length:maxCols},(_,idx)=>String(header[idx]??'').trim()||`Coluna ${idx+1}`);
+  const rows=aoa.slice(headerIdx+1)
+    .filter(row=>(row||[]).some(v=>String(v??'').trim()))
+    .map(row=>columns.map((_,idx)=>String(row[idx]??'')));
+  return {columns,rows};
+}
+
 async function readAndRender(){
   setLoading(true,'Lendo planilha...');
   try{
@@ -3919,12 +4047,14 @@ async function readAndRender(){
     const snContratos = wb.SheetNames.find(n=>/tela\s*-\s*contratos/i.test(n));
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn],{defval:null,raw:true});
     const contratosRows = snContratos ? XLSX.utils.sheet_to_json(wb.Sheets[snContratos],{defval:null,raw:true}) : [];
+    const contratosMirror = snContratos ? sheetMirrorData(wb.Sheets[snContratos]) : {columns:[],rows:[]};
     if(!rows.length) throw new Error('Aba "Resultado Vendas" nao encontrada ou vazia.');
 
     setLoading(true,'Calculando indicadores...');
     await sharedSimPromise;
-    D = hydratePersistedSimulations(parseSheet(rows, contratosRows));
+    D = hydratePersistedSimulations(parseSheet(rows, contratosRows, contratosMirror));
     closeSimModal();
+    closeContractListModal();
     renderAll();
     scheduleSharedSimRefresh();
     setLinked(fileName);
@@ -3940,6 +4070,7 @@ async function readAndRender(){
 
 function usePreloaded(){
   closeSimModal();
+  closeContractListModal();
   _simSharedTarget=null;
   _simSharedStore={};
   scheduleSharedSimRefresh();
@@ -4051,7 +4182,7 @@ function printAll(){
 
 // PARSE SHEET
 // --------------------------------------------
-function parseSheet(rows, contratosRows=[]){
+function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}){
   const today=new Date();
   const toN=v=>{
     if(v===null||v===undefined||v==='') return 0;
@@ -4072,6 +4203,14 @@ function parseSheet(rows, contratosRows=[]){
   const isLicitacoesRow=r=>normTxt(r?.['Departamento']||'').includes('licit');
   const pvKey=v=>String(v??'').trim().replace(/\s+/g,'');
   const pvBaseKey=v=>pvKey(v).split('/')[0]||pvKey(v);
+  const contratoQualityFixes=[];
+  const contratoQualityPending=[];
+  const contratoQualityIssueKey=issue=>[issue.tipo,issue.pv,issue.contrato,issue.campos?.join('|')].join('::');
+  const pushContratoIssue=(bucket,issue)=>{
+    const key=contratoQualityIssueKey(issue);
+    if(bucket.some(x=>contratoQualityIssueKey(x)===key)) return;
+    bucket.push(issue);
+  };
 
   // Filtro principal: Licitações, valor > 0
   const all=rows.filter(r=>isLicitacoesRow(r)&&toN(r['Total']||0)>0);
@@ -4254,6 +4393,7 @@ function parseSheet(rows, contratosRows=[]){
       const mc=toN(r['MC ($)']||0);
       const cliente=String(r['Cliente']||'—').trim()||'—';
       const nfe=getNfe(r);
+      const rowIssue=r._contrato_auto_fix||null;
       cMap[contrato].faturamento+=val;
       cMap[contrato].mc_valor+=mc;
       const pv=String(r['PV']||'').trim()||'—';
@@ -4263,6 +4403,11 @@ function parseSheet(rows, contratosRows=[]){
       if(String(r['Status Ent']||'').trim()==='Entregue') cMap[contrato].valor_entregue+=val;
       if(String(r['Status Ent']||'').trim()==='Pendente') cMap[contrato].valor_pendente+=val;
       if(!cMap[contrato].pvMap[pv]) cMap[contrato].pvMap[pv]={pv,cliente,empenho:String(r['Empenho']||'—').trim()||'—',nfe_set:new Set(),status_ent:String(r['Status Ent']||'').trim()||'—',valor:0,mc_valor:0,itens:[]};
+      if(rowIssue){
+        if(!cMap[contrato].data_issues) cMap[contrato].data_issues=[];
+        cMap[contrato].data_issues.push(rowIssue);
+        cMap[contrato].pvMap[pv].data_issue=rowIssue;
+      }
       if(nfe) cMap[contrato].pvMap[pv].nfe_set.add(nfe);
       cMap[contrato].pvMap[pv].valor+=val;
       cMap[contrato].pvMap[pv].mc_valor+=mc;
@@ -4324,6 +4469,8 @@ function parseSheet(rows, contratosRows=[]){
         saldo_pct:totalContrato>0?round(saldoConsumir/totalContrato*100,1):0,
         status_ata_key:statusAtaKey,
         itens_vinculados:row.itemLinks.size,
+        data_issues:[...(row.data_issues||[])],
+        data_issues_count:(row.data_issues||[]).length,
         pv_rows:pvRows,
       };
     }).sort((a,b)=>b.faturamento-a.faturamento);
@@ -4361,16 +4508,62 @@ function parseSheet(rows, contratosRows=[]){
     if(base&&!contratoPvHints[base]) contratoPvHints[base]=hint;
   });
   function enrichContratoRow(r){
-    if(hasContractId(getAtaNumero(r))) return r;
+    const rawContrato=getAtaNumero(r);
     const pv=pvKey(r['PV']);
+    if(hasContractId(rawContrato)){
+      if(!isLicitacoesRow(r)){
+        const issue={
+          tipo:'departamento',
+          pv,
+          base_pv:pvBaseKey(pv),
+          contrato:rawContrato,
+          cliente:String(r['Cliente']||'—').trim()||'—',
+          empenho:String(r['Empenho']||'—').trim()||'—',
+          ano:getAno(r)||'total',
+          campos:['Departamento'],
+          acao:'Linha mantida no contrato pelo número da ata informado',
+        };
+        pushContratoIssue(contratoQualityFixes,issue);
+        return {...r,Departamento:'Licitações',_contrato_auto_fix:issue};
+      }
+      return r;
+    }
     const hint=contratoPvHints[pv]||contratoPvHints[pvBaseKey(pv)];
-    if(!hint) return r;
+    if(!hint){
+      if(isLicitacoesRow(r)){
+        pushContratoIssue(contratoQualityPending,{
+          tipo:'sem_vinculo',
+          pv,
+          base_pv:pvBaseKey(pv),
+          contrato:'—',
+          cliente:String(r['Cliente']||'—').trim()||'—',
+          empenho:String(r['Empenho']||'—').trim()||'—',
+          ano:getAno(r)||'total',
+          campos:['Contrato/Nº da ata'],
+          acao:'Sem contrato e sem PV base para inferência',
+        });
+      }
+      return r;
+    }
+    const issue={
+      tipo:'pv_derivado',
+      pv,
+      base_pv:pvBaseKey(pv),
+      contrato:hint.contrato,
+      cliente:String(r['Cliente']||'—').trim()||'—',
+      empenho:String(r['Empenho']||'—').trim()||'—',
+      ano:getAno(r)||'total',
+      campos:[!hasContractId(rawContrato)?'Contrato/Nº da ata':null,!isLicitacoesRow(r)?'Departamento':null].filter(Boolean),
+      acao:'Vínculo herdado do PV base',
+    };
+    pushContratoIssue(contratoQualityFixes,issue);
     return {
       ...r,
       Contrato:hint.contrato,
       UASG:r['UASG']||hint.uasg,
       'Item PE':r['Item PE']||r['ITEM']||hint.item,
       Departamento:r['Departamento']||hint.departamento||'Licitações',
+      _contrato_auto_fix:issue,
     };
   }
   const contratosSource=rows
@@ -4379,6 +4572,13 @@ function parseSheet(rows, contratosRows=[]){
     .filter(r=>isLicitacoesRow(r)||hasContractId(getAtaNumero(r)));
   const contratos25=contratosSource.filter(r=>getAno(r)===2025);
   const contratos26=contratosSource.filter(r=>getAno(r)===2026);
+  function contratoDiagnosticsFor(anoKey){
+    const byYear=issue=>anoKey==='total'||String(issue.ano)===String(anoKey);
+    return {
+      corrigidas:contratoQualityFixes.filter(byYear),
+      pendentes:contratoQualityPending.filter(byYear),
+    };
+  }
 
   // Envelhecimento pendentes
   const penD=pen.map(r=>({...r,dias:days(toD(r['Data Ped']))}));
@@ -4475,6 +4675,8 @@ function parseSheet(rows, contratosRows=[]){
     status:{'2025':statusAno(all25),'2026':statusAno(all26),'total':statusAno(all)},
     empresas:{'2025':empresasAno(all25),'2026':empresasAno(all26),'total':empresasAno(all)},
     contratos:{'2025':contratosAno(contratos25,'2025'),'2026':contratosAno(contratos26,'2026'),'total':contratosAno(contratosSource,'total')},
+    contratos_lista:contratosMirror,
+    contratos_diagnostics:{'2025':contratoDiagnosticsFor('2025'),'2026':contratoDiagnosticsFor('2026'),'total':contratoDiagnosticsFor('total')},
     envelhecimento,criticos,pendentes_list,previsao_semana,
     clientes:{'2025':topClientes(all25),'2026':topClientes(all26),'total':topClientes(all)},
     vendedores:{'2025':topVendedores(all25),'2026':topVendedores(all26),'total':topVendedores(all)},
