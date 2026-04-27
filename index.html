@@ -306,6 +306,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .contract-pv-table td{padding:8px 10px;border-bottom:1px solid var(--gray-100);font-size:12px;color:var(--navy)}
 .contract-pv-table tr:last-child td{border-bottom:none}
 .contract-pv-empty{padding:18px 10px;text-align:center;font-size:13px;color:var(--gray-400)}
+.contract-match-row td{background:#fff8df!important;border-top:1px solid rgba(201,168,76,.55);border-bottom:1px solid rgba(201,168,76,.65)}
+.contract-match-row td:first-child{box-shadow:inset 4px 0 0 var(--gold)}
+.contract-match-cell{display:inline-flex;align-items:center;border-radius:6px;padding:1px 6px;background:rgba(201,168,76,.22);box-shadow:0 0 0 1px rgba(201,168,76,.45);font-weight:800;color:var(--navy)}
+.contract-main-match{background:rgba(201,168,76,.18)!important}
 .contract-cell-main{font-weight:700;color:var(--navy)}
 .contract-cell-sub{font-size:10px;color:var(--gray-400);margin-top:3px}
 .itens-wrapper{padding:8px 12px 12px 40px;background:var(--gray-50);overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -796,7 +800,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
         <div class="card-subtitle" id="subtitleContratosTabela">—</div>
       </div>
       <div class="header-tools">
-        <input id="searchContratos" type="text" placeholder="Buscar contrato, órgão, PV, cliente ou empenho..." oninput="filterContratos(this.value)"
+        <input id="searchContratos" type="text" placeholder="Buscar contrato, órgão, PV, cliente, empenho, NF-e ou produto..." oninput="filterContratos(this.value)"
           style="padding:6px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none;width:230px">
         <span id="contratosCount" style="font-size:12px;color:var(--gray-400);white-space:nowrap"></span>
       </div>
@@ -2992,8 +2996,34 @@ function contratoSearchText(row){
     pv.cliente,
     pv.empenho,
     pv.nfe,
+    ...(Array.isArray(pv.itens)?pv.itens.map(it=>it.desc):[]),
   ]);
   return normTxt([row.contrato,row.orgao,row.cliente_principal,...pvParts].join(' '));
+}
+function contratoFieldMatches(value,q){
+  return !!q&&normTxt(value).includes(q);
+}
+function contratoItemMatches(item,q){
+  return contratoFieldMatches(item?.desc,q);
+}
+function contratoPvMatchMeta(pv,q){
+  const itemMatch=!!q&&(Array.isArray(pv?.itens)?pv.itens:[]).some(it=>contratoItemMatches(it,q));
+  const fields={
+    pv:contratoFieldMatches(pv?.pv,q),
+    cliente:contratoFieldMatches(pv?.cliente,q),
+    empenho:contratoFieldMatches(pv?.empenho,q),
+    nfe:contratoFieldMatches(pv?.nfe,q),
+    item:itemMatch,
+  };
+  fields.any=fields.pv||fields.cliente||fields.empenho||fields.nfe||fields.item;
+  return fields;
+}
+function contratoHasPvMatch(row,q){
+  return !!q&&(Array.isArray(row?.pv_rows)?row.pv_rows:[]).some(pv=>contratoPvMatchMeta(pv,q).any);
+}
+function contratoMatchCell(value,matched){
+  const text=esc(value||'—');
+  return matched?`<span class="contract-match-cell">${text}</span>`:text;
 }
 function contratoStatusMatches(rowStatus,filterStatus){
   if(filterStatus==='todos') return true;
@@ -3099,6 +3129,7 @@ function renderContratoHighlights(rows,kind){
 }
 function renderContratoPvDetail(row){
   const pvs=Array.isArray(row.pv_rows)?row.pv_rows:[];
+  const q=normTxt(_contratosSearch);
   if(!pvs.length) return `<div class="contract-pv-wrap"><div class="contract-pv-empty">Nenhum PV encontrado para este contrato neste recorte.</div></div>`;
   return `<div class="contract-pv-wrap">
     <div class="contract-pv-head">
@@ -3111,14 +3142,15 @@ function renderContratoPvDetail(row){
         const statusTxt=String(pv.status_ent||'').trim();
         const entCls=statusTxt==='Entregue'?'badge-green':statusTxt==='Pendente'?'badge-red':'badge-navy';
         const rid=`ctr-pv-${contratoDomId(row.contrato)}-${contratoDomId(pv.pv)}`;
-        const opened=_contratoPvExpanded.has(rid);
         const itens=Array.isArray(pv.itens)?pv.itens:[];
-        return `<tr class="expand-row" onclick="toggleContratoPvItems('${rid}', event)">
+        const match=contratoPvMatchMeta(pv,q);
+        const opened=_contratoPvExpanded.has(rid)||match.item;
+        return `<tr class="expand-row${match.any?' contract-match-row':''}" onclick="toggleContratoPvItems('${rid}', event)">
           <td><span class="expand-toggle${opened?' open':''}" id="tog-${rid}">▶</span></td>
-          <td><strong>${esc(pv.pv||'—')}</strong><span class="itens-count">${itens.length} ite${itens.length!==1?'ns':'m'}</span></td>
-          <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(pv.cliente||'—')}">${esc(pv.cliente||'—')}</td>
-          <td>${esc(pv.empenho||'—')}</td>
-          <td>${esc(pv.nfe||'—')}</td>
+          <td><strong>${contratoMatchCell(pv.pv||'—',match.pv)}</strong><span class="itens-count">${itens.length} ite${itens.length!==1?'ns':'m'}</span></td>
+          <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(pv.cliente||'—')}">${contratoMatchCell(pv.cliente||'—',match.cliente)}</td>
+          <td>${contratoMatchCell(pv.empenho||'—',match.empenho)}</td>
+          <td>${contratoMatchCell(pv.nfe||'—',match.nfe)}</td>
           <td><strong>${fmt(pv.valor)}</strong></td>
           <td style="color:${num(pv.mc_valor||0)<0?C.red:C.navy}">${fmt(pv.mc_valor)}</td>
           <td><span class="badge ${getMcBadgeCls(pv.mc_pct)}">${pct(pv.mc_pct)}</span></td>
@@ -3129,14 +3161,17 @@ function renderContratoPvDetail(row){
             <table class="itens-table">
               <thead><tr><th>Descrição</th><th style="text-align:center">Qtd</th><th>Und</th><th style="text-align:right">Valor</th><th style="text-align:right">MC $</th><th style="text-align:right">MC %</th></tr></thead>
               <tbody>
-                ${itens.length?itens.map(it=>`<tr>
-                  <td class="item-desc" title="${esc(it.desc||'—')}">${esc(it.desc||'—')}</td>
+                ${itens.length?itens.map(it=>{
+                  const itemMatched=contratoItemMatches(it,q);
+                  return `<tr class="${itemMatched?'contract-match-row':''}">
+                  <td class="item-desc" title="${esc(it.desc||'—')}">${contratoMatchCell(it.desc||'—',itemMatched)}</td>
                   <td style="text-align:center">${num(it.qtd||0)>0?num(it.qtd).toLocaleString('pt-BR'):'—'}</td>
                   <td>${esc(it.und||'—')}</td>
                   <td style="text-align:right">${fmt(num(it.valor||0))}</td>
                   <td style="text-align:right;color:${num(it.mc_valor||0)<0?C.red:'var(--gray-600)'}">${fmt(num(it.mc_valor||0))}</td>
                   <td style="text-align:right"><span class="badge ${getMcBadgeCls(it.mc_pct)}">${pct(num(it.mc_pct||0))}</span></td>
-                </tr>`).join(''):`<tr><td colspan="6" style="text-align:center;color:var(--gray-400)">Sem itens detalhados para este PV</td></tr>`}
+                </tr>`;
+                }).join(''):`<tr><td colspan="6" style="text-align:center;color:var(--gray-400)">Sem itens detalhados para este PV</td></tr>`}
               </tbody>
             </table>
           </div></td>
@@ -3236,14 +3271,17 @@ function renderContratos(){
 
   document.getElementById('contratosTbody').innerHTML=sortedRows.length?sortedRows.map(row=>{
     const rid='ctr-'+ano+'-'+contratoDomId(row.contrato);
-    const opened=_contratosExpanded.has(rid);
+    const pvMatched=contratoHasPvMatch(row,q);
+    const opened=_contratosExpanded.has(rid)||pvMatched;
     const situacao=getContratoSituacaoMeta(row.mc_valor);
     const ataMeta=getContratoAtaMeta(row.status_ata_key);
     const orgaoLabel=(row.orgaos_count||0)>1?`${row.orgao} +${row.orgaos_count-1}`:row.orgao;
-    return `<tr class="expand-row" onclick="toggleContratoItems('${rid}',this)">
+    const contractMatched=contratoFieldMatches(row.contrato,q);
+    const orgaoMatched=contratoFieldMatches(row.orgao,q);
+    return `<tr class="expand-row${pvMatched||contractMatched||orgaoMatched?' contract-main-match':''}" onclick="toggleContratoItems('${rid}',this)">
       <td><span class="expand-toggle${opened?' open':''}" id="tog-${rid}">▶</span></td>
-      <td><strong>${esc(row.contrato)}</strong></td>
-      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(row.orgao||'—')}">${esc(orgaoLabel||'—')}</td>
+      <td><strong>${contratoMatchCell(row.contrato,contractMatched)}</strong></td>
+      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(row.orgao||'—')}">${contratoMatchCell(orgaoLabel||'—',orgaoMatched)}</td>
       <td><div class="contract-cell-main">${row.total_contrato>0?fmt(row.total_contrato):'—'}</div><div class="contract-cell-sub">${row.total_contrato>0?`${row.itens_vinculados} item${row.itens_vinculados!==1?'s':''} vinculado${row.itens_vinculados!==1?'s':''}`:'Sem cadastro na aba de contratos'}</div></td>
       <td><div class="contract-cell-main">${row.total_contrato>0?fmt(row.consumo_valor):'—'}</div><div class="contract-cell-sub">${row.total_contrato>0?pct(row.consumo_pct):'—'}</div></td>
       <td><div class="contract-cell-main">${row.total_contrato>0?fmt(row.saldo_consumir):'—'}</div><div class="contract-cell-sub">${row.total_contrato>0?pct(row.saldo_pct):'—'}</div></td>
