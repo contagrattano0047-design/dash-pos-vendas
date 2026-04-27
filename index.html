@@ -4069,9 +4069,12 @@ function parseSheet(rows, contratosRows=[]){
   };
   const days=d=>d?Math.floor((today-d)/86400000):0;
   const fmtD=d=>{if(!d)return '—';try{return d.toLocaleDateString('pt-BR');}catch{return '—';}};
+  const isLicitacoesRow=r=>normTxt(r?.['Departamento']||'').includes('licit');
+  const pvKey=v=>String(v??'').trim().replace(/\s+/g,'');
+  const pvBaseKey=v=>pvKey(v).split('/')[0]||pvKey(v);
 
   // Filtro principal: Licitações, valor > 0
-  const all=rows.filter(r=>String(r['Departamento']||'').trim()==='Licitações'&&toN(r['Total']||0)>0);
+  const all=rows.filter(r=>isLicitacoesRow(r)&&toN(r['Total']||0)>0);
   if(!all.length) throw new Error('Nenhuma linha Licitações com valor > 0.');
 
   const getDataPed=r=>toD(r['Data Ped']);
@@ -4340,6 +4343,43 @@ function parseSheet(rows, contratosRows=[]){
     return {resumo,rows,total_contratos:telaStats.counts[anoKey]?.todos||0,total_por_status:telaStats.counts[anoKey]||{todos:0,vigente:0,encerrada:0,misto:0,sem_cadastro:0}};
   }
 
+  const contratoPvHints={};
+  rows.forEach(r=>{
+    if(toN(r['Total']||0)<=0) return;
+    const rawContrato=getAtaNumero(r);
+    if(!hasContractId(rawContrato)) return;
+    const pv=pvKey(r['PV']);
+    if(!pv) return;
+    const hint={
+      contrato:rawContrato,
+      uasg:r['UASG']||'',
+      item:r['Item PE']||r['ITEM']||'',
+      departamento:r['Departamento']||'',
+    };
+    if(!contratoPvHints[pv]) contratoPvHints[pv]=hint;
+    const base=pvBaseKey(pv);
+    if(base&&!contratoPvHints[base]) contratoPvHints[base]=hint;
+  });
+  function enrichContratoRow(r){
+    if(hasContractId(getAtaNumero(r))) return r;
+    const pv=pvKey(r['PV']);
+    const hint=contratoPvHints[pv]||contratoPvHints[pvBaseKey(pv)];
+    if(!hint) return r;
+    return {
+      ...r,
+      Contrato:hint.contrato,
+      UASG:r['UASG']||hint.uasg,
+      'Item PE':r['Item PE']||r['ITEM']||hint.item,
+      Departamento:r['Departamento']||hint.departamento||'Licitações',
+    };
+  }
+  const contratosSource=rows
+    .filter(r=>toN(r['Total']||0)>0)
+    .map(enrichContratoRow)
+    .filter(r=>isLicitacoesRow(r)||hasContractId(getAtaNumero(r)));
+  const contratos25=contratosSource.filter(r=>getAno(r)===2025);
+  const contratos26=contratosSource.filter(r=>getAno(r)===2026);
+
   // Envelhecimento pendentes
   const penD=pen.map(r=>({...r,dias:days(toD(r['Data Ped']))}));
   const pvEnvMap={};
@@ -4434,7 +4474,7 @@ function parseSheet(rows, contratosRows=[]){
     mensal:{'2025':mensalAno(all,2025),'2026':m26},
     status:{'2025':statusAno(all25),'2026':statusAno(all26),'total':statusAno(all)},
     empresas:{'2025':empresasAno(all25),'2026':empresasAno(all26),'total':empresasAno(all)},
-    contratos:{'2025':contratosAno(all25,'2025'),'2026':contratosAno(all26,'2026'),'total':contratosAno(all,'total')},
+    contratos:{'2025':contratosAno(contratos25,'2025'),'2026':contratosAno(contratos26,'2026'),'total':contratosAno(contratosSource,'total')},
     envelhecimento,criticos,pendentes_list,previsao_semana,
     clientes:{'2025':topClientes(all25),'2026':topClientes(all26),'total':topClientes(all)},
     vendedores:{'2025':topVendedores(all25),'2026':topVendedores(all26),'total':topVendedores(all)},
