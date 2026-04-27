@@ -1265,10 +1265,27 @@ function mergeSimStores(...stores){
 function getEffectiveSimStore(){
   return mergeSimStores(_simSharedStore,getSimStorage());
 }
+function formatUserNameFromEmail(value){
+  const raw=String(value||'').trim();
+  if(!raw) return '';
+  if(!raw.includes('@')) return raw;
+  const local=raw.split('@')[0].replace(/[._-]+/g,' ').replace(/\d+/g,' ').replace(/\s+/g,' ').trim();
+  if(!local) return raw;
+  return local.split(' ').map(part=>part?part.charAt(0).toUpperCase()+part.slice(1).toLowerCase():'').join(' ');
+}
+function getSimCreatorDisplayName(value){
+  const raw=String(value||'').trim();
+  if(!raw) return '—';
+  try{
+    const account=msalInstance?getActiveMsalAccount(msalInstance):null;
+    if(account?.name && account?.username && raw.toLowerCase()===String(account.username).toLowerCase()) return account.name;
+  }catch(e){}
+  return formatUserNameFromEmail(raw)||'—';
+}
 function getSimUserLabel(){
   try{
     const account=msalInstance?getActiveMsalAccount(msalInstance):null;
-    return account?.name||account?.username||'';
+    return account?.name||formatUserNameFromEmail(account?.username)||account?.username||'';
   }catch(e){
     return '';
   }
@@ -1588,7 +1605,7 @@ function getItemComparedMetrics(item){
     marca:String(activeScenario.marca||item?.marca||'—'),
     has_compare:true,
     scenario_name:activeScenario.name||'Cenário',
-    scenario_created_by:String(activeScenario.created_by||activeScenario.updated_by||'')
+    scenario_created_by:getSimCreatorDisplayName(activeScenario.created_by||activeScenario.updated_by||'')
   };
 }
 function summarizeComparedItems(items){
@@ -1635,7 +1652,7 @@ function persistSimModalState(renderTable,sharedDelay=900){
   if(renderTable) renderPendentesTable(_pendentesData,true);
 }
 function getSimScenarioCreator(scenario){
-  return String(scenario?.created_by||scenario?.updated_by||'—').trim()||'—';
+  return getSimCreatorDisplayName(scenario?.created_by||scenario?.updated_by||'');
 }
 function touchSimScenario(scenario){
   if(!scenario) return;
