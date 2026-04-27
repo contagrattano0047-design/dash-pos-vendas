@@ -2986,6 +2986,17 @@ function filterContratosStatus(v){
   _contratosStatus = v||'todos';
   renderContratos();
 }
+function contratoStatusMatches(rowStatus,filterStatus){
+  if(filterStatus==='todos') return true;
+  if(filterStatus==='vigente') return rowStatus==='vigente'||rowStatus==='misto';
+  return rowStatus===filterStatus;
+}
+function contratoStatusCount(counts,filterStatus){
+  if(!counts) return 0;
+  if(filterStatus==='todos') return counts.todos||0;
+  if(filterStatus==='vigente') return (counts.vigente||0)+(counts.misto||0);
+  return counts[filterStatus]||0;
+}
 function sortContratos(col){
   if(_contratosSort.col===col) _contratosSort.asc=!_contratosSort.asc;
   else _contratosSort={col,asc:(col==='contrato'||col==='cliente_principal'||col==='status_ata_key'||col==='situacao')};
@@ -3161,13 +3172,13 @@ function renderContratos(){
   const portfolioStatusCounts=D.contratos?.total?.total_por_status||statusCounts;
   const q=normTxt(_contratosSearch);
   const rows=baseRows.filter(r=>{
-    const statusOk=_contratosStatus==='todos'||r.status_ata_key===_contratosStatus;
+    const statusOk=contratoStatusMatches(r.status_ata_key,_contratosStatus);
     const textOk=!q||normTxt(r.contrato).includes(q)||normTxt(r.cliente_principal).includes(q);
     return statusOk&&textOk;
   });
   const sortedRows=sortContratoRows(rows);
   const resumo=summarizeContratoRows(rows);
-  const totalContratos=portfolioStatusCounts[_contratosStatus]??portfolioStatusCounts.todos??0;
+  const totalContratos=contratoStatusCount(portfolioStatusCounts,_contratosStatus);
   const statusLabel=getContratoAtaMeta(_contratosStatus).label;
   const mcConsolidadoMeta=getContratoSituacaoMeta(resumo.mc_total);
   const shareLucro=resumo.total>0?(resumo.lucro/resumo.total*100):0;
