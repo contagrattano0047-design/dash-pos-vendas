@@ -392,6 +392,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .sim-field .hint{display:block;font-size:10px;font-weight:500;color:var(--gray-400);margin-top:3px}
 .sim-field input{width:100%;padding:9px 11px;border:1.5px solid var(--gray-200);border-radius:10px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--navy);background:#fff;outline:none;transition:border-color .15s,box-shadow .15s}
 .sim-field input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.14)}
+.sim-scenario-meta{display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.8fr);gap:10px;margin:2px 0 14px;align-items:end}
+.sim-field.compact input{padding:8px 10px;font-size:12px}
+.sim-created-by{padding:9px 10px;border-radius:10px;background:rgba(42,157,143,.08);border:1px solid rgba(42,157,143,.18);font-size:10px;color:var(--gray-500);line-height:1.25}
+.sim-created-by strong{display:block;margin-top:2px;font-size:11px;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sim-output-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .sim-output-box{padding:9px 11px;border-radius:12px;background:var(--gray-50);border:1px solid var(--gray-100)}
 .sim-output-box .label{font-size:10px;font-weight:700;letter-spacing:.55px;text-transform:uppercase;color:var(--gray-400)}
@@ -408,7 +412,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   .sim-header{padding:16px 18px 14px}
   .sim-toolbar,.sim-board{padding-left:18px;padding-right:18px}
   .sim-cards{grid-auto-columns:minmax(300px,88vw)}
-  .sim-input-grid,.sim-output-grid,.sim-assumption-list{grid-template-columns:1fr}
+  .sim-input-grid,.sim-output-grid,.sim-assumption-list,.sim-scenario-meta{grid-template-columns:1fr}
   .sim-summary-grid{grid-template-columns:1fr}
 }
 
@@ -1196,7 +1200,17 @@ function getScenarioSeq(id){
   return m?num(m[1]):0;
 }
 function cloneScenarioData(scenario){
-  return {id:String(scenario?.id||''),name:String(scenario?.name||'Cenário'),inputs:clone(scenario?.inputs||{}),raw_inputs:clone(scenario?.raw_inputs||{})};
+  return {
+    id:String(scenario?.id||''),
+    name:String(scenario?.name||'Cenário'),
+    marca:String(scenario?.marca||scenario?.brand||''),
+    created_by:String(scenario?.created_by||scenario?.createdBy||''),
+    created_at:String(scenario?.created_at||scenario?.createdAt||''),
+    updated_by:String(scenario?.updated_by||scenario?.updatedBy||''),
+    updated_at:String(scenario?.updated_at||scenario?.updatedAt||''),
+    inputs:clone(scenario?.inputs||{}),
+    raw_inputs:clone(scenario?.raw_inputs||{})
+  };
 }
 function getSimStorage(){
   try{
@@ -1219,8 +1233,13 @@ function getSimEntryUpdatedMs(entry){
   return isNaN(parsed)?0:parsed;
 }
 function normalizeSimEntry(entry){
+  const fallbackUser=String(entry?.updated_by||entry?.updatedBy||'');
   return {
-    sim_saved:Array.isArray(entry?.sim_saved)?entry.sim_saved.map(cloneScenarioData):[],
+    sim_saved:Array.isArray(entry?.sim_saved)?entry.sim_saved.map(s=>{
+      const scenario=cloneScenarioData(s);
+      if(!scenario.created_by&&fallbackUser) scenario.created_by=fallbackUser;
+      return scenario;
+    }):[],
     sim_active_id:String(entry?.sim_active_id||''),
     updated_at:String(entry?.updated_at||entry?.updatedAt||''),
     updated_by:String(entry?.updated_by||entry?.updatedBy||'')
@@ -1249,7 +1268,7 @@ function getEffectiveSimStore(){
 function getSimUserLabel(){
   try{
     const account=msalInstance?getActiveMsalAccount(msalInstance):null;
-    return account?.username||account?.name||'';
+    return account?.name||account?.username||'';
   }catch(e){
     return '';
   }
@@ -1532,7 +1551,11 @@ function scheduleSharedSimRefresh(){
   _simSharedRefreshTimer=window.setInterval(refreshSharedSimulationsFromSharePoint,60000);
 }
 function getItemSavedScenarios(item){
-  return Array.isArray(item?.sim_saved)?item.sim_saved.map(cloneScenarioData):[];
+  return Array.isArray(item?.sim_saved)?item.sim_saved.map(s=>{
+    const scenario=cloneScenarioData(s);
+    if(!scenario.marca) scenario.marca=String(item?.marca||'—');
+    return scenario;
+  }):[];
 }
 function getItemActiveScenario(item){
   const activeId=String(item?.sim_active_id||'');
@@ -1549,8 +1572,10 @@ function getItemComparedMetrics(item){
       valor:num(item?.valor||0),
       mc_valor:num(item?.mc_valor||0),
       custo_un:num(baseInputs.custo_un||0),
+      marca:String(item?.marca||'—'),
       has_compare:false,
-      scenario_name:''
+      scenario_name:'',
+      scenario_created_by:''
     };
   }
   const calc=calcSimScenario(activeScenario.inputs||baseInputs);
@@ -1560,8 +1585,10 @@ function getItemComparedMetrics(item){
     valor:roundN(calc.total),
     mc_valor:roundN(calc.mcValor),
     custo_un:roundN(calc.custoUn),
+    marca:String(activeScenario.marca||item?.marca||'—'),
     has_compare:true,
-    scenario_name:activeScenario.name||'Cenário'
+    scenario_name:activeScenario.name||'Cenário',
+    scenario_created_by:String(activeScenario.created_by||activeScenario.updated_by||'')
   };
 }
 function summarizeComparedItems(items){
@@ -1607,13 +1634,49 @@ function persistSimModalState(renderTable,sharedDelay=900){
   }
   if(renderTable) renderPendentesTable(_pendentesData,true);
 }
-function createSimScenario(inputs,name,id){
+function getSimScenarioCreator(scenario){
+  return String(scenario?.created_by||scenario?.updated_by||'—').trim()||'—';
+}
+function touchSimScenario(scenario){
+  if(!scenario) return;
+  const user=getSimUserLabel();
+  scenario.updated_by=user||scenario.updated_by||'';
+  scenario.updated_at=new Date().toISOString();
+}
+function getSimBrandOptions(currentMarca){
+  const marcas=new Set();
+  const current=String(currentMarca||_simModalState.item?.marca||'').trim();
+  if(current) marcas.add(current);
+  const sources=[...(D.pendentes_list||[]),...(_pendentesData||[])];
+  sources.forEach(row=>(row.itens||[]).forEach(it=>{
+    const marca=String(it.marca||'').trim();
+    if(marca&&marca!=='—') marcas.add(marca);
+  }));
+  return [...marcas].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+}
+function createSimScenario(inputs,name,id,meta={}){
+  const user=getSimUserLabel()||'Este navegador';
+  const now=new Date().toISOString();
+  const base={
+    id:id?String(id):'',
+    name:name||'Cenário',
+    marca:String(meta.marca||_simModalState.item?.marca||'—'),
+    created_by:String(meta.created_by||(!id?user:'')),
+    created_at:String(meta.created_at||(!id?now:'')),
+    updated_by:String(meta.updated_by||''),
+    updated_at:String(meta.updated_at||''),
+    inputs:clone(inputs),
+    raw_inputs:clone(meta.raw_inputs||{})
+  };
   if(id){
     _simModalState.seq=Math.max(_simModalState.seq,getScenarioSeq(id));
-    return {id:String(id),name:name||(`Cenário ${getScenarioSeq(id)||1}`),inputs:clone(inputs),raw_inputs:{}};
+    base.name=name||(`Cenário ${getScenarioSeq(id)||1}`);
+    return base;
   }
   _simModalState.seq+=1;
-  return {id:'sim-'+_simModalState.seq,name:name||('Cenário '+_simModalState.seq),inputs:clone(inputs),raw_inputs:{}};
+  base.id='sim-'+_simModalState.seq;
+  base.name=name||('Cenário '+_simModalState.seq);
+  return base;
 }
 function applySimScenarioToItem(id){
   if(!_simModalState.itemRef) return;
@@ -1660,7 +1723,7 @@ function closeSimModal(){
 function addSimScenario(){
   if(!_simModalState.baseInputs) return;
   const last=_simModalState.scenarios[_simModalState.scenarios.length-1];
-  _simModalState.scenarios.push(createSimScenario(last?last.inputs:_simModalState.baseInputs));
+  _simModalState.scenarios.push(createSimScenario(last?last.inputs:_simModalState.baseInputs,null,null,{marca:last?.marca||_simModalState.item?.marca}));
   persistSimModalState(false,900);
   renderSimModal();
 }
@@ -1668,6 +1731,8 @@ function resetSimScenario(id){
   const scenario=getSimScenario(id);
   if(!scenario||!_simModalState.baseInputs) return;
   scenario.inputs=clone(_simModalState.baseInputs);
+  scenario.marca=String(_simModalState.item?.marca||'—');
+  touchSimScenario(scenario);
   persistSimModalState(_simModalState.activeId===id,_simModalState.activeId===id?0:900);
   renderSimModal();
 }
@@ -1697,6 +1762,14 @@ function applySimScenarioFieldValue(id,key,value,isPct){
       scenario.inputs.preco_venda_un=qtd>0?roundN(fixedTotal/qtd,4):0;
     }
   }
+  touchSimScenario(scenario);
+}
+function updateSimScenarioBrand(id,value){
+  const scenario=getSimScenario(id);
+  if(!scenario) return;
+  scenario.marca=String(value||'').trim()||'—';
+  touchSimScenario(scenario);
+  persistSimModalState(_simModalState.activeId===id,_simModalState.activeId===id?0:900);
 }
 function updateSimScenarioField(id,key,value,isPct){
   const scenario=getSimScenario(id);
@@ -1779,12 +1852,14 @@ function renderSimModal(){
   document.getElementById('simModalMeta').innerHTML=
     `<span class="sim-chip">PV ${esc(item.pv)}</span>`+
     `<span class="sim-chip">${esc(item.cliente||'—')}</span>`+
+    `<span class="sim-chip">Marca ${esc(item.marca||'—')}</span>`+
     `<span class="sim-chip">${num(item.qtd).toLocaleString('pt-BR')} ${esc(item.und||'und')}</span>`;
   document.getElementById('simToolbarCopy').textContent='A base usa a lógica da planilha: o total do item fica travado, então ao mexer na Venda un. a quantidade é recalculada automaticamente. Escolha um cenário para aparecer na linha e entrar na imagem comparativa.';
   const clearBtn=document.getElementById('btnClearSimApplied');
   if(clearBtn) clearBtn.disabled=!(_simModalState.activeId||_simModalState.itemRef?.sim_active_id);
 
   const originalAssumptions = [
+    ['Marca', item.marca||'—'],
     ['Venda un.', fmt(original.precoVendaUn)],
     ['Custo un.', fmt(original.custoUn)],
     ['ICMS venda', pct((_simModalState.baseInputs.icms_pct||0)*100)],
@@ -1815,6 +1890,10 @@ function renderSimModal(){
 
   _simModalState.scenarios.forEach((scenario,idx)=>{
     const isActive=_simModalState.activeId===scenario.id;
+    if(!scenario.marca) scenario.marca=String(item.marca||'—');
+    const creator=getSimScenarioCreator(scenario);
+    const brandOptions=getSimBrandOptions(scenario.marca);
+    const brandListId=`sim-brand-options-${scenario.id}`;
     const actions = `
       <div class="sim-card-actions">
         <button class="sim-text-btn cta ${isActive?'active':''}" type="button" onclick="${isActive?'return false':'applySimScenarioToItem(\''+scenario.id+'\')'}">${isActive?'Aplicado na linha':'Usar na linha'}</button>
@@ -1841,6 +1920,25 @@ function renderSimModal(){
         `).join('')}
       </div>
     `).join('');
+    const scenarioMeta = `
+      <div class="sim-scenario-meta">
+        <div class="sim-field compact">
+          <label for="marca-${scenario.id}">Marca do cenário</label>
+          <input
+            id="marca-${scenario.id}"
+            type="text"
+            list="${brandListId}"
+            value="${esc(scenario.marca||'—')}"
+            oninput="updateSimScenarioBrand('${scenario.id}',this.value)"
+          >
+          <datalist id="${brandListId}">
+            ${brandOptions.map(m=>`<option value="${esc(m)}"></option>`).join('')}
+          </datalist>
+          <span class="hint">Escolha uma marca conhecida ou digite outra.</span>
+        </div>
+        <div class="sim-created-by">Criado por<strong title="${esc(creator)}">${esc(creator)}</strong></div>
+      </div>
+    `;
     cards.push(`
       <section class="sim-card">
         <div class="sim-card-head">
@@ -1852,6 +1950,7 @@ function renderSimModal(){
         </div>
         <div class="sim-card-body">
           <div id="sim-outputs-${scenario.id}">${renderSimDelta(calcSimScenario(scenario.inputs),original)+renderSimOutputsBlock(calcSimScenario(scenario.inputs))}</div>
+          ${scenarioMeta}
           ${sections}
         </div>
       </section>
@@ -2875,13 +2974,17 @@ function renderPendentesTable(data,keepSort){
       const itemCompareVendaUn=comparedItem.has_compare?comparedItem.preco_venda_un:itemBaseVendaUn;
       const itemBaseCustoUn=num(itemBaseInputs.custo_un||0);
       const itemCompareCustoUn=comparedItem.has_compare?comparedItem.custo_un:itemBaseCustoUn;
+      const itemCompareMarca=comparedItem.has_compare?String(comparedItem.marca||it.marca||'—'):String(it.marca||'—');
+      const itemScenarioCreator=comparedItem.scenario_created_by||'';
       const itemCompareValor=comparedItem.has_compare?comparedItem.valor:it.valor;
       const itemCompareMc=comparedItem.has_compare?comparedItem.mc_valor:it.mc_valor;
       const itemComparePct=itemCompareValor>0?(itemCompareMc/itemCompareValor*100):0;
       const pvArg=JSON.stringify(String(r.pv));
       html+=`<tr>`;
       html+=`<td class="item-desc" title="${(it.desc||'').replace(/"/g,'&quot;')}">${it.desc||'—'}</td>`;
-      html+=`<td><span class="brand-tag">${it.marca||'—'}</span></td>`;
+      html+=comparedItem.has_compare
+        ? `<td><div class="metric-stack"><div class="metric-current"><span class="brand-tag">${it.marca||'—'}</span></div><div class="metric-compare ${itemCompareMarca!==String(it.marca||'—')?'pos':'neutral'}">Cen. ${esc(itemCompareMarca)}</div></div></td>`
+        : `<td><span class="brand-tag">${it.marca||'—'}</span></td>`;
       html+=`<td>${it.categoria&&it.categoria!=='—'?`<span class="cat-tag">${it.categoria}</span>`:'<span style="color:var(--gray-400);font-size:11px">—</span>'}</td>`;
       html+=`<td style="font-size:11px;color:var(--gray-600)">${it.tipo||'—'}</td>`;
       html+=comparedItem.has_compare
@@ -2903,7 +3006,7 @@ function renderPendentesTable(data,keepSort){
       html+=comparedItem.has_compare
         ? `<td style="text-align:center"><div class="metric-stack center"><div class="metric-current"><span class="badge ${mcBadgeCls(iPct)}">${iPct.toFixed(1)}%</span></div><div class="metric-compare ${itemComparePct>=20?'good':itemComparePct>=10?'warn':'neg'}">Cen. ${itemComparePct.toFixed(1)}%</div></div></td>`
         : `<td style="text-align:center"><span class="badge ${mcBadgeCls(iPct)}">${iPct.toFixed(1)}%</span></td>`;
-      html+=`<td style="text-align:center"><button class="sim-btn" type="button" ${canSim?'':"disabled title=\"Requer base da planilha\""} title="${activeScenario?`Comparando com ${activeScenario.name}`:'Abrir simulador'}" onclick='event.stopPropagation();openItemSimulator(${pvArg},${originalIdx})'>${activeScenario?'🧮 Ativo':'🧮 Simular'}</button></td>`;
+      html+=`<td style="text-align:center"><button class="sim-btn" type="button" ${canSim?'':"disabled title=\"Requer base da planilha\""} title="${activeScenario?`Comparando com ${activeScenario.name}`:'Abrir simulador'}" onclick='event.stopPropagation();openItemSimulator(${pvArg},${originalIdx})'>${activeScenario?'🧮 Ativo':'🧮 Simular'}</button>${comparedItem.has_compare&&itemScenarioCreator?`<span class="compare-note active" title="${esc(itemScenarioCreator)}">por ${esc(itemScenarioCreator.length>18?itemScenarioCreator.slice(0,18)+'…':itemScenarioCreator)}</span>`:''}</td>`;
       html+=`</tr>`;
     });
     if(!r._itens.length) html+=`<tr><td colspan="12" style="text-align:center;color:var(--gray-400);padding:12px">Sem itens correspondentes ao filtro</td></tr>`;
