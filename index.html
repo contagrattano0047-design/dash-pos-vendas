@@ -330,12 +330,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .contract-list-close{border:none;background:rgba(255,255,255,.1);color:#fff;width:38px;height:38px;border-radius:10px;font-size:21px;cursor:pointer}
 .contract-list-close:hover{background:rgba(255,255,255,.18)}
 .contract-list-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid var(--gray-200);background:#fff;flex-wrap:wrap}
-.contract-list-toolbar input{padding:7px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none;width:min(360px,100%)}
+.contract-list-filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.contract-list-toolbar input,.contract-list-toolbar select{padding:7px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none;background:#fff}
+.contract-list-toolbar input{width:min(360px,100%)}
+.contract-list-toolbar select{min-width:150px}
 .contract-list-meta{font-size:12px;color:var(--gray-500)}
 .contract-list-body{overflow:auto;padding:0;background:#fff}
 .contract-list-table{width:max-content;min-width:100%;border-collapse:collapse;font-size:12px}
-.contract-list-table th{position:sticky;top:0;z-index:1;text-align:left;padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.55px;color:var(--gray-500);background:#f2f5fa;border-bottom:1px solid var(--gray-200);white-space:nowrap}
+.contract-list-table th{position:sticky;top:0;z-index:1;text-align:left;padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.55px;color:var(--gray-500);background:#f2f5fa;border-bottom:1px solid var(--gray-200);white-space:nowrap;cursor:pointer;user-select:none}
+.contract-list-table th:hover{color:var(--navy);background:#e8edf5}
 .contract-list-table td{padding:8px 10px;border-bottom:1px solid var(--gray-100);color:var(--navy);white-space:nowrap}
+.contract-list-table td.contract-list-desc{max-width:360px;min-width:240px;overflow:hidden;text-overflow:ellipsis}
+.contract-list-sort{margin-left:5px;color:var(--gold);font-size:10px}
 .contract-list-empty{padding:28px;text-align:center;color:var(--gray-400);font-size:13px}
 .itens-wrapper{padding:8px 12px 12px 40px;background:var(--gray-50);overflow-x:auto;-webkit-overflow-scrolling:touch}
 .itens-table{width:100%;min-width:960px;border-collapse:collapse;font-size:12px}
@@ -526,7 +532,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
       <button class="contract-list-close" type="button" aria-label="Fechar lista de contratos" onclick="closeContractListModal()">×</button>
     </div>
     <div class="contract-list-toolbar">
-      <input id="contractListSearch" type="text" placeholder="Buscar na lista completa..." oninput="renderContractListTable()">
+      <div class="contract-list-filters">
+        <input id="contractListSearch" type="text" placeholder="Buscar na lista completa..." oninput="renderContractListTable()">
+        <select id="contractListStatus" onchange="setContractListStatus(this.value)">
+          <option value="todos">Todas as atas</option>
+          <option value="vigente">Ata Vigente</option>
+        </select>
+      </div>
       <div class="contract-list-meta" id="contractListMeta">—</div>
     </div>
     <div class="contract-list-body" id="contractListBody"></div>
@@ -1022,6 +1034,8 @@ let _contratosStatus = 'vigente';
 let _contratosExpanded = new Set();
 let _contratoPvExpanded = new Set();
 let _contratosSort = {col:'faturamento',asc:false};
+let _contractListSort = {idx:null,asc:true};
+let _contractListStatus = 'todos';
 let _pendentesData = [];
 let _pendentesSort = {col:'dias',asc:false};
 let _pendentesFilter = {produto:'',categoria:'',marca:'',tipo:''};
@@ -3324,14 +3338,70 @@ function getContractListData(){
     ? D.contratos_lista
     : {columns:[],rows:[]};
 }
+function contractListColNorm(columns,idx){
+  return normTxt(columns?.[idx]||'');
+}
+function isContractListDescCol(columns,idx){
+  const col=contractListColNorm(columns,idx);
+  return col.includes('descricao')||col.includes('descri')||col.includes('objeto');
+}
+function getContractListStatusIdx(columns){
+  const idx=(columns||[]).findIndex((_,i)=>contractListColNorm(columns,i)==='status');
+  if(idx>=0) return idx;
+  return (columns||[]).findIndex((_,i)=>{
+    const col=contractListColNorm(columns,i);
+    return col.includes('status')||col.includes('situacao');
+  });
+}
+function contractListRowStatusKey(row,columns){
+  const idx=getContractListStatusIdx(columns);
+  if(idx<0) return 'sem_cadastro';
+  const txt=normTxt(row?.[idx]||'');
+  if(txt.includes('vigente')) return 'vigente';
+  if(txt.includes('encerrada')) return 'encerrada';
+  return txt?'outro':'sem_cadastro';
+}
+function setContractListStatus(value){
+  _contractListStatus=value||'todos';
+  renderContractListTable();
+}
+function sortContractList(idx){
+  if(_contractListSort.idx===idx) _contractListSort.asc=!_contractListSort.asc;
+  else _contractListSort={idx,asc:true};
+  renderContractListTable();
+}
+function contractListSortValue(value){
+  const s=String(value??'').trim();
+  const numericLike=/^(?:R\$\s*)?[+-]?\d{1,3}(?:\.\d{3})*(?:,\d+)?%?$|^(?:R\$\s*)?[+-]?\d+(?:,\d+)?%?$/.test(s);
+  if(numericLike) return {type:'num',value:num(s)};
+  return {type:'txt',value:normTxt(s)};
+}
+function sortContractListRows(rows){
+  if(_contractListSort.idx===null) return rows;
+  const idx=_contractListSort.idx;
+  const dir=_contractListSort.asc?1:-1;
+  return [...rows].sort((a,b)=>{
+    const av=contractListSortValue(a[idx]);
+    const bv=contractListSortValue(b[idx]);
+    if(av.type==='num'&&bv.type==='num') return (av.value-bv.value)*dir;
+    return String(av.value).localeCompare(String(bv.value),'pt-BR',{numeric:true,sensitivity:'base'})*dir;
+  });
+}
 function renderContractListTable(){
   const body=document.getElementById('contractListBody');
   const meta=document.getElementById('contractListMeta');
   if(!body||!meta) return;
   const data=getContractListData();
   const columns=data.columns||[];
+  const statusSel=document.getElementById('contractListStatus');
+  if(statusSel&&statusSel.value!==_contractListStatus) statusSel.value=_contractListStatus;
   const q=normTxt(document.getElementById('contractListSearch')?.value||'');
-  const rows=(data.rows||[]).filter(row=>!q||normTxt(row.join(' ')).includes(q));
+  const filteredRows=(data.rows||[]).filter(row=>{
+    const textOk=!q||normTxt(row.join(' ')).includes(q);
+    const statusOk=_contractListStatus==='todos'||contractListRowStatusKey(row,columns)==='vigente';
+    return textOk&&statusOk;
+  });
+  const rows=sortContractListRows(filteredRows);
   meta.textContent=columns.length&&data.rows.length
     ? `${rows.length} de ${data.rows.length} linha${data.rows.length!==1?'s':''} · ${columns.length} coluna${columns.length!==1?'s':''}`
     : 'Aba Tela - Contratos ainda não carregada';
@@ -3340,10 +3410,14 @@ function renderContractListTable(){
     return;
   }
   body.innerHTML=`<table class="contract-list-table">
-    <thead><tr>${columns.map(c=>`<th>${esc(c||'—')}</th>`).join('')}</tr></thead>
+    <thead><tr>${columns.map((c,idx)=>{
+      const sortMark=_contractListSort.idx===idx?(_contractListSort.asc?'↑':'↓'):'↕';
+      return `<th onclick="sortContractList(${idx})">${esc(c||'—')}<span class="contract-list-sort">${sortMark}</span></th>`;
+    }).join('')}</tr></thead>
     <tbody>${rows.map(row=>`<tr>${columns.map((_,idx)=>{
       const value=String(row[idx]??'');
-      return `<td title="${esc(value)}">${value?esc(value):'—'}</td>`;
+      const cls=isContractListDescCol(columns,idx)?' class="contract-list-desc"':'';
+      return `<td${cls} title="${esc(value)}">${value?esc(value):'—'}</td>`;
     }).join('')}</tr>`).join('')}</tbody>
   </table>`;
 }
