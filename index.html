@@ -340,7 +340,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .contract-list-table th{position:sticky;top:0;z-index:1;text-align:left;padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.55px;color:var(--gray-500);background:#f2f5fa;border-bottom:1px solid var(--gray-200);white-space:nowrap;cursor:pointer;user-select:none}
 .contract-list-table th:hover{color:var(--navy);background:#e8edf5}
 .contract-list-table td{padding:8px 10px;border-bottom:1px solid var(--gray-100);color:var(--navy);white-space:nowrap}
-.contract-list-table td.contract-list-desc{max-width:360px;min-width:240px;overflow:hidden;text-overflow:ellipsis}
+.contract-list-table tbody tr:nth-child(even):not(.contract-list-expiring-soon):not(.contract-list-expired) td{background:#f3f8ff}
+.contract-list-table tbody tr:nth-child(even):not(.contract-list-expiring-soon):not(.contract-list-expired):hover td,
+.contract-list-table tbody tr:nth-child(odd):not(.contract-list-expiring-soon):not(.contract-list-expired):hover td{background:#eaf3ff}
+.contract-list-table tr.contract-list-expiring-soon td{background:#fff8df}
+.contract-list-table tr.contract-list-expired td{background:#fff1f1}
+.contract-list-table td.contract-list-desc{max-width:220px;min-width:180px;overflow:hidden;text-overflow:ellipsis}
+.contract-list-table td.contract-list-margin{text-align:center}
+.contract-list-vigencia{display:inline-flex;align-items:center;gap:5px}
+.contract-list-vigencia-badge{display:inline-flex;align-items:center;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:800;white-space:nowrap}
+.contract-list-vigencia-badge.danger{background:var(--red-pale);color:var(--red)}
+.contract-list-vigencia-badge.warn{background:#fef3e2;color:#a86f10}
+.contract-list-vigencia-badge.ok{background:#e6f4ef;color:var(--green-light)}
 .contract-list-sort{margin-left:5px;color:var(--gold);font-size:10px}
 .contract-list-empty{padding:28px;text-align:center;color:var(--gray-400);font-size:13px}
 .itens-wrapper{padding:8px 12px 12px 40px;background:var(--gray-50);overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -3343,7 +3354,18 @@ function contractListColNorm(columns,idx){
 }
 function isContractListDescCol(columns,idx){
   const col=contractListColNorm(columns,idx);
-  return col.includes('descricao')||col.includes('descri')||col.includes('objeto');
+  return col.includes('descricao')||col.includes('descri')||col.includes('desc resumida')||col.includes('objeto');
+}
+function isContractListMarginCol(columns,idx){
+  const col=contractListColNorm(columns,idx);
+  return col.includes('margem')||col.includes('mc %')||col.includes('mc%')||col.includes('mc (%)');
+}
+function contractListMarginBadge(value){
+  const raw=String(value??'').trim();
+  if(!raw) return '';
+  const val=num(raw.replace('%',''));
+  const cls=val>=20?'badge-green':val>=10?'badge-orange':'badge-red';
+  return `<span class="badge ${cls}">${esc(raw.includes('%')?raw:(val.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%'))}</span>`;
 }
 function getContractListStatusIdx(columns){
   const idx=(columns||[]).findIndex((_,i)=>contractListColNorm(columns,i)==='status');
@@ -3360,6 +3382,52 @@ function contractListRowStatusKey(row,columns){
   if(txt.includes('vigente')) return 'vigente';
   if(txt.includes('encerrada')) return 'encerrada';
   return txt?'outro':'sem_cadastro';
+}
+function getContractListVigenciaIdx(columns){
+  const candidates=['vigencia','vigencia ata','validade','data fim','fim vigencia','fim da vigencia','termino','termino vigencia','data final','final vigencia'];
+  let idx=(columns||[]).findIndex((_,i)=>{
+    const col=contractListColNorm(columns,i);
+    return candidates.some(c=>col===c||col.includes(c));
+  });
+  if(idx>=0) return idx;
+  return (columns||[]).findIndex((_,i)=>{
+    const col=contractListColNorm(columns,i);
+    return (col.includes('fim')||col.includes('final'))&&(col.includes('ata')||col.includes('contrato')||col.includes('vigencia'));
+  });
+}
+function parseContractListDate(value){
+  const s=String(value??'').trim();
+  if(!s) return null;
+  const matches=[...s.matchAll(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/g)];
+  if(matches.length){
+    const m=matches[matches.length-1];
+    const d=Number(m[1]);
+    const mo=Number(m[2])-1;
+    let y=Number(m[3]);
+    if(y<100) y+=2000;
+    const dt=new Date(y,mo,d);
+    return isNaN(dt.getTime())?null:dt;
+  }
+  const iso=s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(iso){
+    const dt=new Date(Number(iso[1]),Number(iso[2])-1,Number(iso[3]));
+    return isNaN(dt.getTime())?null:dt;
+  }
+  return null;
+}
+function contractListVigenciaMeta(row,columns){
+  const idx=getContractListVigenciaIdx(columns);
+  if(idx<0) return null;
+  const dt=parseContractListDate(row?.[idx]);
+  if(!dt) return null;
+  const today=new Date();
+  today.setHours(0,0,0,0);
+  dt.setHours(0,0,0,0);
+  const days=Math.ceil((dt-today)/86400000);
+  if(days<0) return {idx,cls:'danger',rowCls:'contract-list-expired',label:'Encerrada'};
+  if(days<=90) return {idx,cls:'danger',rowCls:'contract-list-expiring-soon',label:`Vence ${days}d`};
+  if(days<=180) return {idx,cls:'warn',rowCls:'contract-list-expiring-soon',label:`${days}d`};
+  return {idx,cls:'ok',rowCls:'',label:'Vigente'};
 }
 function setContractListStatus(value){
   _contractListStatus=value||'todos';
@@ -3414,11 +3482,23 @@ function renderContractListTable(){
       const sortMark=_contractListSort.idx===idx?(_contractListSort.asc?'↑':'↓'):'↕';
       return `<th onclick="sortContractList(${idx})">${esc(c||'—')}<span class="contract-list-sort">${sortMark}</span></th>`;
     }).join('')}</tr></thead>
-    <tbody>${rows.map(row=>`<tr>${columns.map((_,idx)=>{
+    <tbody>${rows.map(row=>{
+      const vigencia=contractListVigenciaMeta(row,columns);
+      return `<tr class="${vigencia?.rowCls||''}">${columns.map((_,idx)=>{
       const value=String(row[idx]??'');
-      const cls=isContractListDescCol(columns,idx)?' class="contract-list-desc"':'';
-      return `<td${cls} title="${esc(value)}">${value?esc(value):'—'}</td>`;
-    }).join('')}</tr>`).join('')}</tbody>
+      const classes=[
+        isContractListDescCol(columns,idx)?'contract-list-desc':'',
+        isContractListMarginCol(columns,idx)?'contract-list-margin':''
+      ].filter(Boolean).join(' ');
+      const cls=classes?` class="${classes}"`:'';
+      let display=value?esc(value):'—';
+      if(isContractListMarginCol(columns,idx)&&value) display=contractListMarginBadge(value);
+      if(vigencia&&idx===vigencia.idx){
+        display=`<span class="contract-list-vigencia"><span>${display}</span><span class="contract-list-vigencia-badge ${vigencia.cls}">${esc(vigencia.label)}</span></span>`;
+      }
+      return `<td${cls} title="${esc(value)}">${display}</td>`;
+    }).join('')}</tr>`;
+    }).join('')}</tbody>
   </table>`;
 }
 function openContractListModal(){
