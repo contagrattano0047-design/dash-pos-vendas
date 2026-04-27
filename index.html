@@ -1058,6 +1058,7 @@ let _prodCatalog = {};
 let _simModalState = {item:null,itemRef:null,baseInputs:null,scenarios:[],seq:0,activeId:''};
 const SIM_STORAGE_KEY = 'dashPosVendas.simulacoes.v1';
 const SIM_SHARED_FILE = 'dash-pos-vendas-simulacoes.json';
+const CONTRACT_QUALITY_STORAGE_KEY = 'dashPosVendas.contratos.qualidade.v1';
 let _simSharedStore = {};
 let _simSharedTarget = null;
 let _simSharedSyncTimer = null;
@@ -2056,6 +2057,7 @@ window.addEventListener('keydown', e=>{
 // -------------------------------------------------------
 function renderAll(){
   document.getElementById('lastUpdateTime').textContent = new Date().toLocaleString('pt-BR');
+  hydrateContratoQualityAging();
   renderPanorama();
   renderEnvelhecimento();
   renderStatus();
@@ -3300,6 +3302,39 @@ function summarizeContratoRows(rows){
   resumo.mc_pct=resumo.faturamento>0?(resumo.mc_total/resumo.faturamento*100):0;
   return resumo;
 }
+function contratoQualityKey(issue){
+  return [issue?.tipo||'',issue?.pv||'',issue?.contrato||'',(issue?.campos||[]).join('|')].join('::');
+}
+function loadContratoQualitySeen(){
+  try{
+    const raw=localStorage.getItem(CONTRACT_QUALITY_STORAGE_KEY);
+    const parsed=raw?JSON.parse(raw):{};
+    return parsed&&typeof parsed==='object'?parsed:{};
+  }catch(e){return {};}
+}
+function saveContratoQualitySeen(seen){
+  try{localStorage.setItem(CONTRACT_QUALITY_STORAGE_KEY,JSON.stringify(seen));}catch(e){}
+}
+function hydrateContratoQualityAging(){
+  const diagnostics=D.contratos_diagnostics||{};
+  const activeKeys=new Set();
+  const seen=loadContratoQualitySeen();
+  const nowIso=new Date().toISOString();
+  Object.values(diagnostics).forEach(diag=>{
+    [...(diag?.corrigidas||[]),...(diag?.pendentes||[])].forEach(issue=>{
+      const key=contratoQualityKey(issue);
+      if(!key||key==='::::') return;
+      activeKeys.add(key);
+      if(!seen[key]) seen[key]={first_seen:nowIso,last_seen:nowIso,occurrences:0};
+      seen[key].last_seen=nowIso;
+      seen[key].occurrences=(seen[key].occurrences||0)+1;
+      issue.first_seen=seen[key].first_seen;
+      issue.days_open=Math.max(0,Math.floor((Date.now()-new Date(seen[key].first_seen).getTime())/86400000));
+    });
+  });
+  Object.keys(seen).forEach(key=>{if(!activeKeys.has(key)) delete seen[key];});
+  saveContratoQualitySeen(seen);
+}
 function renderContratosQualityPanel(ano){
   const panel=document.getElementById('contratosQualityPanel');
   if(!panel) return;
@@ -3313,6 +3348,9 @@ function renderContratosQualityPanel(ano){
   }
   panel.classList.remove('is-hidden');
   const sample=[...corrigidas.map(i=>({...i,status:'Corrigido'})),...pendentes.map(i=>({...i,status:'Revisar'}))].slice(0,6);
+  const ageLabel=i=>i.first_seen
+    ? `Encontrado em ${new Date(i.first_seen).toLocaleDateString('pt-BR')} · ${num(i.days_open||0)} dia${num(i.days_open||0)!==1?'s':''} sem resolução`
+    : 'Monitoramento iniciado nesta sessão';
   panel.innerHTML=`
     <div class="contract-quality-head">
       <div class="contract-quality-title">Qualidade da planilha</div>
@@ -3323,7 +3361,8 @@ function renderContratosQualityPanel(ano){
         <strong>PV ${esc(i.pv||'—')}</strong>${i.base_pv&&i.base_pv!==i.pv?` via PV ${esc(i.base_pv)}`:''}
         ${i.contrato&&i.contrato!=='—'?` → contrato ${esc(i.contrato)}`:''}
         <span class="contract-quality-badge">${esc(i.status)}</span><br>
-        ${esc(i.acao||'')} ${i.campos?.length?`· Campo(s): ${esc(i.campos.join(', '))}`:''}
+        ${esc(i.acao||'')} ${i.campos?.length?`· Campo(s): ${esc(i.campos.join(', '))}`:''}<br>
+        <span class="contract-cell-sub">${esc(ageLabel(i))}</span>
       </div>`).join('')}
     </div>`;
 }
