@@ -796,14 +796,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
         <div class="card-subtitle" id="subtitleContratosTabela">—</div>
       </div>
       <div class="header-tools">
-        <input id="searchContratos" type="text" placeholder="Buscar contrato ou cliente..." oninput="filterContratos(this.value)"
+        <input id="searchContratos" type="text" placeholder="Buscar contrato, órgão, PV, cliente ou empenho..." oninput="filterContratos(this.value)"
           style="padding:6px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none;width:230px">
         <span id="contratosCount" style="font-size:12px;color:var(--gray-400);white-space:nowrap"></span>
       </div>
     </div>
     <div class="table-scroll xwide">
       <table class="data-table">
-        <thead><tr><th style="width:30px"></th><th style="cursor:pointer" onclick="sortContratos('contrato')">Contrato <span id="sortContratos-contrato">↕</span></th><th style="cursor:pointer" onclick="sortContratos('cliente_principal')">Cliente Principal <span id="sortContratos-cliente_principal">↕</span></th><th style="cursor:pointer" onclick="sortContratos('total_contrato')">Valor do Contrato <span id="sortContratos-total_contrato">↕</span></th><th style="cursor:pointer" onclick="sortContratos('consumo_valor')">Consumo <span id="sortContratos-consumo_valor">↕</span></th><th style="cursor:pointer" onclick="sortContratos('saldo_consumir')">Saldo <span id="sortContratos-saldo_consumir">↕</span></th><th style="cursor:pointer" onclick="sortContratos('faturamento')">Faturamento <span id="sortContratos-faturamento">↕</span></th><th style="cursor:pointer" onclick="sortContratos('mc_valor')">MC (R$) <span id="sortContratos-mc_valor">↕</span></th><th style="cursor:pointer" onclick="sortContratos('mc_pct')">MC (%) <span id="sortContratos-mc_pct">↕</span></th><th style="cursor:pointer" onclick="sortContratos('pvs')">PVs <span id="sortContratos-pvs">↕</span></th><th style="cursor:pointer" onclick="sortContratos('status_ata_key')">Ata <span id="sortContratos-status_ata_key">↕</span></th><th style="cursor:pointer" onclick="sortContratos('situacao')">Situação <span id="sortContratos-situacao">↕</span></th></tr></thead>
+        <thead><tr><th style="width:30px"></th><th style="cursor:pointer" onclick="sortContratos('contrato')">Contrato <span id="sortContratos-contrato">↕</span></th><th style="cursor:pointer" onclick="sortContratos('orgao')">Órgão <span id="sortContratos-orgao">↕</span></th><th style="cursor:pointer" onclick="sortContratos('total_contrato')">Valor do Contrato <span id="sortContratos-total_contrato">↕</span></th><th style="cursor:pointer" onclick="sortContratos('consumo_valor')">Consumo <span id="sortContratos-consumo_valor">↕</span></th><th style="cursor:pointer" onclick="sortContratos('saldo_consumir')">Saldo <span id="sortContratos-saldo_consumir">↕</span></th><th style="cursor:pointer" onclick="sortContratos('faturamento')">Faturamento <span id="sortContratos-faturamento">↕</span></th><th style="cursor:pointer" onclick="sortContratos('mc_valor')">MC (R$) <span id="sortContratos-mc_valor">↕</span></th><th style="cursor:pointer" onclick="sortContratos('mc_pct')">MC (%) <span id="sortContratos-mc_pct">↕</span></th><th style="cursor:pointer" onclick="sortContratos('pvs')">PVs <span id="sortContratos-pvs">↕</span></th><th style="cursor:pointer" onclick="sortContratos('status_ata_key')">Ata <span id="sortContratos-status_ata_key">↕</span></th><th style="cursor:pointer" onclick="sortContratos('situacao')">Situação <span id="sortContratos-situacao">↕</span></th></tr></thead>
         <tbody id="contratosTbody"></tbody>
       </table>
     </div>
@@ -2986,6 +2986,15 @@ function filterContratosStatus(v){
   _contratosStatus = v||'todos';
   renderContratos();
 }
+function contratoSearchText(row){
+  const pvParts=(Array.isArray(row.pv_rows)?row.pv_rows:[]).flatMap(pv=>[
+    pv.pv,
+    pv.cliente,
+    pv.empenho,
+    pv.nfe,
+  ]);
+  return normTxt([row.contrato,row.orgao,row.cliente_principal,...pvParts].join(' '));
+}
 function contratoStatusMatches(rowStatus,filterStatus){
   if(filterStatus==='todos') return true;
   if(filterStatus==='vigente') return rowStatus==='vigente'||rowStatus==='misto';
@@ -2999,7 +3008,7 @@ function contratoStatusCount(counts,filterStatus){
 }
 function sortContratos(col){
   if(_contratosSort.col===col) _contratosSort.asc=!_contratosSort.asc;
-  else _contratosSort={col,asc:(col==='contrato'||col==='cliente_principal'||col==='status_ata_key'||col==='situacao')};
+  else _contratosSort={col,asc:(col==='contrato'||col==='orgao'||col==='status_ata_key'||col==='situacao')};
   renderContratos();
 }
 function getContratoSituacaoSort(row){
@@ -3016,7 +3025,7 @@ function sortContratoRows(rows){
       vb=getContratoSituacaoSort(b);
       return asc?va.localeCompare(vb,'pt-BR'):vb.localeCompare(va,'pt-BR');
     }
-    if(col==='contrato'||col==='cliente_principal'||col==='status_ata_key'){
+    if(col==='contrato'||col==='orgao'||col==='status_ata_key'){
       va=String(a[col]??'');
       vb=String(b[col]??'');
       return asc?va.localeCompare(vb,'pt-BR'):vb.localeCompare(va,'pt-BR');
@@ -3028,7 +3037,7 @@ function sortContratoRows(rows){
   return sorted;
 }
 function syncContratosSortIndicators(){
-  ['contrato','cliente_principal','total_contrato','consumo_valor','saldo_consumir','faturamento','mc_valor','mc_pct','pvs','status_ata_key','situacao'].forEach(col=>{
+  ['contrato','orgao','total_contrato','consumo_valor','saldo_consumir','faturamento','mc_valor','mc_pct','pvs','status_ata_key','situacao'].forEach(col=>{
     const el=document.getElementById(`sortContratos-${col}`);
     if(!el) return;
     el.textContent=_contratosSort.col===col?(_contratosSort.asc?'↑':'↓'):'↕';
@@ -3075,11 +3084,11 @@ function renderContratoHighlights(rows,kind){
   if(!rows.length) return `<div style="color:var(--gray-400);font-size:13px;text-align:center;padding:18px 8px">Nenhum contrato ${kind==='lucro'?'lucrativo':'em prejuízo'} neste recorte</div>`;
   return rows.map(row=>{
     const color=kind==='prejuizo'?C.red:C.green;
-    const extraClientes=(row.clientes_count||0)>1?` +${row.clientes_count-1} cliente${row.clientes_count-1!==1?'s':''}`:'';
+    const extraOrgaos=(row.orgaos_count||0)>1?` +${row.orgaos_count-1} órgão${row.orgaos_count-1!==1?'s':''}`:'';
     return `<div class="aging-row ${kind==='prejuizo'?'danger':''}" style="margin-bottom:8px">
       <div>
         <div class="aging-label">Contrato ${esc(row.contrato)}</div>
-        <div class="aging-count" title="${esc(row.cliente_principal||'—')}">${esc(String(row.cliente_principal||'—').substring(0,34))}${extraClientes}</div>
+        <div class="aging-count" title="${esc(row.orgao||'—')}">${esc(String(row.orgao||'—').substring(0,34))}${extraOrgaos}</div>
       </div>
       <div class="aging-value">
         <div class="val" style="font-size:13px;color:${color}">${fmt(row.mc_valor)}</div>
@@ -3097,7 +3106,7 @@ function renderContratoPvDetail(row){
       <div class="contract-pv-count">${pvs.length} PV${pvs.length!==1?'s':''} no recorte atual</div>
     </div>
     <table class="contract-pv-table">
-      <thead><tr><th style="width:30px"></th><th>PV</th><th>Cliente</th><th>Empenho</th><th>Valor</th><th>MC (R$)</th><th>MC (%)</th><th>Status Ent.</th></tr></thead>
+      <thead><tr><th style="width:30px"></th><th>PV</th><th>Cliente</th><th>Empenho</th><th>NF-e</th><th>Valor</th><th>MC (R$)</th><th>MC (%)</th><th>Status Ent.</th></tr></thead>
       <tbody>${pvs.map(pv=>{
         const statusTxt=String(pv.status_ent||'').trim();
         const entCls=statusTxt==='Entregue'?'badge-green':statusTxt==='Pendente'?'badge-red':'badge-navy';
@@ -3109,15 +3118,16 @@ function renderContratoPvDetail(row){
           <td><strong>${esc(pv.pv||'—')}</strong><span class="itens-count">${itens.length} ite${itens.length!==1?'ns':'m'}</span></td>
           <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(pv.cliente||'—')}">${esc(pv.cliente||'—')}</td>
           <td>${esc(pv.empenho||'—')}</td>
+          <td>${esc(pv.nfe||'—')}</td>
           <td><strong>${fmt(pv.valor)}</strong></td>
           <td style="color:${num(pv.mc_valor||0)<0?C.red:C.navy}">${fmt(pv.mc_valor)}</td>
           <td><span class="badge ${getMcBadgeCls(pv.mc_pct)}">${pct(pv.mc_pct)}</span></td>
           <td><span class="badge ${entCls}">${esc(statusTxt||'—')}</span></td>
         </tr>
         <tr class="expand-detail${opened?' open':''}" id="${rid}">
-          <td colspan="8"><div class="itens-wrapper" style="padding-left:24px">
+          <td colspan="9"><div class="itens-wrapper" style="padding-left:24px">
             <table class="itens-table">
-              <thead><tr><th>Descrição</th><th style="text-align:center">Qtd</th><th>Und</th><th style="text-align:right">Valor</th><th style="text-align:right">MC $</th></tr></thead>
+              <thead><tr><th>Descrição</th><th style="text-align:center">Qtd</th><th>Und</th><th style="text-align:right">Valor</th><th style="text-align:right">MC $</th><th style="text-align:right">MC %</th></tr></thead>
               <tbody>
                 ${itens.length?itens.map(it=>`<tr>
                   <td class="item-desc" title="${esc(it.desc||'—')}">${esc(it.desc||'—')}</td>
@@ -3125,7 +3135,8 @@ function renderContratoPvDetail(row){
                   <td>${esc(it.und||'—')}</td>
                   <td style="text-align:right">${fmt(num(it.valor||0))}</td>
                   <td style="text-align:right;color:${num(it.mc_valor||0)<0?C.red:'var(--gray-600)'}">${fmt(num(it.mc_valor||0))}</td>
-                </tr>`).join(''):`<tr><td colspan="5" style="text-align:center;color:var(--gray-400)">Sem itens detalhados para este PV</td></tr>`}
+                  <td style="text-align:right"><span class="badge ${getMcBadgeCls(it.mc_pct)}">${pct(num(it.mc_pct||0))}</span></td>
+                </tr>`).join(''):`<tr><td colspan="6" style="text-align:center;color:var(--gray-400)">Sem itens detalhados para este PV</td></tr>`}
               </tbody>
             </table>
           </div></td>
@@ -3173,7 +3184,7 @@ function renderContratos(){
   const q=normTxt(_contratosSearch);
   const rows=baseRows.filter(r=>{
     const statusOk=contratoStatusMatches(r.status_ata_key,_contratosStatus);
-    const textOk=!q||normTxt(r.contrato).includes(q)||normTxt(r.cliente_principal).includes(q);
+    const textOk=!q||contratoSearchText(r).includes(q);
     return statusOk&&textOk;
   });
   const sortedRows=sortContratoRows(rows);
@@ -3228,11 +3239,11 @@ function renderContratos(){
     const opened=_contratosExpanded.has(rid);
     const situacao=getContratoSituacaoMeta(row.mc_valor);
     const ataMeta=getContratoAtaMeta(row.status_ata_key);
-    const clienteLabel=(row.clientes_count||0)>1?`${row.cliente_principal} +${row.clientes_count-1}`:row.cliente_principal;
+    const orgaoLabel=(row.orgaos_count||0)>1?`${row.orgao} +${row.orgaos_count-1}`:row.orgao;
     return `<tr class="expand-row" onclick="toggleContratoItems('${rid}',this)">
       <td><span class="expand-toggle${opened?' open':''}" id="tog-${rid}">▶</span></td>
       <td><strong>${esc(row.contrato)}</strong></td>
-      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(row.cliente_principal||'—')}">${esc(clienteLabel||'—')}</td>
+      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(row.orgao||'—')}">${esc(orgaoLabel||'—')}</td>
       <td><div class="contract-cell-main">${row.total_contrato>0?fmt(row.total_contrato):'—'}</div><div class="contract-cell-sub">${row.total_contrato>0?`${row.itens_vinculados} item${row.itens_vinculados!==1?'s':''} vinculado${row.itens_vinculados!==1?'s':''}`:'Sem cadastro na aba de contratos'}</div></td>
       <td><div class="contract-cell-main">${row.total_contrato>0?fmt(row.consumo_valor):'—'}</div><div class="contract-cell-sub">${row.total_contrato>0?pct(row.consumo_pct):'—'}</div></td>
       <td><div class="contract-cell-main">${row.total_contrato>0?fmt(row.saldo_consumir):'—'}</div><div class="contract-cell-sub">${row.total_contrato>0?pct(row.saldo_pct):'—'}</div></td>
@@ -3999,6 +4010,17 @@ function parseSheet(rows, contratosRows=[]){
       ''
     ).trim();
   }
+  function getContratoOrgao(row){
+    return String(
+      row?.['ORGÃO']||
+      row?.['ÓRGÃO']||
+      row?.['ORGAO']||
+      row?.['Orgão']||
+      row?.['Órgão']||
+      row?.['Orgao']||
+      ''
+    ).trim();
+  }
   function telaContratoStats(rowsTela){
     const itemMap={};
     const contractMap={};
@@ -4007,11 +4029,13 @@ function parseSheet(rows, contratosRows=[]){
       const status=String(r['STATUS']||'').trim()||'Sem cadastro';
       const contractCode=getAtaNumero(r);
       const contractKey=hasContractId(contractCode)?contratoLinkPart(contractCode):'';
+      const orgao=getContratoOrgao(r)||'—';
       if(key){
         itemMap[key]={
           key,
           ata_numero:contractCode,
           ata_key:contractKey,
+          orgao,
           total:toN(r['R$ TOTAL']||0),
           consumo:toN(r['CONSUMO (R$)']||0),
           saldo:toN(r['Saldo a Empenhar R$']||0),
@@ -4025,9 +4049,11 @@ function parseSheet(rows, contratosRows=[]){
         consumo:0,
         saldo:0,
         statuses:new Set(),
+        orgaos:{},
         itens_total:0,
         ano:contratoAnoCodigo(contractCode)||contratoAnoCodigo(String(r['Nª DA ATA']||''))
       };
+      if(orgao&&orgao!=='—') contractMap[contractKey].orgaos[orgao]=(contractMap[contractKey].orgaos[orgao]||0)+toN(r['R$ TOTAL']||0);
       contractMap[contractKey].total+=toN(r['R$ TOTAL']||0);
       contractMap[contractKey].consumo+=toN(r['CONSUMO (R$)']||0);
       contractMap[contractKey].saldo+=toN(r['Saldo a Empenhar R$']||0);
@@ -4037,6 +4063,9 @@ function parseSheet(rows, contratosRows=[]){
     const blank=()=>({todos:0,vigente:0,encerrada:0,misto:0,sem_cadastro:0});
     const counts={'2025':blank(),'2026':blank(),'total':blank()};
     Object.values(contractMap).forEach(entry=>{
+      const orgaoEntries=Object.entries(entry.orgaos||{}).sort((a,b)=>b[1]-a[1]);
+      entry.orgao=orgaoEntries[0]?.[0]||'—';
+      entry.orgaos_count=orgaoEntries.length;
       const statusKey=getAtaStatusKey(entry.statuses);
       counts.total.todos+=1;
       counts.total[statusKey]+=1;
@@ -4051,6 +4080,7 @@ function parseSheet(rows, contratosRows=[]){
 
   function contratosAno(subset,anoKey){
     const cMap={};
+    const getNfe=r=>String(r['NFe']||r['NF-e']||r['NFe Saída']||r['Nota Fiscal']||'').trim();
     subset.forEach(r=>{
       const rawContrato=getAtaNumero(r);
       if(!hasContractId(rawContrato)) return;
@@ -4058,18 +4088,21 @@ function parseSheet(rows, contratosRows=[]){
       const contrato=(linked?.ata_numero && hasContractId(linked.ata_numero)) ? String(linked.ata_numero).trim() : rawContrato;
       const contratoKey=contratoLinkPart(contrato);
       const ataSummary=telaStats.contractMap?.[contratoKey]||null;
-      if(!cMap[contrato]) cMap[contrato]={contrato,faturamento:0,mc_valor:0,pvs:new Set(),clientes:{},valor_entregue:0,valor_pendente:0,total_contrato:0,consumo_valor:0,saldo_consumir:0,statuses:new Set(),itemLinks:new Set(),pvMap:{}};
+      if(!cMap[contrato]) cMap[contrato]={contrato,faturamento:0,mc_valor:0,pvs:new Set(),clientes:{},orgaos:{},orgao:'—',orgaos_count:0,valor_entregue:0,valor_pendente:0,total_contrato:0,consumo_valor:0,saldo_consumir:0,statuses:new Set(),itemLinks:new Set(),pvMap:{}};
       const val=toN(r['Total']||0);
       const mc=toN(r['MC ($)']||0);
       const cliente=String(r['Cliente']||'—').trim()||'—';
+      const nfe=getNfe(r);
       cMap[contrato].faturamento+=val;
       cMap[contrato].mc_valor+=mc;
       const pv=String(r['PV']||'').trim()||'—';
       cMap[contrato].pvs.add(pv);
       cMap[contrato].clientes[cliente]=(cMap[contrato].clientes[cliente]||0)+val;
+      if(linked?.orgao&&linked.orgao!=='—') cMap[contrato].orgaos[linked.orgao]=(cMap[contrato].orgaos[linked.orgao]||0)+(linked.total||val||0);
       if(String(r['Status Ent']||'').trim()==='Entregue') cMap[contrato].valor_entregue+=val;
       if(String(r['Status Ent']||'').trim()==='Pendente') cMap[contrato].valor_pendente+=val;
-      if(!cMap[contrato].pvMap[pv]) cMap[contrato].pvMap[pv]={pv,cliente,empenho:String(r['Empenho']||'—').trim()||'—',status_ent:String(r['Status Ent']||'').trim()||'—',valor:0,mc_valor:0,itens:[]};
+      if(!cMap[contrato].pvMap[pv]) cMap[contrato].pvMap[pv]={pv,cliente,empenho:String(r['Empenho']||'—').trim()||'—',nfe_set:new Set(),status_ent:String(r['Status Ent']||'').trim()||'—',valor:0,mc_valor:0,itens:[]};
+      if(nfe) cMap[contrato].pvMap[pv].nfe_set.add(nfe);
       cMap[contrato].pvMap[pv].valor+=val;
       cMap[contrato].pvMap[pv].mc_valor+=mc;
       cMap[contrato].pvMap[pv].itens.push({
@@ -4078,6 +4111,7 @@ function parseSheet(rows, contratosRows=[]){
         und:String(r['Und']||r['Un']||'—'),
         valor:round(val),
         mc_valor:round(mc),
+        mc_pct:val>0?round(mc/val*100,1):0,
       });
       if(linked && !cMap[contrato].itemLinks.has(linked.key)){
         cMap[contrato].itemLinks.add(linked.key);
@@ -4088,11 +4122,16 @@ function parseSheet(rows, contratosRows=[]){
         cMap[contrato].total_contrato=ataSummary.total;
         cMap[contrato].consumo_valor=ataSummary.consumo;
         cMap[contrato].saldo_consumir=ataSummary.saldo;
+        cMap[contrato].orgao=ataSummary.orgao||'—';
+        cMap[contrato].orgaos_count=ataSummary.orgaos_count||0;
       }
     });
     const rows=Object.values(cMap).map(row=>{
       const clienteEntries=Object.entries(row.clientes).sort((a,b)=>b[1]-a[1]);
       const clientePrincipal=clienteEntries[0]?.[0]||'—';
+      const orgaoEntries=Object.entries(row.orgaos).sort((a,b)=>b[1]-a[1]);
+      const orgao=(row.orgao&&row.orgao!=='—')?row.orgao:(orgaoEntries[0]?.[0]||'—');
+      const orgaosCount=row.orgaos_count||orgaoEntries.length||(orgao&&orgao!=='—'?1:0);
       const faturamento=round(row.faturamento);
       const mcValor=round(row.mc_valor);
       const totalContrato=round(row.total_contrato);
@@ -4101,11 +4140,14 @@ function parseSheet(rows, contratosRows=[]){
       const pvRows=Object.values(row.pvMap).map(pv=>{
         const pvValor=round(pv.valor);
         const pvMc=round(pv.mc_valor);
-        return {...pv,valor:pvValor,mc_valor:pvMc,mc_pct:pvValor>0?round(pvMc/pvValor*100,1):0};
+        const {nfe_set,...pvClean}=pv;
+        return {...pvClean,nfe:[...(nfe_set||[])].join(', ')||'—',valor:pvValor,mc_valor:pvMc,mc_pct:pvValor>0?round(pvMc/pvValor*100,1):0};
       }).sort((a,b)=>b.valor-a.valor);
       const statusAtaKey=getAtaStatusKey(row.statuses);
       return {
         contrato:row.contrato,
+        orgao,
+        orgaos_count:orgaosCount,
         cliente_principal:clientePrincipal,
         clientes_count:clienteEntries.length,
         faturamento,
