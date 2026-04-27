@@ -4276,6 +4276,17 @@ function shouldFormatMirrorNumber(column){
   const valueHints=['r$','valor','total','consumo','saldo','margem','percent','%','preco','custo','qtd','quant'];
   return valueHints.some(h=>col.includes(h));
 }
+function parseMirrorNumericBody(body){
+  const s=String(body||'').trim();
+  if(!s) return null;
+  let normalized=s;
+  if(/^[+-]?\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)) normalized=s.replace(/,/g,'');
+  else if(/^[+-]?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) normalized=s.replace(/\./g,'').replace(',','.');
+  else if(/^[+-]?\d+,\d+$/.test(s)) normalized=s.replace(',','.');
+  else if(!/^[+-]?\d+(\.\d+)?$/.test(s)) return null;
+  const n=Number(normalized);
+  return Number.isFinite(n)?n:null;
+}
 function formatMirrorNumberText(value,column){
   let s=String(value??'').trim();
   if(!s||!shouldFormatMirrorNumber(column)) return s;
@@ -4284,15 +4295,14 @@ function formatMirrorNumberText(value,column){
   const body=s.replace(/^R\$\s*/i,'').replace('%','').trim();
   if(!/^[+-]?\d[\d,.]*$/.test(body)) return s;
   if(/^\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}$/.test(body)) return s;
-  let normalized=body;
-  if(/^[+-]?\d{1,3}(,\d{3})+(\.\d+)?$/.test(body)){
-    normalized=body.replace(/,/g,'').replace('.',',');
-  }else if(/^[+-]?\d+\.\d+$/.test(body)){
-    normalized=body.replace('.',',');
-  }else{
-    return s;
-  }
-  return `${prefix}${normalized}${suffix}`;
+  const parsed=parseMirrorNumericBody(body);
+  if(parsed===null) return s;
+  const decimalMatch=body.match(/[,.](\d+)$/);
+  const sourceDecimals=decimalMatch?decimalMatch[1].length:0;
+  const isMoney=!!prefix||/(r\$|valor|total|consumo|saldo|preco|custo)/.test(normTxt(column));
+  const minDigits=isMoney?2:(suffix?0:sourceDecimals);
+  const maxDigits=isMoney?2:Math.min(Math.max(sourceDecimals,0),4);
+  return `${prefix}${parsed.toLocaleString('pt-BR',{minimumFractionDigits:minDigits,maximumFractionDigits:maxDigits})}${suffix}`;
 }
 function sheetMirrorData(sheet){
   if(!sheet) return {columns:[],rows:[]};
