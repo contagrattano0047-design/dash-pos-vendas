@@ -319,11 +319,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .contract-quality-item{padding:8px 10px;border-radius:6px;background:#fff;border-left:3px solid var(--gold);font-size:12px;color:var(--gray-600);line-height:1.35}
 .contract-quality-item strong{color:var(--navy)}
 .contract-quality-badge{display:inline-flex;align-items:center;margin-left:7px;padding:1px 6px;border-radius:20px;background:#fef3e2;color:#a86f10;font-size:10px;font-weight:800;vertical-align:middle}
+.contract-quality-action{border:none;background:var(--navy);color:var(--gold-light);border-radius:999px;padding:4px 10px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap}
+.contract-quality-action:hover{background:var(--navy-light);color:#fff}
 .contract-cell-main{font-weight:700;color:var(--navy)}
 .contract-cell-sub{font-size:10px;color:var(--gray-400);margin-top:3px}
 .contract-list-modal{position:fixed;inset:0;z-index:1250;display:flex;align-items:stretch;justify-content:center;padding:20px;background:rgba(10,22,40,.72);backdrop-filter:blur(6px)}
 .contract-list-modal.hidden{display:none}
 .contract-list-panel{width:min(1680px,100%);background:#fff;border-radius:18px;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;border:1px solid rgba(255,255,255,.55)}
+.contract-list-panel.quality{width:min(1280px,100%)}
 .contract-list-header{padding:18px 22px;background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 68%,var(--navy-light) 100%);color:#fff;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
 .contract-list-title{font-family:'DM Serif Display',serif;font-size:25px;line-height:1.05;font-weight:400}
 .contract-list-subtitle{margin-top:5px;font-size:12px;color:rgba(255,255,255,.76)}
@@ -354,6 +357,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .contract-list-vigencia-badge.ok{background:#e6f4ef;color:var(--green-light)}
 .contract-list-sort{margin-left:5px;color:var(--gold);font-size:10px}
 .contract-list-empty{padding:28px;text-align:center;color:var(--gray-400);font-size:13px}
+.contract-quality-table-wrap{overflow:auto;max-height:calc(100vh - 210px)}
+.contract-quality-table{width:100%;min-width:980px;border-collapse:collapse;font-size:12px}
+.contract-quality-table th{text-align:left;padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.55px;color:var(--gray-500);background:#f2f5fa;border-bottom:1px solid var(--gray-200);white-space:nowrap}
+.contract-quality-table td{padding:9px 10px;border-bottom:1px solid var(--gray-100);color:var(--navy);vertical-align:top}
+.contract-quality-table tbody tr:nth-child(even) td{background:#f3f8ff}
+.contract-quality-table .action-cell{max-width:380px;line-height:1.35;color:var(--gray-600)}
 .itens-wrapper{padding:8px 12px 12px 40px;background:var(--gray-50);overflow-x:auto;-webkit-overflow-scrolling:touch}
 .itens-table{width:100%;min-width:960px;border-collapse:collapse;font-size:12px}
 .itens-table th{text-align:left;padding:5px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gray-400);background:var(--gray-100);border-bottom:1px solid var(--gray-200)}
@@ -553,6 +562,23 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
       <div class="contract-list-meta" id="contractListMeta">—</div>
     </div>
     <div class="contract-list-body" id="contractListBody"></div>
+  </div>
+</div>
+
+<div class="contract-list-modal hidden" id="contractQualityModal" onclick="if(event.target===this) closeContractQualityModal()">
+  <div class="contract-list-panel quality" role="dialog" aria-modal="true" aria-labelledby="contractQualityTitle">
+    <div class="contract-list-header">
+      <div>
+        <div class="contract-list-title" id="contractQualityTitle">Qualidade da planilha</div>
+        <div class="contract-list-subtitle" id="contractQualitySubtitle">Ocorrências completas do recorte atual</div>
+      </div>
+      <button class="contract-list-close" type="button" aria-label="Fechar qualidade da planilha" onclick="closeContractQualityModal()">×</button>
+    </div>
+    <div class="contract-list-toolbar">
+      <div class="contract-list-meta" id="contractQualityMeta">—</div>
+      <button class="btn btn-outline" type="button" style="color:var(--navy);border-color:var(--gray-200);padding:7px 12px;font-size:12px" onclick="closeContractQualityModal()">Fechar</button>
+    </div>
+    <div class="contract-quality-table-wrap" id="contractQualityBody"></div>
   </div>
 </div>
 
@@ -2050,6 +2076,7 @@ function renderSimModal(){
 window.addEventListener('keydown', e=>{
   if(e.key==='Escape'&&!document.getElementById('simModal')?.classList.contains('hidden')) closeSimModal();
   if(e.key==='Escape'&&!document.getElementById('contractListModal')?.classList.contains('hidden')) closeContractListModal();
+  if(e.key==='Escape'&&!document.getElementById('contractQualityModal')?.classList.contains('hidden')) closeContractQualityModal();
 });
 
 // -------------------------------------------------------
@@ -3335,6 +3362,60 @@ function hydrateContratoQualityAging(){
   Object.keys(seen).forEach(key=>{if(!activeKeys.has(key)) delete seen[key];});
   saveContratoQualitySeen(seen);
 }
+function contratoQualityAgeLabel(i){
+  return i?.first_seen
+    ? `Encontrado em ${new Date(i.first_seen).toLocaleDateString('pt-BR')} · ${num(i.days_open||0)} dia${num(i.days_open||0)!==1?'s':''} sem resolução`
+    : 'Monitoramento iniciado nesta sessão';
+}
+function contratoQualityItemsFor(ano){
+  const diag=D.contratos_diagnostics?.[ano]||{corrigidas:[],pendentes:[]};
+  const corrigidas=Array.isArray(diag.corrigidas)?diag.corrigidas:[];
+  const pendentes=Array.isArray(diag.pendentes)?diag.pendentes:[];
+  return [
+    ...corrigidas.map(i=>({...i,status:'Corrigido'})),
+    ...pendentes.map(i=>({...i,status:'Revisar'}))
+  ];
+}
+function renderContractQualityModal(){
+  const ano=_contratosAno;
+  const items=contratoQualityItemsFor(ano);
+  const body=document.getElementById('contractQualityBody');
+  const meta=document.getElementById('contractQualityMeta');
+  const subtitle=document.getElementById('contractQualitySubtitle');
+  if(!body||!meta) return;
+  if(subtitle) subtitle.textContent=`Ocorrências completas · ${LABEL[ano]||ano}`;
+  const corrigidas=items.filter(i=>i.status==='Corrigido').length;
+  const pendentes=items.filter(i=>i.status==='Revisar').length;
+  meta.textContent=`${corrigidas} corrigida${corrigidas!==1?'s':''} automaticamente · ${pendentes} para revisar na origem`;
+  if(!items.length){
+    body.innerHTML='<div class="contract-list-empty">Nenhuma ocorrência de qualidade neste recorte.</div>';
+    return;
+  }
+  body.innerHTML=`<table class="contract-quality-table">
+    <thead><tr><th>Status</th><th>PV</th><th>Contrato</th><th>Campos</th><th>Ação / motivo</th><th>Monitoramento</th></tr></thead>
+    <tbody>${items.map(i=>{
+      const badgeCls=i.status==='Corrigido'?'badge-orange':'badge-red';
+      const pv=`PV ${esc(i.pv||'—')}${i.base_pv&&i.base_pv!==i.pv?` via PV ${esc(i.base_pv)}`:''}`;
+      return `<tr>
+        <td><span class="badge ${badgeCls}">${esc(i.status)}</span></td>
+        <td><strong>${pv}</strong></td>
+        <td>${i.contrato&&i.contrato!=='—'?esc(i.contrato):'—'}</td>
+        <td>${i.campos?.length?esc(i.campos.join(', ')):'—'}</td>
+        <td class="action-cell">${esc(i.acao||'—')}</td>
+        <td>${esc(contratoQualityAgeLabel(i))}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+function openContractQualityModal(){
+  renderContractQualityModal();
+  const modal=document.getElementById('contractQualityModal');
+  if(modal) modal.classList.remove('hidden');
+}
+function closeContractQualityModal(){
+  const modal=document.getElementById('contractQualityModal');
+  if(modal) modal.classList.add('hidden');
+}
 function renderContratosQualityPanel(ano){
   const panel=document.getElementById('contratosQualityPanel');
   if(!panel) return;
@@ -3347,14 +3428,12 @@ function renderContratosQualityPanel(ano){
     return;
   }
   panel.classList.remove('is-hidden');
-  const sample=[...corrigidas.map(i=>({...i,status:'Corrigido'})),...pendentes.map(i=>({...i,status:'Revisar'}))].slice(0,6);
-  const ageLabel=i=>i.first_seen
-    ? `Encontrado em ${new Date(i.first_seen).toLocaleDateString('pt-BR')} · ${num(i.days_open||0)} dia${num(i.days_open||0)!==1?'s':''} sem resolução`
-    : 'Monitoramento iniciado nesta sessão';
+  const allItems=contratoQualityItemsFor(ano);
+  const sample=allItems.slice(0,6);
   panel.innerHTML=`
     <div class="contract-quality-head">
       <div class="contract-quality-title">Qualidade da planilha</div>
-      <div class="contract-quality-summary">${corrigidas.length} linha${corrigidas.length!==1?'s':''} corrigida${corrigidas.length!==1?'s':''} automaticamente · ${pendentes.length} para revisar na origem</div>
+      <div class="contract-quality-summary">${corrigidas.length} linha${corrigidas.length!==1?'s':''} corrigida${corrigidas.length!==1?'s':''} automaticamente · ${pendentes.length} para revisar na origem ${allItems.length>6?`<button class="contract-quality-action" type="button" onclick="openContractQualityModal()">Ver todos</button>`:''}</div>
     </div>
     <div class="contract-quality-list">
       ${sample.map(i=>`<div class="contract-quality-item">
@@ -3362,7 +3441,7 @@ function renderContratosQualityPanel(ano){
         ${i.contrato&&i.contrato!=='—'?` → contrato ${esc(i.contrato)}`:''}
         <span class="contract-quality-badge">${esc(i.status)}</span><br>
         ${esc(i.acao||'')} ${i.campos?.length?`· Campo(s): ${esc(i.campos.join(', '))}`:''}<br>
-        <span class="contract-cell-sub">${esc(ageLabel(i))}</span>
+        <span class="contract-cell-sub">${esc(contratoQualityAgeLabel(i))}</span>
       </div>`).join('')}
     </div>`;
 }
@@ -4190,6 +4269,31 @@ async function refresh(){
   await readAndRender();
 }
 
+function shouldFormatMirrorNumber(column){
+  const col=normTxt(column);
+  const codeHints=['contrato','ata','uasg','item','pv','empenho','chave','codigo','cod','cnpj','processo','pregao'];
+  if(codeHints.some(h=>col.includes(h))&&!col.includes('valor')&&!col.includes('total')) return false;
+  const valueHints=['r$','valor','total','consumo','saldo','margem','percent','%','preco','custo','qtd','quant'];
+  return valueHints.some(h=>col.includes(h));
+}
+function formatMirrorNumberText(value,column){
+  let s=String(value??'').trim();
+  if(!s||!shouldFormatMirrorNumber(column)) return s;
+  const prefix=(s.match(/^R\$\s*/i)||[''])[0];
+  const suffix=s.endsWith('%')?'%':'';
+  const body=s.replace(/^R\$\s*/i,'').replace('%','').trim();
+  if(!/^[+-]?\d[\d,.]*$/.test(body)) return s;
+  if(/^\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}$/.test(body)) return s;
+  let normalized=body;
+  if(/^[+-]?\d{1,3}(,\d{3})+(\.\d+)?$/.test(body)){
+    normalized=body.replace(/,/g,'').replace('.',',');
+  }else if(/^[+-]?\d+\.\d+$/.test(body)){
+    normalized=body.replace('.',',');
+  }else{
+    return s;
+  }
+  return `${prefix}${normalized}${suffix}`;
+}
 function sheetMirrorData(sheet){
   if(!sheet) return {columns:[],rows:[]};
   const aoa=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false});
@@ -4200,7 +4304,7 @@ function sheetMirrorData(sheet){
   const columns=Array.from({length:maxCols},(_,idx)=>String(header[idx]??'').trim()||`Coluna ${idx+1}`);
   const rows=aoa.slice(headerIdx+1)
     .filter(row=>(row||[]).some(v=>String(v??'').trim()))
-    .map(row=>columns.map((_,idx)=>String(row[idx]??'')));
+    .map(row=>columns.map((col,idx)=>formatMirrorNumberText(row[idx]??'',col)));
   return {columns,rows};
 }
 
