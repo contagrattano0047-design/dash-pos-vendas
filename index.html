@@ -395,6 +395,42 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .metric-compare.warn{color:#d4821a}
 .compare-note{display:block;font-size:10px;color:var(--gray-400);white-space:nowrap}
 .compare-note.active{color:var(--gold);font-weight:700}
+.ac-badge{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.6px;background:linear-gradient(135deg,var(--gold) 0%,var(--gold-light) 100%);color:#0a1628;border:1px solid rgba(201,168,76,.55);cursor:pointer;box-shadow:0 1px 2px rgba(201,168,76,.35);transition:all .15s}
+.ac-badge:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(201,168,76,.45)}
+.ac-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;margin-left:4px;padding:5px 9px;border:1px solid rgba(42,157,143,.4);border-radius:999px;background:rgba(42,157,143,.12);color:#0a1628;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s}
+.ac-btn:hover:not(:disabled){background:var(--teal);color:#fff;border-color:var(--teal);transform:translateY(-1px)}
+.ac-btn.active{background:var(--gold);color:#0a1628;border-color:var(--gold)}
+.ac-check-wrap{display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:4px 8px;border:1px solid var(--gray-200);border-radius:999px;background:#fff;cursor:pointer;font-size:10px;font-weight:700;color:var(--gray-600);user-select:none;transition:all .15s}
+.ac-check-wrap:hover{border-color:var(--gold);color:var(--navy)}
+.ac-check-wrap input[type="checkbox"]{margin:0;cursor:pointer;accent-color:var(--gold);width:14px;height:14px}
+.ac-check-wrap input[type="checkbox"]:checked + span{color:var(--navy);font-weight:800}
+.acordo-header-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+.acordo-header-grid .ah-field{padding:9px 11px;border-radius:12px;background:#fff;border:1px solid var(--gray-200)}
+.acordo-header-grid .ah-field label{display:block;font-size:10px;font-weight:700;letter-spacing:.55px;text-transform:uppercase;color:var(--gray-400);margin-bottom:3px}
+.acordo-header-grid .ah-field input,.acordo-header-grid .ah-field textarea{width:100%;border:none;outline:none;font:inherit;color:var(--navy);font-weight:600;font-size:13px;background:transparent;resize:vertical}
+.acordo-header-grid .ah-field.readonly{background:var(--gray-50)}
+.acordo-header-grid .ah-field.readonly .value{font-weight:700;color:var(--navy);font-size:13px}
+.acordo-footer{margin-top:14px;padding:14px 16px;border-radius:14px;border:1px solid var(--gray-200);background:#fff;display:flex;flex-wrap:wrap;gap:18px;justify-content:space-between;align-items:center}
+.acordo-footer .ftr-grid{display:flex;flex-wrap:wrap;gap:14px}
+.acordo-footer .ftr-box{padding:8px 14px;border-radius:10px;background:var(--gray-50);border:1px solid var(--gray-100)}
+.acordo-footer .ftr-box .label{font-size:10px;font-weight:700;letter-spacing:.55px;text-transform:uppercase;color:var(--gray-400)}
+.acordo-footer .ftr-box .value{font-size:15px;font-weight:800;color:var(--navy);font-family:'DM Serif Display',serif;margin-top:2px}
+.acordo-footer .ftr-box.match .value{color:var(--green-light)}
+.acordo-footer .ftr-box.diff .value{color:var(--red)}
+.acordo-footer .ftr-status{font-size:12px;color:var(--gray-600);max-width:340px}
+.acordo-footer .ftr-status.warn{color:var(--red);font-weight:600}
+.acordo-footer .ftr-status.ok{color:var(--green-light);font-weight:600}
+.acordo-sub-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px}
+.acordo-sub-meta .sub-field label{display:block;font-size:10px;font-weight:700;letter-spacing:.55px;text-transform:uppercase;color:var(--gray-400);margin-bottom:3px}
+.acordo-sub-meta .sub-field input{width:100%;padding:8px 10px;border:1px solid var(--gray-200);border-radius:10px;font:inherit;font-size:13px;color:var(--navy);background:#fff}
+.acordo-sub-meta .sub-field input:focus{outline:none;border-color:var(--gold)}
+.acordo-report-table{width:100%;border-collapse:collapse;font-size:12px}
+.acordo-report-table th,.acordo-report-table td{padding:7px 9px;border-bottom:1px solid var(--gray-100);vertical-align:top}
+.acordo-report-table thead th{position:sticky;top:0;background:#0a1628;color:#fff;font-size:10px;letter-spacing:.55px;text-transform:uppercase;padding:9px;text-align:left}
+.acordo-report-table tbody tr.group-head td{background:#fbfbfd;font-weight:800;color:var(--navy);font-size:12px}
+.acordo-report-table tbody tr:hover:not(.group-head){background:#fbfbfd}
+.acordo-report-table .num{text-align:right;font-variant-numeric:tabular-nums}
+.acordo-report-table .center{text-align:center}
 
 /* SIMULADOR */
 .sim-modal{position:fixed;inset:0;z-index:1200;display:flex;align-items:stretch;justify-content:center;padding:20px;background:rgba(10,22,40,.7);backdrop-filter:blur(6px)}
@@ -539,6 +575,52 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
     <div class="sim-board">
       <div class="sim-cards" id="simCards"></div>
     </div>
+  </div>
+</div>
+
+<div class="sim-modal hidden" id="acordoModal" onclick="if(event.target===this) closeAcordoModal()">
+  <div class="sim-panel" role="dialog" aria-modal="true" aria-labelledby="acordoModalTitle">
+    <div class="sim-header" style="background:linear-gradient(135deg,#0a1628 0%,#132240 55%,#2a9d8f 130%)">
+      <div>
+        <h3 id="acordoModalTitle">Acordo de Entrega</h3>
+        <p id="acordoModalSubtitle">Carregando item…</p>
+        <div class="sim-header-meta" id="acordoModalMeta"></div>
+      </div>
+      <button class="sim-close" type="button" aria-label="Fechar acordo" onclick="closeAcordoModal()">×</button>
+    </div>
+    <div class="sim-toolbar">
+      <div class="sim-toolbar-copy">Cadastre os produtos que serão entregues no lugar do item original. O total deve bater com o valor empenhado. Ao salvar, o item recebe o selo <strong>AC</strong> na lista e fica disponível no relatório de acordos. Use “Imprimir Termo” para gerar o documento de assinatura do órgão.</div>
+      <div class="sim-toolbar-actions">
+        <button class="btn btn-outline" type="button" style="color:var(--navy);border-color:var(--gray-200)" onclick="addAcordoSubItem()">+ Linha</button>
+        <button class="btn btn-outline" type="button" style="color:var(--navy);border-color:var(--gray-200)" onclick="printAcordoTermo()">🖨 Imprimir Termo</button>
+        <button class="btn btn-outline" type="button" style="color:var(--red);border-color:rgba(230,57,70,.35)" onclick="clearAcordo()">Remover Acordo</button>
+        <button class="btn btn-outline" type="button" style="color:var(--navy);border-color:var(--gray-200)" onclick="closeAcordoModal()">Fechar</button>
+      </div>
+    </div>
+    <div class="sim-board">
+      <div class="acordo-header-grid" id="acordoHeaderGrid"></div>
+      <div class="sim-cards" id="acordoCards"></div>
+      <div class="acordo-footer" id="acordoFooter"></div>
+    </div>
+  </div>
+</div>
+
+<div class="contract-list-modal hidden" id="acordoReportModal" onclick="if(event.target===this) closeAcordoReportModal()">
+  <div class="contract-list-panel" role="dialog" aria-modal="true" aria-labelledby="acordoReportTitle">
+    <div class="contract-list-header">
+      <div>
+        <div class="contract-list-title" id="acordoReportTitle">Relatório de Acordos</div>
+        <div class="contract-list-subtitle">Itens entregues via acordo (substituição de produto)</div>
+      </div>
+      <button class="contract-list-close" type="button" aria-label="Fechar relatório" onclick="closeAcordoReportModal()">×</button>
+    </div>
+    <div class="contract-list-toolbar">
+      <div class="contract-list-filters">
+        <input id="acordoReportSearch" type="text" placeholder="Buscar PV, empenho, NFe, órgão, produto…" oninput="renderAcordoReport()">
+      </div>
+      <div class="contract-list-meta" id="acordoReportMeta">—</div>
+    </div>
+    <div class="contract-list-body" id="acordoReportBody"></div>
   </div>
 </div>
 
@@ -1579,8 +1661,10 @@ async function refreshSharedSimulationsFromSharePoint(){
     _msalToken=await getToken();
     const before=JSON.stringify(_simSharedStore||{});
     await loadSharedSimStore({Authorization:'Bearer '+_msalToken});
-    if(JSON.stringify(_simSharedStore||{})!==before){
-      D=hydratePersistedSimulations(D);
+    const beforeAcordo=JSON.stringify(_acordoSharedStore||{});
+    if(_acordoSharedTarget) await loadSharedAcordoStore({Authorization:'Bearer '+_msalToken});
+    if(JSON.stringify(_simSharedStore||{})!==before||JSON.stringify(_acordoSharedStore||{})!==beforeAcordo){
+      D=hydratePersistedAcordos(hydratePersistedSimulations(D));
       _pendentesData = [...(D.pendentes_list||[])];
       if(_pendentesData.length) renderPendentesTable(_pendentesData,true);
     }
@@ -1643,8 +1727,10 @@ async function forceSyncSimulations(){
     _msalToken=await getToken(true);
     const headers={Authorization:'Bearer '+_msalToken};
     await syncLocalSimStorageToSharePoint(headers,{throwOnError:true,saveToken:_msalToken});
+    await syncLocalAcordoStorageToSharePoint(headers,{throwOnError:false,saveToken:_msalToken});
     await loadSharedSimStore(headers);
-    D=hydratePersistedSimulations(D);
+    await loadSharedAcordoStore(headers);
+    D=hydratePersistedAcordos(hydratePersistedSimulations(D));
     _pendentesData=[...(D.pendentes_list||[])];
     if(_pendentesData.length) renderPendentesTable(_pendentesData,true);
     const hint=document.getElementById('statusHint');
@@ -1675,6 +1761,807 @@ function getItemActiveScenario(item){
   if(!activeId) return null;
   return getItemSavedScenarios(item).find(s=>s.id===activeId)||null;
 }
+// ============================================================
+// ACORDO — Entrega via acordo (substituição de produto)
+// ============================================================
+const ACORDO_STORAGE_KEY = 'dashPosVendas.acordos.v1';
+const ACORDO_SHARED_FILE = 'dash-pos-vendas-acordos.json';
+let _acordoModalState = {item:null,itemRef:null,row:null,acordo:null,scenarioBaseId:''};
+let _acordoSharedStore = {};
+let _acordoSharedTarget = null;
+let _acordoSharedSyncTimer = null;
+let _acordoSharedPendingItem = null;
+let _acordoSharedSyncBusy = false;
+let _acordoSharedSyncQueued = false;
+let _acordoReportModalOpen = false;
+
+const COMPANY_PROFILES = {
+  marck:{
+    nome_fantasia:'MARCK SUPRIMENTOS',
+    razao_social:'MARCK SERVIÇOS E DISTRIBUIÇÃO DE EQUIPAMENTOS DE SEGURANÇA E PRODUTOS PARA A SAÚDE LTDA.',
+    cnpj:'37.119.089/0001-10',
+    inscricao_municipal:'3039365',
+    inscricao_estadual:'11.710.050',
+    endereco:'RUA LUIZ LEOPOLDO FERNANDES PINHEIRO, Nº 555, SL 802. BAIRRO: CENTRO – NITERÓI – RJ CEP: 24.030-127.',
+    representante:{nome:'ANDRÉ LEMOS LATTARI',cargo:'DIRETOR',cpf:'130.339.117-14',rg:'21.625.893-9',rg_orgao:'DETRAN',contato:'21 98887-4011',email:'andre@marcksuprimentos.com.br'},
+    email_geral:'andre@marcksuprimentos.com.br / licitacao@marcksuprimentos.com.br',
+    banco:{nome:'BANCO SANTANDER - 033',agencia:'AGENCIA PRAÇA JAURU - 1669',conta:'13001326-2',endereco_agencia:'PRAÇA JAURU, Nº 23 – TAQUARA – RIO DE JANEIRO – RJ, 22725-520'}
+  }
+};
+
+function nowISO(){return new Date().toISOString();}
+function genId(prefix){return prefix+'-'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+function fmtDateBR(v){
+  if(!v) return '—';
+  if(typeof v==='string'){
+    if(/^\d{4}-\d{2}-\d{2}/.test(v)){
+      const [y,m,d]=v.slice(0,10).split('-');
+      return `${d}/${m}/${y}`;
+    }
+    return v;
+  }
+  return v;
+}
+function todayInputDate(){
+  const d=new Date();
+  const yy=d.getFullYear();
+  const mm=String(d.getMonth()+1).padStart(2,'0');
+  const dd=String(d.getDate()).padStart(2,'0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+function buildAcordoSubItemFromInputs(inputs,meta={}){
+  const safe=clone(inputs||{});
+  return {
+    id:meta.id||genId('sub'),
+    descricao:String(meta.descricao||''),
+    marca:String(meta.marca||'—'),
+    grade:String(meta.grade||''),
+    und:String(meta.und||'UN'),
+    data_entrega:String(meta.data_entrega||''),
+    inputs:safe,
+    raw_inputs:{}
+  };
+}
+function buildEmptyAcordo(item,row,scenarioBaseId){
+  const baseInputs=deriveSimInputs(item);
+  const sub=buildAcordoSubItemFromInputs(baseInputs,{
+    descricao:'',
+    marca:'',
+    und:item?.und||'UN',
+    data_entrega:todayInputDate()
+  });
+  return {
+    id:genId('ac'),
+    created_at:nowISO(),
+    created_by:getSimUserLabel()||'',
+    updated_at:nowISO(),
+    updated_by:getSimUserLabel()||'',
+    empresa_key:'marck',
+    nfe_termo:String(item?.nfe||''),
+    pregao:String(item?.pregao||''),
+    observacoes:'',
+    scenario_base_id:String(scenarioBaseId||''),
+    fixed_total:roundN(num(item?.valor||0),4),
+    itens_substitutos:[sub]
+  };
+}
+function cloneAcordo(acordo){
+  if(!acordo) return null;
+  const cloned=clone(acordo);
+  cloned.itens_substitutos=(cloned.itens_substitutos||[]).map(sub=>{
+    sub.raw_inputs=sub.raw_inputs||{};
+    sub.inputs=sub.inputs||{};
+    return sub;
+  });
+  return cloned;
+}
+function normalizeAcordoEntry(entry){
+  if(!entry) return null;
+  if(!entry.itens_substitutos||!entry.itens_substitutos.length) return null;
+  return cloneAcordo(entry);
+}
+function hasAcordoEntry(entry){
+  return !!(entry&&Array.isArray(entry.itens_substitutos)&&entry.itens_substitutos.length);
+}
+function getAcordoEntryUpdatedMs(entry){
+  const raw=entry?.updated_at||'';
+  const parsed=Date.parse(raw);
+  return isNaN(parsed)?0:parsed;
+}
+function getAcordoStorage(){
+  try{
+    const raw=localStorage.getItem(ACORDO_STORAGE_KEY);
+    if(!raw) return {};
+    const parsed=JSON.parse(raw);
+    return parsed&&typeof parsed==='object'?parsed:{};
+  }catch(e){return {};}
+}
+function saveAcordoStorage(store){
+  try{localStorage.setItem(ACORDO_STORAGE_KEY,JSON.stringify(store||{}));}catch(e){}
+}
+function mergeAcordoStores(...stores){
+  const merged={};
+  stores.forEach(store=>{
+    Object.entries(store||{}).forEach(([key,entry])=>{
+      const normalized=normalizeAcordoEntry(entry);
+      if(!normalized) return;
+      const current=merged[key];
+      if(!current||getAcordoEntryUpdatedMs(normalized)>=getAcordoEntryUpdatedMs(current)){
+        merged[key]=normalized;
+      }
+    });
+  });
+  return merged;
+}
+function getEffectiveAcordoStore(){
+  return mergeAcordoStores(_acordoSharedStore,getAcordoStorage());
+}
+function getAcordoItemStorageKey(item){
+  if(!item) return '';
+  return [
+    item.pv,
+    item.empenho,
+    item.uasg,
+    item.chave||item.desc||'',
+    item.und||''
+  ].map(v=>String(v||'').trim()).join('||');
+}
+function persistItemAcordoStorage(item){
+  const key=getAcordoItemStorageKey(item);
+  if(!key) return;
+  const store=getAcordoStorage();
+  if(item.acordo&&hasAcordoEntry(item.acordo)){
+    store[key]=cloneAcordo(item.acordo);
+  }else{
+    delete store[key];
+  }
+  saveAcordoStorage(store);
+}
+function hydratePersistedAcordos(data){
+  const store=getEffectiveAcordoStore();
+  (data?.pendentes_list||[]).forEach(row=>{
+    (row?.itens||[]).forEach(item=>{
+      const key=getAcordoItemStorageKey({...item,pv:row.pv,empenho:row.empenho,uasg:row.uasg});
+      const saved=store[key]?normalizeAcordoEntry(store[key]):null;
+      item.acordo=saved||null;
+    });
+  });
+  return data;
+}
+function configureAcordoShareTarget(meta,graphBase){
+  const parent=meta?.parentReference||{};
+  if(!parent.driveId||!parent.id){_acordoSharedTarget=null;return;}
+  _acordoSharedTarget={graphBase,driveId:parent.driveId,parentId:parent.id,fileName:ACORDO_SHARED_FILE,fileId:''};
+}
+function getAcordoSharedItemUrl(){
+  if(!_acordoSharedTarget) return '';
+  const t=_acordoSharedTarget;
+  return `${t.graphBase}/drives/${encodeURIComponent(t.driveId)}/items/${encodeURIComponent(t.parentId)}:/${encodeURIComponent(t.fileName)}:`;
+}
+function getAcordoSharedFileUrl(){
+  if(!_acordoSharedTarget) return '';
+  const t=_acordoSharedTarget;
+  return `${t.graphBase}/drives/${encodeURIComponent(t.driveId)}/items/${encodeURIComponent(t.parentId)}:/${encodeURIComponent(t.fileName)}:/content`;
+}
+function getAcordoSharedExactContentUrl(){
+  if(!_acordoSharedTarget?.fileId) return '';
+  const t=_acordoSharedTarget;
+  return `${t.graphBase}/drives/${encodeURIComponent(t.driveId)}/items/${encodeURIComponent(t.fileId)}/content`;
+}
+async function loadSharedAcordoStore(headers){
+  if(!_acordoSharedTarget||!headers){_acordoSharedStore={};return _acordoSharedStore;}
+  try{
+    const metaResp=await fetch(getAcordoSharedItemUrl(),{headers,cache:'no-store'});
+    if(metaResp.status===404){_acordoSharedStore={};return _acordoSharedStore;}
+    if(!metaResp.ok){console.warn('Acordos compartilhados: meta status',metaResp.status);return _acordoSharedStore;}
+    const meta=await metaResp.json();
+    if(_acordoSharedTarget) _acordoSharedTarget.fileId=String(meta?.id||_acordoSharedTarget.fileId||'');
+    let resp;
+    if(meta['@microsoft.graph.downloadUrl']){
+      resp=await fetch(meta['@microsoft.graph.downloadUrl'],{cache:'no-store'});
+    }else{
+      resp=await fetch(getAcordoSharedFileUrl(),{headers,cache:'no-store'});
+    }
+    if(!resp.ok){console.warn('Acordos compartilhados: download status',resp.status);return _acordoSharedStore;}
+    const payload=await resp.json().catch(()=>({}));
+    const store=payload?.items&&typeof payload.items==='object'?payload.items:payload;
+    _acordoSharedStore=mergeAcordoStores(store);
+    return _acordoSharedStore;
+  }catch(e){console.warn('Falha ao ler acordos compartilhados:',e);return _acordoSharedStore;}
+}
+async function saveSharedAcordoStore(store,token){
+  if(!_acordoSharedTarget) return false;
+  token=token||await getToken();
+  const url=getAcordoSharedExactContentUrl()||getAcordoSharedFileUrl();
+  const resp=await fetch(url,{
+    method:'PUT',
+    headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+    body:JSON.stringify({version:1,updated_at:nowISO(),items:store||{}})
+  });
+  if(!resp.ok){
+    const err=await resp.json().catch(()=>({}));
+    throw new Error(err.error?.message||('Erro ao sincronizar acordo: '+resp.status));
+  }
+  const payload=await resp.json().catch(()=>null);
+  if(payload?.id&&_acordoSharedTarget) _acordoSharedTarget.fileId=String(payload.id);
+  return true;
+}
+function queueSharedAcordoSync(item,delay=900){
+  if(!_acordoSharedTarget) return;
+  _acordoSharedPendingItem=clone(item);
+  if(_acordoSharedSyncTimer) window.clearTimeout(_acordoSharedSyncTimer);
+  _acordoSharedSyncTimer=window.setTimeout(flushSharedAcordoSync,delay);
+}
+async function flushSharedAcordoSync(){
+  if(_acordoSharedSyncBusy){_acordoSharedSyncQueued=true;return;}
+  const item=_acordoSharedPendingItem;
+  if(!item) return;
+  _acordoSharedPendingItem=null;
+  _acordoSharedSyncBusy=true;
+  try{
+    const key=getAcordoItemStorageKey(item);
+    if(!key) return;
+    const token=await getToken();
+    const headers={Authorization:'Bearer '+token};
+    const remote=await loadSharedAcordoStore(headers);
+    const next=mergeAcordoStores(remote,getAcordoStorage());
+    if(item.acordo&&hasAcordoEntry(item.acordo)) next[key]=cloneAcordo(item.acordo);
+    else delete next[key];
+    await saveSharedAcordoStore(next,token);
+    _acordoSharedStore=next;
+    saveAcordoStorage(next);
+  }catch(e){console.warn('Acordo salvo localmente, mas nao sincronizado:',e);}
+  finally{
+    _acordoSharedSyncBusy=false;
+    if(_acordoSharedSyncQueued||_acordoSharedPendingItem){
+      _acordoSharedSyncQueued=false;
+      flushSharedAcordoSync();
+    }
+  }
+}
+async function syncLocalAcordoStorageToSharePoint(headers,opts={}){
+  if(!_acordoSharedTarget||!headers) return;
+  const local=getAcordoStorage();
+  if(!Object.keys(local).length) return;
+  try{
+    const remote=await loadSharedAcordoStore(headers);
+    const next=mergeAcordoStores(remote);
+    let changed=false;
+    Object.entries(local).forEach(([key,entry])=>{
+      const normalized=normalizeAcordoEntry(entry);
+      if(!normalized) return;
+      const remoteEntry=remote[key]?normalizeAcordoEntry(remote[key]):null;
+      const localMs=getAcordoEntryUpdatedMs(normalized);
+      const remoteMs=getAcordoEntryUpdatedMs(remoteEntry);
+      if(remoteEntry&&(!localMs||remoteMs>localMs)) return;
+      if(!normalized.updated_at) normalized.updated_at=nowISO();
+      const before=JSON.stringify(next[key]||null);
+      next[key]=normalized;
+      if(JSON.stringify(next[key])!==before) changed=true;
+    });
+    if(!changed) return;
+    await saveSharedAcordoStore(next,opts.saveToken||null);
+    _acordoSharedStore=next;
+    saveAcordoStorage(mergeAcordoStores(local,next));
+  }catch(e){console.warn('Falha ao migrar acordos locais:',e);if(opts.throwOnError) throw e;}
+}
+
+// ============================================================
+// ACORDO MODAL — controllers
+// ============================================================
+function findItemInData(pv,empenho,uasg,chave){
+  const row=(D.pendentes_list||[]).find(r=>String(r.pv)===String(pv));
+  if(!row) return {row:null,item:null,index:-1};
+  const idx=(row.itens||[]).findIndex(it=>
+    String(it.empenho||row.empenho||'')===String(empenho||row.empenho||'')&&
+    String(it.chave||'')===String(chave||'')
+  );
+  if(idx>=0) return {row,item:row.itens[idx],index:idx};
+  // fallback by chave only or first match
+  const idx2=(row.itens||[]).findIndex(it=>String(it.chave||'')===String(chave||''));
+  if(idx2>=0) return {row,item:row.itens[idx2],index:idx2};
+  return {row,item:row.itens?.[0]||null,index:0};
+}
+
+function openAcordoModal(pv,itemIdx,scenarioBaseId){
+  const row=(D.pendentes_list||[]).find(r=>String(r.pv)===String(pv));
+  const item=row?.itens?.[itemIdx];
+  if(!item){alert('Item não encontrado.');return;}
+  let acordo=item.acordo?cloneAcordo(item.acordo):null;
+  if(!acordo){
+    acordo=buildEmptyAcordo(item,row,scenarioBaseId);
+    // Se veio de um cenário, pré-popular a primeira linha com inputs do cenário
+    if(scenarioBaseId){
+      const scenario=(item.sim_saved||[]).find(s=>s.id===scenarioBaseId);
+      if(scenario){
+        acordo.itens_substitutos[0].inputs=clone(scenario.inputs||{});
+        acordo.itens_substitutos[0].marca=scenario.marca||'—';
+      }
+    }
+  }
+  _acordoModalState={
+    item:{...item,pv:row.pv,cliente:row.cliente,empenho:row.empenho,uasg:row.uasg,prev_ent:row.prev_ent},
+    itemRef:item,
+    row,
+    acordo,
+    scenarioBaseId:String(scenarioBaseId||acordo.scenario_base_id||'')
+  };
+  document.body.style.overflow='hidden';
+  renderAcordoModal();
+  document.getElementById('acordoModal').classList.remove('hidden');
+}
+function closeAcordoModal(){
+  const m=document.getElementById('acordoModal');
+  if(m) m.classList.add('hidden');
+  document.body.style.overflow='';
+  _acordoModalState={item:null,itemRef:null,row:null,acordo:null,scenarioBaseId:''};
+}
+function persistAcordoModalState(rerenderTable){
+  if(!_acordoModalState.itemRef||!_acordoModalState.acordo) return;
+  _acordoModalState.acordo.updated_at=nowISO();
+  _acordoModalState.acordo.updated_by=getSimUserLabel()||'';
+  _acordoModalState.itemRef.acordo=cloneAcordo(_acordoModalState.acordo);
+  const itemForStorage={
+    ..._acordoModalState.itemRef,
+    pv:_acordoModalState.item?.pv,
+    empenho:_acordoModalState.item?.empenho,
+    uasg:_acordoModalState.item?.uasg
+  };
+  persistItemAcordoStorage(itemForStorage);
+  queueSharedAcordoSync(itemForStorage,900);
+  if(rerenderTable&&_pendentesData?.length) renderPendentesTable(_pendentesData,true);
+}
+function clearAcordo(){
+  if(!_acordoModalState.itemRef) return;
+  if(!confirm('Remover o acordo deste item? O registro será apagado.')) return;
+  _acordoModalState.itemRef.acordo=null;
+  _acordoModalState.acordo=null;
+  const itemForStorage={
+    ..._acordoModalState.itemRef,
+    pv:_acordoModalState.item?.pv,
+    empenho:_acordoModalState.item?.empenho,
+    uasg:_acordoModalState.item?.uasg
+  };
+  persistItemAcordoStorage(itemForStorage);
+  queueSharedAcordoSync(itemForStorage,0);
+  if(_pendentesData?.length) renderPendentesTable(_pendentesData,true);
+  closeAcordoModal();
+}
+function addAcordoSubItem(){
+  if(!_acordoModalState.acordo||!_acordoModalState.item) return;
+  const baseInputs=deriveSimInputs(_acordoModalState.itemRef);
+  _acordoModalState.acordo.itens_substitutos.push(buildAcordoSubItemFromInputs(baseInputs,{
+    marca:'—',
+    und:_acordoModalState.item.und||'UN',
+    data_entrega:todayInputDate()
+  }));
+  persistAcordoModalState(false);
+  renderAcordoModal();
+}
+function removeAcordoSubItem(subId){
+  if(!_acordoModalState.acordo) return;
+  if(_acordoModalState.acordo.itens_substitutos.length<=1){alert('Mantenha pelo menos uma linha de substituição.');return;}
+  _acordoModalState.acordo.itens_substitutos=_acordoModalState.acordo.itens_substitutos.filter(s=>s.id!==subId);
+  persistAcordoModalState(false);
+  renderAcordoModal();
+}
+function getAcordoSubItem(subId){
+  return _acordoModalState.acordo?.itens_substitutos.find(s=>s.id===subId);
+}
+function applyAcordoFieldValue(subId,key,value,isPct){
+  const sub=getAcordoSubItem(subId);
+  if(!sub) return;
+  sub.inputs=sub.inputs||{};
+  sub.inputs[key]=isPct?parseSimInputNumber(value)/100:parseSimInputNumber(value);
+  // Não trava total automaticamente — o total é livre, validado no rodapé
+}
+function updateAcordoNumField(subId,key,value,isPct){
+  const sub=getAcordoSubItem(subId);
+  if(!sub) return;
+  sub.raw_inputs=sub.raw_inputs||{};
+  sub.raw_inputs[key]=value;
+  if(isIncompleteSimNumber(value)) return;
+  applyAcordoFieldValue(subId,key,value,isPct);
+  renderAcordoSubOutputs(subId);
+  renderAcordoFooter();
+}
+function commitAcordoNumField(subId,key,value,isPct){
+  const sub=getAcordoSubItem(subId);
+  if(!sub) return;
+  sub.raw_inputs=sub.raw_inputs||{};
+  if(isIncompleteSimNumber(value)){delete sub.raw_inputs[key];renderAcordoSubOutputs(subId);return;}
+  applyAcordoFieldValue(subId,key,value,isPct);
+  delete sub.raw_inputs[key];
+  persistAcordoModalState(false);
+  renderAcordoSubOutputs(subId);
+  renderAcordoFooter();
+}
+function updateAcordoMeta(subId,key,value){
+  const sub=getAcordoSubItem(subId);
+  if(!sub) return;
+  sub[key]=String(value||'');
+  persistAcordoModalState(false);
+}
+function updateAcordoHeader(field,value){
+  if(!_acordoModalState.acordo) return;
+  _acordoModalState.acordo[field]=String(value||'');
+  persistAcordoModalState(false);
+}
+function getItemHasAcordo(item){
+  return !!(item&&item.acordo&&hasAcordoEntry(item.acordo));
+}
+function getRowHasAcordo(row){
+  return (row?.itens||[]).some(getItemHasAcordo);
+}
+function toggleAcordoFlag(pv,itemIdx,isChecked){
+  const row=(D.pendentes_list||[]).find(r=>String(r.pv)===String(pv));
+  const item=row?.itens?.[itemIdx];
+  if(!item) return;
+  if(isChecked){
+    if(!getItemHasAcordo(item)){
+      item.acordo=buildEmptyAcordo(item,row,'');
+    }
+  }else{
+    item.acordo=null;
+  }
+  const itemForStorage={...item,pv:row.pv,empenho:row.empenho,uasg:row.uasg};
+  persistItemAcordoStorage(itemForStorage);
+  queueSharedAcordoSync(itemForStorage,0);
+  if(_pendentesData?.length) renderPendentesTable(_pendentesData,true);
+}
+function calcAcordoSub(sub){
+  return calcSimScenario(sub?.inputs||{});
+}
+function calcAcordoTotals(acordo){
+  const fixed=num(acordo?.fixed_total||0);
+  let total=0,mc=0,custoTotal=0;
+  (acordo?.itens_substitutos||[]).forEach(sub=>{
+    const c=calcAcordoSub(sub);
+    total+=c.total;
+    mc+=c.mcValor;
+    custoTotal+=c.custoLiqTotal;
+  });
+  return {fixed,total:roundN(total),mc:roundN(mc),custoTotal:roundN(custoTotal),mcPct:total>0?(mc/total*100):0,diff:roundN(total-fixed)};
+}
+
+function renderAcordoModal(){
+  if(!_acordoModalState.acordo||!_acordoModalState.item) return;
+  const item=_acordoModalState.item;
+  const acordo=_acordoModalState.acordo;
+  document.getElementById('acordoModalSubtitle').textContent=item.desc||'Item sem descrição';
+  document.getElementById('acordoModalMeta').innerHTML=
+    `<span class="sim-chip">PV ${esc(item.pv)}</span>`+
+    `<span class="sim-chip">${esc(item.cliente||'—')}</span>`+
+    `<span class="sim-chip">Empenho ${esc(item.empenho||'—')}</span>`+
+    `<span class="sim-chip">UASG ${esc(item.uasg||'—')}</span>`+
+    `<span class="sim-chip">${num(item.qtd).toLocaleString('pt-BR')} ${esc(item.und||'und')}</span>`+
+    `<span class="sim-chip">Total empenhado ${fmt(num(item.valor||0))}</span>`;
+
+  document.getElementById('acordoHeaderGrid').innerHTML=`
+    <div class="ah-field"><label>NFe</label><input type="text" value="${esc(acordo.nfe_termo||'')}" oninput="updateAcordoHeader('nfe_termo',this.value)" placeholder="${esc(item.nfe||'—')}"></div>
+    <div class="ah-field"><label>Pregão / Contrato</label><input type="text" value="${esc(acordo.pregao||'')}" oninput="updateAcordoHeader('pregao',this.value)" placeholder="${esc(item.pregao||'—')}"></div>
+    <div class="ah-field readonly"><label>Órgão</label><div class="value">${esc(item.cliente||'—')}</div></div>
+    <div class="ah-field readonly"><label>Item original</label><div class="value" style="font-size:11px">${esc(item.desc||'—')}</div></div>
+    <div class="ah-field"><label>Observações</label><input type="text" value="${esc(acordo.observacoes||'')}" oninput="updateAcordoHeader('observacoes',this.value)" placeholder="Observações para o termo"></div>
+  `;
+
+  const cards=acordo.itens_substitutos.map((sub,idx)=>{
+    const calc=calcAcordoSub(sub);
+    const sections=SIM_INPUT_SECTIONS.map(section=>`
+      <div class="sim-section-title">${section.title}</div>
+      <div class="sim-input-grid">
+        ${section.fields.map(field=>`
+          <div class="sim-field">
+            <label for="ac-${field.key}-${sub.id}">${field.label}</label>
+            <input id="ac-${field.key}-${sub.id}" type="text" inputmode="decimal"
+              value="${(sub.raw_inputs&&sub.raw_inputs[field.key]!==undefined)?sub.raw_inputs[field.key]:simValue(field,sub.inputs[field.key])}"
+              oninput="updateAcordoNumField('${sub.id}','${field.key}',this.value,${field.pct?'true':'false'})"
+              onblur="commitAcordoNumField('${sub.id}','${field.key}',this.value,${field.pct?'true':'false'})">
+            <span class="hint">${field.hint}</span>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+    return `
+      <section class="sim-card">
+        <div class="sim-card-head">
+          <div>
+            <div class="sim-card-title">Linha ${idx+1} — Produto Substituto</div>
+            <div class="sim-card-subtitle">Cadastre o produto que será efetivamente entregue</div>
+          </div>
+          <div class="sim-card-actions">
+            ${acordo.itens_substitutos.length>1?`<button class="sim-text-btn" type="button" onclick="removeAcordoSubItem('${sub.id}')">Remover</button>`:''}
+          </div>
+        </div>
+        <div class="sim-card-body">
+          <div class="acordo-sub-meta">
+            <div class="sub-field"><label>Descrição do produto</label><input type="text" value="${esc(sub.descricao||'')}" oninput="updateAcordoMeta('${sub.id}','descricao',this.value)" placeholder="Ex.: SERINGA DESCARTÁVEL 10ML"></div>
+            <div class="sub-field"><label>Marca</label><input type="text" value="${esc(sub.marca||'')}" oninput="updateAcordoMeta('${sub.id}','marca',this.value)" placeholder="Marca"></div>
+            <div class="sub-field"><label>Grade</label><input type="text" value="${esc(sub.grade||'')}" oninput="updateAcordoMeta('${sub.id}','grade',this.value)" placeholder="Tam/Calibre"></div>
+            <div class="sub-field"><label>Unidade</label><input type="text" value="${esc(sub.und||'UN')}" oninput="updateAcordoMeta('${sub.id}','und',this.value)"></div>
+            <div class="sub-field"><label>Data de entrega</label><input type="date" value="${esc(sub.data_entrega||'')}" oninput="updateAcordoMeta('${sub.id}','data_entrega',this.value)"></div>
+          </div>
+          <div id="ac-outputs-${sub.id}">${renderAcordoSubOutputsBlock(calc)}</div>
+          ${sections}
+        </div>
+      </section>
+    `;
+  });
+  document.getElementById('acordoCards').innerHTML=cards.join('');
+  renderAcordoFooter();
+}
+function renderAcordoSubOutputsBlock(calc){
+  const mcCls=calc.mcValor>=0?'up':'down';
+  return `
+    <div class="sim-summary-grid">
+      <div class="sim-summary-box"><div class="label">Valor total</div><div class="value">${fmt(calc.total)}</div></div>
+      <div class="sim-summary-box"><div class="label">MC $</div><div class="value ${mcCls}">${fmt(calc.mcValor)}</div></div>
+      <div class="sim-summary-box"><div class="label">MC %</div><div class="value">${pct(calc.mcPctBruto)}</div></div>
+    </div>
+    <div class="sim-output-grid">
+      <div class="sim-output-box"><div class="label">Qtd</div><div class="value">${num(calc.qtd).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:4})}</div></div>
+      <div class="sim-output-box"><div class="label">Venda un.</div><div class="value">${fmt(calc.precoVendaUn)}</div></div>
+      <div class="sim-output-box"><div class="label">Custo un.</div><div class="value">${fmt(calc.custoUn)}</div></div>
+      <div class="sim-output-box"><div class="label">Custo líq. total</div><div class="value">${fmt(calc.custoLiqTotal)}</div></div>
+      <div class="sim-output-box"><div class="label">DIFAL</div><div class="value">${fmt(calc.difalValor)}</div></div>
+      <div class="sim-output-box"><div class="label">Impostos venda</div><div class="value">${pct(calc.impostosPct)}</div></div>
+    </div>
+  `;
+}
+function renderAcordoSubOutputs(subId){
+  const sub=getAcordoSubItem(subId);
+  if(!sub) return;
+  const mount=document.getElementById('ac-outputs-'+subId);
+  if(mount) mount.innerHTML=renderAcordoSubOutputsBlock(calcAcordoSub(sub));
+  // Sincroniza inputs visíveis com o input válido (preserva pt-BR durante digitação não — só quando blur)
+}
+function renderAcordoFooter(){
+  const acordo=_acordoModalState.acordo;
+  const mount=document.getElementById('acordoFooter');
+  if(!acordo||!mount) return;
+  const totals=calcAcordoTotals(acordo);
+  const tol=0.5; // R$ 0,50 de tolerância
+  const matches=Math.abs(totals.diff)<=tol;
+  const status=matches
+    ?`<div class="ftr-status ok">✓ Total da substituição bate com o valor empenhado.</div>`
+    :`<div class="ftr-status warn">⚠ Diferença de ${fmt(totals.diff)} em relação ao valor empenhado. Ajuste qtd × valor unit. para zerar.</div>`;
+  mount.innerHTML=`
+    <div class="ftr-grid">
+      <div class="ftr-box"><div class="label">Total empenhado</div><div class="value">${fmt(totals.fixed)}</div></div>
+      <div class="ftr-box ${matches?'match':'diff'}"><div class="label">Total substituído</div><div class="value">${fmt(totals.total)}</div></div>
+      <div class="ftr-box"><div class="label">MC $ acordo</div><div class="value">${fmt(totals.mc)}</div></div>
+      <div class="ftr-box"><div class="label">MC % acordo</div><div class="value">${pct(totals.mcPct)}</div></div>
+    </div>
+    ${status}
+  `;
+}
+
+// ============================================================
+// RELATÓRIO de Acordos
+// ============================================================
+function getAllAcordos(){
+  const out=[];
+  (D.pendentes_list||[]).forEach(row=>{
+    (row.itens||[]).forEach((item,idx)=>{
+      if(!getItemHasAcordo(item)) return;
+      out.push({row,item,index:idx,acordo:item.acordo});
+    });
+  });
+  return out;
+}
+function openAcordoReportModal(){
+  document.body.style.overflow='hidden';
+  _acordoReportModalOpen=true;
+  document.getElementById('acordoReportModal').classList.remove('hidden');
+  renderAcordoReport();
+}
+function closeAcordoReportModal(){
+  _acordoReportModalOpen=false;
+  const m=document.getElementById('acordoReportModal');
+  if(m) m.classList.add('hidden');
+  document.body.style.overflow='';
+}
+function renderAcordoReport(){
+  const all=getAllAcordos();
+  const q=normTxt(document.getElementById('acordoReportSearch')?.value||'');
+  const filtered=q?all.filter(({row,item,acordo})=>{
+    const subTxt=(acordo.itens_substitutos||[]).map(s=>`${s.descricao} ${s.marca} ${s.grade}`).join(' ');
+    return normTxt([row.pv,row.cliente,row.empenho,row.uasg,acordo.nfe_termo,acordo.pregao,item.desc,item.marca,subTxt].join(' ')).includes(q);
+  }):all;
+  const meta=document.getElementById('acordoReportMeta');
+  if(meta) meta.textContent=`${filtered.length} item${filtered.length!==1?'s':''} com acordo registrado`;
+  const body=document.getElementById('acordoReportBody');
+  if(!body) return;
+  if(!filtered.length){body.innerHTML='<div style="padding:30px;text-align:center;color:var(--gray-400)">Nenhum acordo registrado.</div>';return;}
+  // Group by NFe (or "sem NFe")
+  const groups={};
+  filtered.forEach(rec=>{
+    const k=String(rec.acordo.nfe_termo||rec.item.nfe||'sem NFe').trim()||'sem NFe';
+    if(!groups[k]) groups[k]={key:k,records:[]};
+    groups[k].records.push(rec);
+  });
+  let html=`<table class="acordo-report-table"><thead><tr>
+    <th>PV</th><th>Empenho</th><th>Órgão</th><th>Item original</th><th>Substituto</th><th>Marca</th><th>Grade</th><th class="center">Qtd</th><th>Und</th><th class="num">Valor un.</th><th class="num">Valor total</th><th class="num">MC $</th><th class="center">MC %</th><th>Data</th><th class="center">Ações</th>
+  </tr></thead><tbody>`;
+  Object.values(groups).forEach(g=>{
+    const groupTotal=g.records.reduce((s,r)=>s+calcAcordoTotals(r.acordo).total,0);
+    html+=`<tr class="group-head"><td colspan="15">📄 NFe ${esc(g.key)} • ${g.records.length} item${g.records.length!==1?'s':''} • Total ${fmt(groupTotal)}</td></tr>`;
+    g.records.forEach(({row,item,index,acordo})=>{
+      acordo.itens_substitutos.forEach((sub,si)=>{
+        const c=calcAcordoSub(sub);
+        const mcCls=c.mcPctBruto>=20?'badge-green':c.mcPctBruto>=10?'badge-orange':'badge-red';
+        html+=`<tr>
+          <td>${si===0?`<strong>${esc(row.pv)}</strong>`:''}</td>
+          <td>${si===0?esc(row.empenho||'—'):''}</td>
+          <td title="${esc(row.cliente||'')}">${si===0?esc(String(row.cliente||'').slice(0,28)):''}</td>
+          <td title="${esc(item.desc||'')}">${si===0?esc(String(item.desc||'').slice(0,40)):''}</td>
+          <td title="${esc(sub.descricao||'')}">${esc(String(sub.descricao||'—').slice(0,42))}</td>
+          <td>${esc(sub.marca||'—')}</td>
+          <td>${esc(sub.grade||'—')}</td>
+          <td class="center">${num(c.qtd).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:4})}</td>
+          <td>${esc(sub.und||'—')}</td>
+          <td class="num">${fmt(c.precoVendaUn)}</td>
+          <td class="num"><strong>${fmt(c.total)}</strong></td>
+          <td class="num">${fmt(c.mcValor)}</td>
+          <td class="center"><span class="badge ${mcCls}">${c.mcPctBruto.toFixed(1)}%</span></td>
+          <td>${esc(fmtDateBR(sub.data_entrega))}</td>
+          <td class="center">${si===0?`<button class="sim-text-btn cta" type="button" onclick="closeAcordoReportModal();openAcordoModal('${esc(row.pv)}',${index})">Editar</button>`:''}</td>
+        </tr>`;
+      });
+    });
+  });
+  html+=`</tbody></table>`;
+  body.innerHTML=html;
+}
+
+// ============================================================
+// TERMO DE COMPROMISSO — impressão
+// ============================================================
+function buildTermoHtml(item,acordo,company){
+  const empresa=company||COMPANY_PROFILES.marck;
+  const orgao=String(item.cliente||'').toUpperCase();
+  const empenho=String(item.empenho||'').trim();
+  const nfe=String(acordo.nfe_termo||item.nfe||'').trim();
+  const pregao=String(acordo.pregao||item.pregao||'').trim();
+  const totals=calcAcordoTotals(acordo);
+  const totalEntregue=totals.total;
+  const totalNF=num(item.valor||0); // saldo da NF é fora do escopo: usamos valor empenhado como referência
+  const saldoNF=Math.max(totalNF-totalEntregue,0);
+  const dataExt=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+
+  const linhas=(acordo.itens_substitutos||[]).map(sub=>{
+    const c=calcAcordoSub(sub);
+    return `<tr>
+      <td>${esc(orgao)}</td>
+      <td>${esc(empenho||'—')}</td>
+      <td>${esc(nfe||'—')}</td>
+      <td>${esc(sub.descricao||'—')}</td>
+      <td>${esc(sub.marca||'—')}</td>
+      <td>${esc(sub.grade||'—')}</td>
+      <td class="num">${num(c.qtd).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:4})}</td>
+      <td>${esc(sub.und||'UN')}</td>
+      <td class="num">${fmt(c.precoVendaUn)}</td>
+      <td class="num">${fmt(c.total)}</td>
+      <td>${esc(fmtDateBR(sub.data_entrega))}</td>
+    </tr>`;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<title>Termo de Compromisso de Entrega — ${esc(orgao)}</title>
+<style>
+@page{size:A4;margin:18mm 16mm}
+*{box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;color:#0a1628;font-size:11px;margin:0}
+.t-header{display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1.5px solid #0a1628;padding-bottom:8px;margin-bottom:14px}
+.t-header .marca{font-family:Arial Black,Helvetica,sans-serif;font-size:18px;letter-spacing:1px}
+.t-header .info{font-size:10px;line-height:1.45;text-align:right;max-width:62%}
+h1{font-size:16px;text-align:center;margin:18px 0 14px;letter-spacing:.5px}
+.t-greeting{margin-bottom:6px}
+.t-greeting strong{font-size:13px}
+.t-decl{font-size:11px;line-height:1.55;text-align:justify;margin-bottom:14px}
+table.t-grid{width:100%;border-collapse:collapse;margin-bottom:0}
+table.t-grid th,table.t-grid td{border:1px solid #0a1628;padding:5px 6px;font-size:10px;vertical-align:middle}
+table.t-grid th{background:#e6efe9;font-weight:bold}
+table.t-grid td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.t-totais{width:100%;border-collapse:collapse;margin-bottom:18px}
+.t-totais td{border:1px solid #0a1628;padding:6px 8px;font-size:11px}
+.t-totais td.label{background:#fff7c2;font-weight:bold;text-align:right}
+.t-totais td.value{text-align:right;font-weight:bold;font-variant-numeric:tabular-nums}
+.t-sign-block{margin-top:14px;font-size:11px}
+.t-sign-line{margin:46px auto 6px;border-top:1px solid #0a1628;width:62%;text-align:center;padding-top:4px;font-weight:bold}
+.t-data-box{border:1px solid #0a1628;padding:10px;font-size:10px;line-height:1.5;margin-top:18px}
+.t-data-box h3{margin:0 0 4px;font-size:11px}
+.t-data-box .row{margin-bottom:2px}
+.t-footer-sign{display:flex;justify-content:space-between;align-items:flex-end;margin-top:32px;font-size:10px}
+.t-footer-sign .nome{font-weight:bold;font-size:11px}
+.t-print-actions{margin:14px;text-align:right}
+.t-print-actions button{padding:8px 14px;border:1px solid #0a1628;background:#0a1628;color:#fff;font-weight:bold;border-radius:6px;cursor:pointer;margin-left:6px}
+.t-print-actions button.outline{background:#fff;color:#0a1628}
+@media print{.t-print-actions{display:none}}
+</style></head>
+<body>
+<div class="t-print-actions">
+  <button onclick="window.print()">🖨 Imprimir</button>
+  <button class="outline" onclick="window.close()">Fechar</button>
+</div>
+<div class="t-header">
+  <div class="marca">${esc(empresa.nome_fantasia)}</div>
+  <div class="info">
+    <strong>${esc(empresa.razao_social)}</strong><br>
+    CNPJ: ${esc(empresa.cnpj)}<br>
+    INSCRIÇÃO MUNICIPAL: ${esc(empresa.inscricao_municipal)} • INSCRIÇÃO ESTADUAL: ${esc(empresa.inscricao_estadual)}<br>
+    ${esc(empresa.endereco)}
+  </div>
+</div>
+<h1>TERMO DE COMPROMISSO DE ENTREGA</h1>
+<div class="t-greeting">Ao,<br><strong>${esc(orgao)}</strong></div>
+<div class="t-decl">
+  ${esc(empresa.razao_social)}, inscrita no CNPJ sob o nº ${esc(empresa.cnpj)}, sediada na ${esc(empresa.endereco)} neste ato representada pelo seu representante legal, o Sr. <strong>${esc(empresa.representante.nome)}</strong>, ${esc(empresa.representante.cargo.toLowerCase())}, inscrito no CPF sob o nº ${esc(empresa.representante.cpf)}, portador da cédula de identidade nº ${esc(empresa.representante.rg)}, expedida por ${esc(empresa.representante.rg_orgao)}, <strong>DECLARA</strong> que está entregando de acordo com o relacionado abaixo, referente a NF<strong>${esc(nfe||'—')}</strong>, empenho <strong>${esc(empenho||'—')}</strong>${pregao?` e pregão <strong>${esc(pregao)}</strong>`:''}.${acordo.observacoes?`<br><br><em>Observações:</em> ${esc(acordo.observacoes)}`:''}
+</div>
+<table class="t-grid">
+  <thead><tr>
+    <th>ÓRGÃO</th><th>Empenho</th><th>NFe</th><th>Material</th><th>Marca</th><th>Grade</th>
+    <th>Qtd entregue</th><th>Unidade</th><th>Valor Unit</th><th>Valor Total</th><th>Data da entrega</th>
+  </tr></thead>
+  <tbody>${linhas||'<tr><td colspan="11" style="text-align:center;color:#888">Sem itens substitutos</td></tr>'}</tbody>
+</table>
+<table class="t-totais">
+  <tr><td class="label" style="width:78%">TOTAL DA NOTA FISCAL</td><td class="value">${fmt(totalNF)}</td></tr>
+  <tr><td class="label">Total ENTREGUE</td><td class="value">${fmt(totalEntregue)}</td></tr>
+  <tr><td class="label">Saldo da NF</td><td class="value">${fmt(saldoNF)}</td></tr>
+</table>
+<div class="t-sign-block">
+  Assinatura e carimbo do responsável pelo recebimento:<br>
+  Rio de Janeiro, ____ de, ______________, de________.
+  <div class="t-sign-line">${esc(orgao)}</div>
+</div>
+<div class="t-data-box">
+  <h3>Dados da empresa</h3>
+  <div class="row"><strong>Nome empresarial</strong> – ${esc(empresa.razao_social)}</div>
+  <div class="row"><strong>CNPJ</strong> – ${esc(empresa.cnpj)}</div>
+  <div class="row"><strong>Endereço</strong> – ${esc(empresa.endereco)}</div>
+  <div class="row"><strong>Inscrição Municipal</strong> – ${esc(empresa.inscricao_municipal)}</div>
+  <div class="row"><strong>Inscrição Estadual</strong> – ${esc(empresa.inscricao_estadual)}</div>
+  <div class="row"><strong>E-mail</strong> – ${esc(empresa.email_geral)}</div>
+  <h3 style="margin-top:6px">Dados do representante legal</h3>
+  <div class="row"><strong>Nome</strong> – ${esc(empresa.representante.nome)}</div>
+  <div class="row"><strong>CPF</strong> – ${esc(empresa.representante.cpf)}</div>
+  <div class="row"><strong>Cargo</strong> – ${esc(empresa.representante.cargo)}</div>
+  <div class="row"><strong>Contato</strong> – ${esc(empresa.representante.contato)}</div>
+  <div class="row"><strong>E-mail</strong> – ${esc(empresa.representante.email)}</div>
+  <h3 style="margin-top:6px">Dados bancários</h3>
+  <div class="row"><strong>Banco</strong> – ${esc(empresa.banco.nome)}</div>
+  <div class="row"><strong>Agência</strong> – ${esc(empresa.banco.agencia)}</div>
+  <div class="row"><strong>Conta corrente</strong> – ${esc(empresa.banco.conta)}</div>
+  <div class="row"><strong>Endereço da agência</strong> – ${esc(empresa.banco.endereco_agencia)}</div>
+</div>
+<div class="t-footer-sign">
+  <div>
+    <div class="nome">${esc(empresa.representante.nome)}</div>
+    ${esc(empresa.representante.cargo)}<br>
+    CPF: ${esc(empresa.representante.cpf)}<br>
+    ID: ${esc(empresa.representante.rg)}
+  </div>
+  <div>Rio de Janeiro, ${esc(dataExt)}.</div>
+</div>
+</body></html>`;
+}
+function printAcordoTermo(){
+  if(!_acordoModalState.acordo||!_acordoModalState.item){alert('Abra um acordo para imprimir o termo.');return;}
+  const totals=calcAcordoTotals(_acordoModalState.acordo);
+  if(Math.abs(totals.diff)>0.5){
+    if(!confirm(`O total substituído (${fmt(totals.total)}) não bate com o valor empenhado (${fmt(totals.fixed)}). Diferença de ${fmt(totals.diff)}.\n\nImprimir mesmo assim?`)) return;
+  }
+  const html=buildTermoHtml(_acordoModalState.item,_acordoModalState.acordo,COMPANY_PROFILES[_acordoModalState.acordo.empresa_key||'marck']);
+  const w=window.open('','_blank','width=900,height=1000');
+  if(!w){alert('Pop-up bloqueado. Permita pop-ups para gerar o termo.');return;}
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}
+
 function getItemComparedMetrics(item){
   const activeScenario=getItemActiveScenario(item);
   const baseInputs=deriveSimInputs(item);
@@ -1796,6 +2683,17 @@ function applySimScenarioToItem(id){
   _simModalState.activeId=id;
   persistSimModalState(true,0);
   renderSimModal();
+}
+function useScenarioInAcordo(scenarioId){
+  if(!_simModalState.item||!_simModalState.itemRef) return;
+  // garante que o cenário esteja salvo no item antes de migrar
+  syncSimScenariosToItem();
+  const pv=_simModalState.item.pv;
+  const row=(D.pendentes_list||[]).find(r=>String(r.pv)===String(pv));
+  const idx=(row?.itens||[]).indexOf(_simModalState.itemRef);
+  if(idx<0){alert('Não foi possível localizar o item para abrir o acordo.');return;}
+  closeSimModal();
+  setTimeout(()=>openAcordoModal(pv,idx,scenarioId),60);
 }
 function clearSimAppliedScenario(){
   if(!_simModalState.itemRef) return;
@@ -2010,6 +2908,7 @@ function renderSimModal(){
     const actions = `
       <div class="sim-card-actions">
         <button class="sim-text-btn cta ${isActive?'active':''}" type="button" onclick="${isActive?'return false':'applySimScenarioToItem(\''+scenario.id+'\')'}">${isActive?'Aplicado na linha':'Usar na linha'}</button>
+        <button class="sim-text-btn cta" type="button" style="border-color:rgba(42,157,143,.4);background:rgba(42,157,143,.12)" onclick="useScenarioInAcordo('${scenario.id}')">Usar no Acordo</button>
         <button class="sim-text-btn" type="button" onclick="resetSimScenario('${scenario.id}')">Resetar</button>
         ${_simModalState.scenarios.length>1?`<button class="sim-text-btn" type="button" onclick="removeSimScenario('${scenario.id}')">Remover</button>`:''}
       </div>
@@ -2077,6 +2976,8 @@ window.addEventListener('keydown', e=>{
   if(e.key==='Escape'&&!document.getElementById('simModal')?.classList.contains('hidden')) closeSimModal();
   if(e.key==='Escape'&&!document.getElementById('contractListModal')?.classList.contains('hidden')) closeContractListModal();
   if(e.key==='Escape'&&!document.getElementById('contractQualityModal')?.classList.contains('hidden')) closeContractQualityModal();
+  if(e.key==='Escape'&&!document.getElementById('acordoModal')?.classList.contains('hidden')) closeAcordoModal();
+  if(e.key==='Escape'&&!document.getElementById('acordoReportModal')?.classList.contains('hidden')) closeAcordoReportModal();
 });
 
 // -------------------------------------------------------
@@ -3055,9 +3956,13 @@ function renderPendentesTable(data,keepSort){
       ? `<span class="itens-count" style="color:var(--gold)">${nItens}/${totalItens} it</span>`
       : `<span class="itens-count">${totalItens} ite${totalItens!==1?'ns':'m'}</span>`;
 
+    const rowAcordoCount=(r.itens||[]).filter(getItemHasAcordo).length;
+    const acBadge=rowAcordoCount>0
+      ? `<span class="ac-badge" title="${rowAcordoCount} item${rowAcordoCount!==1?'s':''} com acordo de entrega - clique para ver o relatório" onclick="event.stopPropagation();openAcordoReportModal()">AC${rowAcordoCount>1?' '+rowAcordoCount:''}</span>`
+      : '';
     let html=`<tr class="expand-row" onclick="togglePenItems('${rid}',this)">`;
     html+=`<td><span class="expand-toggle" id="tog-${rid}">▶</span></td>`;
-    html+=`<td><strong>${r.pv}</strong>${itensLabel}</td>`;
+    html+=`<td><strong>${r.pv}</strong>${acBadge}${itensLabel}</td>`;
     html+=`<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.cliente}">${r.cliente}</td>`;
     html+=`<td style="font-size:11px;color:var(--gray-600)">${r.empenho}</td>`;
     html+=`<td style="font-size:11px;color:var(--gray-600)">${r.uasg||'—'}</td>`;
@@ -3122,7 +4027,8 @@ function renderPendentesTable(data,keepSort){
       html+=comparedItem.has_compare
         ? `<td style="text-align:center"><div class="metric-stack center"><div class="metric-current"><span class="badge ${mcBadgeCls(iPct)}">${iPct.toFixed(1)}%</span></div><div class="metric-compare ${itemComparePct>=20?'good':itemComparePct>=10?'warn':'neg'}">Cen. ${itemComparePct.toFixed(1)}%</div></div></td>`
         : `<td style="text-align:center"><span class="badge ${mcBadgeCls(iPct)}">${iPct.toFixed(1)}%</span></td>`;
-      html+=`<td style="text-align:center"><button class="sim-btn" type="button" ${canSim?'':"disabled title=\"Requer base da planilha\""} title="${activeScenario?`Comparando com ${activeScenario.name}`:'Abrir simulador'}" onclick='event.stopPropagation();openItemSimulator(${pvArg},${originalIdx})'>${activeScenario?'🧮 Ativo':'🧮 Simular'}</button>${comparedItem.has_compare&&itemScenarioCreator?`<span class="compare-note active" title="${esc(itemScenarioCreator)}">por ${esc(itemScenarioCreator.length>18?itemScenarioCreator.slice(0,18)+'…':itemScenarioCreator)}</span>`:''}</td>`;
+      const itemHasAcordo=getItemHasAcordo(it);
+      html+=`<td style="text-align:center;white-space:nowrap"><button class="sim-btn" type="button" ${canSim?'':"disabled title=\"Requer base da planilha\""} title="${activeScenario?`Comparando com ${activeScenario.name}`:'Abrir simulador'}" onclick='event.stopPropagation();openItemSimulator(${pvArg},${originalIdx})'>${activeScenario?'🧮 Ativo':'🧮 Simular'}</button><button class="ac-btn ${itemHasAcordo?'active':''}" type="button" title="${itemHasAcordo?'Editar acordo de entrega':'Criar acordo de entrega'}" onclick='event.stopPropagation();openAcordoModal(${pvArg},${originalIdx})'>${itemHasAcordo?'📄 AC':'📄 Acordo'}</button><label class="ac-check-wrap" title="Marcar entrega via acordo (ativa o selo AC)" onclick="event.stopPropagation()"><input type="checkbox" class="ac-check" ${itemHasAcordo?'checked':''} onclick="event.stopPropagation();toggleAcordoFlag(${pvArg},${originalIdx},this.checked)"><span>AC</span></label>${comparedItem.has_compare&&itemScenarioCreator?`<span class="compare-note active" title="${esc(itemScenarioCreator)}">por ${esc(itemScenarioCreator.length>18?itemScenarioCreator.slice(0,18)+'…':itemScenarioCreator)}</span>`:''}</td>`;
       html+=`</tr>`;
     });
     if(!r._itens.length) html+=`<tr><td colspan="12" style="text-align:center;color:var(--gray-400);padding:12px">Sem itens correspondentes ao filtro</td></tr>`;
@@ -4338,7 +5244,9 @@ async function readAndRender(){
     const meta = await metaResp.json();
     const fileName = meta.name || 'Controle Geral.xlsx';
     configureSimShareTarget(meta, graphBase);
+    configureAcordoShareTarget(meta, graphBase);
     const sharedSimPromise = loadSharedSimStore(headers).then(()=>syncLocalSimStorageToSharePoint(headers));
+    const sharedAcordoPromise = loadSharedAcordoStore(headers).then(()=>syncLocalAcordoStorageToSharePoint(headers));
 
     let dlResp;
     if(meta['@microsoft.graph.downloadUrl']){
@@ -4359,7 +5267,8 @@ async function readAndRender(){
 
     setLoading(true,'Calculando indicadores...');
     await sharedSimPromise;
-    D = hydratePersistedSimulations(parseSheet(rows, contratosRows, contratosMirror));
+    await sharedAcordoPromise;
+    D = hydratePersistedAcordos(hydratePersistedSimulations(parseSheet(rows, contratosRows, contratosMirror)));
     closeSimModal();
     closeContractListModal();
     renderAll();
@@ -4377,12 +5286,15 @@ async function readAndRender(){
 
 function usePreloaded(){
   closeSimModal();
+  closeAcordoModal();
   closeContractListModal();
   _simSharedTarget=null;
   _simSharedStore={};
+  _acordoSharedTarget=null;
+  _acordoSharedStore={};
   scheduleSharedSimRefresh();
   updateSimSyncButtonState(false);
-  D=hydratePersistedSimulations(JSON.parse(JSON.stringify(DEFAULT_DATA)));renderAll();
+  D=hydratePersistedAcordos(hydratePersistedSimulations(JSON.parse(JSON.stringify(DEFAULT_DATA))));renderAll();
   document.getElementById('firstRun').classList.add('hidden');
   document.getElementById('fileDot').className='file-dot none';
   document.getElementById('fileStatusText').innerHTML='Dados pr?-carregados';
@@ -4930,6 +5842,8 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
       und:String(r['Und']||'—'),
       valor:round(v),
       mc_valor:round(mv),
+      nfe:String(r['NFe']||r['NF-e']||r['NFe Saída']||r['Nota Fiscal']||'').trim(),
+      pregao:String(r['Contrato']||'').trim(),
       sim:{
         preco_venda_un:toN(r['Un']||0),
         custo_un:toN(r['Custo Un']||0),
@@ -5022,7 +5936,7 @@ document.addEventListener('DOMContentLoaded', async()=>{
     _prodCatalog={};
   }
 
-  D = hydratePersistedSimulations(JSON.parse(JSON.stringify(DEFAULT_DATA)));
+  D = hydratePersistedAcordos(hydratePersistedSimulations(JSON.parse(JSON.stringify(DEFAULT_DATA))));
   renderAll();
 
   try{
