@@ -4028,7 +4028,7 @@ function renderPendentesTable(data,keepSort){
         ? `<td style="text-align:center"><div class="metric-stack center"><div class="metric-current"><span class="badge ${mcBadgeCls(iPct)}">${iPct.toFixed(1)}%</span></div><div class="metric-compare ${itemComparePct>=20?'good':itemComparePct>=10?'warn':'neg'}">Cen. ${itemComparePct.toFixed(1)}%</div></div></td>`
         : `<td style="text-align:center"><span class="badge ${mcBadgeCls(iPct)}">${iPct.toFixed(1)}%</span></td>`;
       const itemHasAcordo=getItemHasAcordo(it);
-      html+=`<td style="text-align:center;white-space:nowrap"><button class="sim-btn" type="button" ${canSim?'':"disabled title=\"Requer base da planilha\""} title="${activeScenario?`Comparando com ${activeScenario.name}`:'Abrir simulador'}" onclick='event.stopPropagation();openItemSimulator(${pvArg},${originalIdx})'>${activeScenario?'🧮 Ativo':'🧮 Simular'}</button><button class="ac-btn ${itemHasAcordo?'active':''}" type="button" title="${itemHasAcordo?'Editar acordo de entrega':'Criar acordo de entrega'}" onclick='event.stopPropagation();openAcordoModal(${pvArg},${originalIdx})'>${itemHasAcordo?'📄 AC':'📄 Acordo'}</button><label class="ac-check-wrap" title="Marcar entrega via acordo (ativa o selo AC)" onclick="event.stopPropagation()"><input type="checkbox" class="ac-check" ${itemHasAcordo?'checked':''} onclick="event.stopPropagation();toggleAcordoFlag(${pvArg},${originalIdx},this.checked)"><span>AC</span></label>${comparedItem.has_compare&&itemScenarioCreator?`<span class="compare-note active" title="${esc(itemScenarioCreator)}">por ${esc(itemScenarioCreator.length>18?itemScenarioCreator.slice(0,18)+'…':itemScenarioCreator)}</span>`:''}</td>`;
+      html+=`<td style="text-align:center;white-space:nowrap"><button class="sim-btn" type="button" ${canSim?'':"disabled title=\"Requer base da planilha\""} title="${activeScenario?`Comparando com ${activeScenario.name}`:'Abrir simulador'}" onclick='event.stopPropagation();openItemSimulator(${pvArg},${originalIdx})'>${activeScenario?'🧮 Ativo':'🧮 Simular'}</button><button class="ac-btn ${itemHasAcordo?'active':''}" type="button" title="${itemHasAcordo?'Editar acordo de entrega':'Criar acordo de entrega'}" onclick='event.stopPropagation();openAcordoModal(${pvArg},${originalIdx})'>${itemHasAcordo?'📄 AC':'📄 Acordo'}</button><label class="ac-check-wrap" title="Marcar entrega via acordo (ativa o selo AC)" onclick='event.stopPropagation()'><input type="checkbox" class="ac-check" ${itemHasAcordo?'checked':''} onclick='event.stopPropagation();toggleAcordoFlag(${pvArg},${originalIdx},this.checked)'><span>AC</span></label>${comparedItem.has_compare&&itemScenarioCreator?`<span class="compare-note active" title="${esc(itemScenarioCreator)}">por ${esc(itemScenarioCreator.length>18?itemScenarioCreator.slice(0,18)+'…':itemScenarioCreator)}</span>`:''}</td>`;
       html+=`</tr>`;
     });
     if(!r._itens.length) html+=`<tr><td colspan="12" style="text-align:center;color:var(--gray-400);padding:12px">Sem itens correspondentes ao filtro</td></tr>`;
@@ -5955,7 +5955,6 @@ document.addEventListener('DOMContentLoaded', async()=>{
 </script>
 </body>
 </html>
-
 
 
 
