@@ -138,6 +138,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .table-scroll::-webkit-scrollbar,.tabs-wrapper::-webkit-scrollbar,.pill-group::-webkit-scrollbar,.contract-pv-wrap::-webkit-scrollbar,.itens-wrapper::-webkit-scrollbar,.header-right::-webkit-scrollbar{height:8px;width:8px}
 .table-scroll::-webkit-scrollbar-thumb,.tabs-wrapper::-webkit-scrollbar-thumb,.pill-group::-webkit-scrollbar-thumb,.contract-pv-wrap::-webkit-scrollbar-thumb,.itens-wrapper::-webkit-scrollbar-thumb,.header-right::-webkit-scrollbar-thumb{background:rgba(19,34,64,.26);border-radius:999px}
 
+/* OPERATIONAL STATUS */
+.exec-status-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:16px}
+.exec-status-card{border:1px solid var(--gray-200);border-top:3px solid var(--navy);background:var(--white);border-radius:var(--radius);padding:13px 15px;text-align:left;box-shadow:var(--shadow-sm);cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s}
+.exec-status-card:hover,.exec-status-card.active{transform:translateY(-1px);box-shadow:var(--shadow-md);border-color:rgba(201,168,76,.55)}
+.exec-status-card.gold{border-top-color:var(--gold)}.exec-status-card.green{border-top-color:var(--green-light)}.exec-status-card.orange{border-top-color:#d4821a}.exec-status-card.navy{border-top-color:var(--navy)}
+.exec-status-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--gray-500);margin-bottom:6px}
+.exec-status-value{font-family:'DM Serif Display',serif;font-size:22px;line-height:1;color:var(--navy);margin-bottom:4px}
+.exec-status-meta{font-size:11px;color:var(--gray-500);display:flex;justify-content:space-between;gap:8px;align-items:center}
+.exec-status-note{font-size:11px;color:var(--gray-600);margin-top:8px;line-height:1.35}
+.exec-select{width:100%;min-width:150px;border:1px solid var(--gray-200);border-radius:10px;padding:6px 8px;font:inherit;font-size:11px;font-weight:700;color:var(--navy);background:#fff}
+.exec-select:focus{outline:none;border-color:var(--gold)}
+
 /* INLINE BADGES */
 .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
 .badge-green{background:#e6f4ef;color:var(--green-light)}.badge-orange{background:#fef3e2;color:#d4821a}
@@ -827,6 +839,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
     <div class="chart-wrap" style="height:230px"><canvas id="chartEmpresas"></canvas></div>
   </div>
 
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header" style="padding-bottom:14px">
+      <div>
+        <div class="card-title">Status para Faturamento</div>
+        <div class="card-subtitle" id="subtitleExecStatus">Todos os pendentes recebem uma classificação operacional</div>
+      </div>
+      <div class="header-tools">
+        <button class="btn btn-outline" type="button" style="color:var(--navy);border-color:var(--gray-200);padding:7px 12px;font-size:12px" onclick="setPendentesExecFilter('todos')">Ver todos</button>
+        <span id="execStatusFilterLabel" class="micro-status">Sem filtro operacional</span>
+      </div>
+    </div>
+    <div class="card-body" style="padding-top:0">
+      <div class="exec-status-grid" id="execStatusGrid"></div>
+    </div>
+  </div>
+
   <!-- Tabela completa de pendentes -->
   <div class="card">
     <div class="card-header" style="padding-bottom:14px">
@@ -864,7 +892,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
             <th style="cursor:pointer;text-align:right" onclick="sortPendentes('mc')">MC $ ↕</th>
             <th style="cursor:pointer;text-align:center" onclick="sortPendentes('mcpct')">MC % ↕</th>
             <th style="cursor:pointer;text-align:center" onclick="sortPendentes('dias')">Dias ↕</th>
-            <th>Prev. Entrega</th><th>Risco</th><th style="text-align:center">Ação</th>
+            <th>Prev. Entrega</th><th>Risco</th><th>Status faturamento</th><th style="text-align:center">Ação</th>
           </tr>
         </thead>
         <tbody id="pendentesTbody"></tbody>
@@ -1159,6 +1187,7 @@ let _pendentesData = [];
 let _pendentesSort = {col:'dias',asc:false};
 let _pendentesFilter = {produto:'',categoria:'',marca:'',tipo:''};
 let _pendentesSearch = '';
+let _pendentesExecFilter = 'todos';
 let _pendentesVisible = [];
 let _pendentesImageStatusTimer = null;
 let _contratosSearch = '';
@@ -1166,6 +1195,7 @@ let _prodCatalog = {};
 let _simModalState = {item:null,itemRef:null,baseInputs:null,scenarios:[],seq:0,activeId:''};
 const SIM_STORAGE_KEY = 'dashPosVendas.simulacoes.v1';
 const SIM_SHARED_FILE = 'dash-pos-vendas-simulacoes.json';
+const PEND_EXEC_STATUS_KEY = 'dashPosVendas.pendentes.statusExecucao.v1';
 const CONTRACT_QUALITY_STORAGE_KEY = 'dashPosVendas.contratos.qualidade.v1';
 let _simSharedStore = {};
 let _simSharedTarget = null;
@@ -3209,10 +3239,77 @@ function updatePendentesFilter(key,value){_pendentesFilter[key]=value;renderPend
 function clearPendentesFilters(){
   _pendentesFilter={produto:'',categoria:'',marca:'',tipo:''};
   _pendentesSearch='';
+  _pendentesExecFilter='todos';
   ['filtProduto','filtCategoria','filtMarca','filtTipo','searchPendentes'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   renderPendentesTable(_pendentesData,true);
+}
+function pendExecKey(row){
+  return [row?.pv,row?.empenho,row?.uasg].map(v=>String(v||'').trim()).join('|');
+}
+function loadPendExecStatusStore(){
+  try{return JSON.parse(localStorage.getItem(PEND_EXEC_STATUS_KEY)||'{}')||{};}catch{return {};}
+}
+function savePendExecStatusStore(store){
+  try{localStorage.setItem(PEND_EXEC_STATUS_KEY,JSON.stringify(store||{}));}catch{}
+}
+function getPendExecMeta(key){
+  const meta={
+    todos:{label:'Todos os pendentes',short:'Todos',badge:'badge-navy',color:'navy',note:'Carteira pendente completa no filtro atual.'},
+    pronto_com_acordo:{label:'Com acordo para faturar',short:'Com acordo',badge:'badge-green',color:'green',note:'Possui AC em ao menos um item e pode seguir com termo/acordo.'},
+    pronto_sem_acordo:{label:'Sem acordo, pronto para faturar',short:'Sem acordo',badge:'badge-teal',color:'gold',note:'Sem AC, mas liberado operacionalmente para seguir.'},
+    negociar:{label:'A verificar / negociar',short:'A negociar',badge:'badge-orange',color:'orange',note:'Sem liberação; precisa atenção antes de faturar.'}
+  };
+  return meta[key]||meta.negociar;
+}
+function getPendExecStatus(row){
+  if(getRowHasAcordo(row)) return 'pronto_com_acordo';
+  const stored=loadPendExecStatusStore()[pendExecKey(row)];
+  return stored==='pronto_sem_acordo' ? 'pronto_sem_acordo' : 'negociar';
+}
+function setPendExecStatus(pv,status){
+  const row=(D.pendentes_list||[]).find(r=>String(r.pv)===String(pv));
+  if(!row) return;
+  const store=loadPendExecStatusStore();
+  const key=pendExecKey(row);
+  if(status==='pronto_sem_acordo') store[key]='pronto_sem_acordo';
+  else delete store[key];
+  savePendExecStatusStore(store);
+  renderPendentesTable(_pendentesData,true);
+}
+function setPendentesExecFilter(status){
+  _pendentesExecFilter=status||'todos';
+  renderPendentesTable(_pendentesData,true);
+}
+function renderPendentesExecSummary(baseRows,visibleRows){
+  const grid=document.getElementById('execStatusGrid');
+  if(!grid) return;
+  const rows=baseRows||[];
+  const defs=['todos','pronto_com_acordo','pronto_sem_acordo','negociar'];
+  const summary={};
+  defs.forEach(k=>summary[k]={qtd:0,valor:0});
+  rows.forEach(r=>{
+    const st=getPendExecStatus(r);
+    summary.todos.qtd+=1; summary.todos.valor+=num(r._valor||0);
+    summary[st].qtd+=1; summary[st].valor+=num(r._valor||0);
+  });
+  grid.innerHTML=defs.map(k=>{
+    const m=getPendExecMeta(k);
+    const active=_pendentesExecFilter===k?' active':'';
+    const s=summary[k]||{qtd:0,valor:0};
+    return `<button class="exec-status-card ${m.color}${active}" type="button" onclick="setPendentesExecFilter('${k}')">
+      <div class="exec-status-label">${m.label}</div>
+      <div class="exec-status-value">${fmtS(s.valor)}</div>
+      <div class="exec-status-meta"><span>${s.qtd} pedido${s.qtd!==1?'s':''}</span><span>${rows.length?pct(s.qtd/rows.length*100):'0,0%'}</span></div>
+      <div class="exec-status-note">${m.note}</div>
+    </button>`;
+  }).join('');
+  const lbl=document.getElementById('execStatusFilterLabel');
+  const activeMeta=getPendExecMeta(_pendentesExecFilter);
+  if(lbl) lbl.textContent=_pendentesExecFilter==='todos'?'Sem filtro operacional':`Filtrando: ${activeMeta.label}`;
+  const sub=document.getElementById('subtitleExecStatus');
+  if(sub) sub.textContent=`${visibleRows.length} de ${rows.length} pedidos exibidos no filtro atual · nenhum fica sem status`;
 }
 function setPendentesImageStatus(msg,isError){
   const el=document.getElementById('pendentesImageStatus');
@@ -3269,9 +3366,9 @@ function applyItemFilters(pv){
   const compare=summarizeComparedItems(itens);
   return {itens,valor,mc_valor,filtered:true,...compare};
 }
-function getPendentesRows(data){
+function buildPendentesRows(data){
   const searched=filterArr(data,_pendentesSearch);
-  const enriched=searched.map(pv=>{
+  return searched.map(pv=>{
     const res=applyItemFilters(pv);
     if(res.filtered&&!res.itens.length) return null;
     return {
@@ -3287,9 +3384,10 @@ function getPendentesRows(data){
       _filtered:res.filtered
     };
   }).filter(Boolean);
-
+}
+function sortPendentesRows(rows){
   const {col,asc}=_pendentesSort;
-  return enriched.sort((a,b)=>{
+  return rows.sort((a,b)=>{
     let va,vb;
     if(col==='dias'){va=a.dias||0;vb=b.dias||0;}
     else if(col==='valor'){va=a._valor||0;vb=b._valor||0;}
@@ -3302,6 +3400,13 @@ function getPendentesRows(data){
     return asc?va-vb:vb-va;
   });
 }
+function getPendentesRows(data){
+  const base=buildPendentesRows(data);
+  const filtered=_pendentesExecFilter==='todos'
+    ? base
+    : base.filter(r=>getPendExecStatus(r)===_pendentesExecFilter);
+  return sortPendentesRows(filtered);
+}
 function getPendentesFilterSummary(rows){
   const parts=[];
   if(_pendentesSearch) parts.push(`Busca: "${_pendentesSearch}"`);
@@ -3309,6 +3414,7 @@ function getPendentesFilterSummary(rows){
   if(_pendentesFilter.categoria) parts.push(`Categoria: ${_pendentesFilter.categoria}`);
   if(_pendentesFilter.marca) parts.push(`Marca: ${_pendentesFilter.marca}`);
   if(_pendentesFilter.tipo) parts.push(`Tipo: ${_pendentesFilter.tipo}`);
+  if(_pendentesExecFilter&&_pendentesExecFilter!=='todos') parts.push(`Status: ${getPendExecMeta(_pendentesExecFilter).label}`);
   const comparedRows=rows.filter(r=>r._has_compare).length;
   if(comparedRows) parts.push(`${comparedRows} pedido${comparedRows!==1?'s':''} com cenário aplicado`);
   if(!parts.length) parts.push('Sem filtros adicionais');
@@ -3927,8 +4033,10 @@ async function downloadPendentesAsPdf(){
 }
 function renderPendentesTable(data,keepSort){
   if(!keepSort) _pendentesSort={col:'dias',asc:false};
+  const baseRows=buildPendentesRows(data);
   const sorted=getPendentesRows(data);
   _pendentesVisible=sorted;
+  renderPendentesExecSummary(baseRows,sorted);
 
   const tbody=document.getElementById('pendentesTbody'); if(!tbody) return;
   const count=document.getElementById('pendentesCount');
@@ -3960,6 +4068,15 @@ function renderPendentesTable(data,keepSort){
     const acBadge=rowAcordoCount>0
       ? `<span class="ac-badge" title="${rowAcordoCount} item${rowAcordoCount!==1?'s':''} com acordo de entrega - clique para ver o relatório" onclick="event.stopPropagation();openAcordoReportModal()">AC${rowAcordoCount>1?' '+rowAcordoCount:''}</span>`
       : '';
+    const execStatus=getPendExecStatus(r);
+    const execMeta=getPendExecMeta(execStatus);
+    const pvArg=JSON.stringify(String(r.pv));
+    const execSelect=getRowHasAcordo(r)
+      ? `<span class="badge ${execMeta.badge}">${execMeta.short}</span><div style="font-size:10px;color:var(--gray-400);margin-top:3px">seguir para faturamento</div>`
+      : `<select class="exec-select" onclick="event.stopPropagation()" onchange='setPendExecStatus(${pvArg},this.value)'>
+          <option value="negociar" ${execStatus==='negociar'?'selected':''}>A verificar / negociar</option>
+          <option value="pronto_sem_acordo" ${execStatus==='pronto_sem_acordo'?'selected':''}>Seguir faturamento sem acordo</option>
+        </select>`;
     let html=`<tr class="expand-row" onclick="togglePenItems('${rid}',this)">`;
     html+=`<td><span class="expand-toggle" id="tog-${rid}">▶</span></td>`;
     html+=`<td><strong>${r.pv}</strong>${acBadge}${itensLabel}</td>`;
@@ -3978,9 +4095,10 @@ function renderPendentesTable(data,keepSort){
     html+=`<td style="text-align:center"><span class="badge ${db}">${r.dias}d</span></td>`;
     html+=`<td style="font-size:11px">${(!r.prev_ent || String(r.prev_ent).trim()==='?') ? '—' : r.prev_ent}</td>`;
     html+=`<td>${risco}</td>`;
+    html+=`<td>${execSelect}</td>`;
     html+=`<td style="text-align:center;font-size:11px;color:var(--gray-400)"><span class="compare-note ${r._has_compare?'active':''}">${compareNote}</span></td></tr>`;
 
-    html+=`<tr class="expand-detail" id="${rid}"><td colspan="12"><div class="itens-wrapper">`;
+    html+=`<tr class="expand-detail" id="${rid}"><td colspan="13"><div class="itens-wrapper">`;
     html+=`<table class="itens-table"><thead><tr><th>Descrição</th><th>Marca</th><th>Categoria</th><th>Tipo</th><th style="text-align:center">Qtd</th><th>Und</th><th style="text-align:right">Venda un.</th><th style="text-align:right">Custo un.</th><th style="text-align:right">Valor</th><th style="text-align:right">MC $</th><th style="text-align:center">MC %</th><th style="text-align:center">Simulação</th></tr></thead><tbody>`;
     r._itens.forEach(it=>{
       const iPct=it.valor>0?(it.mc_valor/it.valor*100):0;
@@ -4037,7 +4155,7 @@ function renderPendentesTable(data,keepSort){
   }).join('');
 
   if(!sorted.length){
-    tbody.innerHTML=`<tr><td colspan="12" style="text-align:center;color:var(--gray-400);padding:28px">Nenhum empenho pendente corresponde aos filtros</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="13" style="text-align:center;color:var(--gray-400);padding:28px">Nenhum empenho pendente corresponde aos filtros</td></tr>`;
   }
 }
 function togglePenItems(id,row){
@@ -5955,7 +6073,3 @@ document.addEventListener('DOMContentLoaded', async()=>{
 </script>
 </body>
 </html>
-
-
-
-
