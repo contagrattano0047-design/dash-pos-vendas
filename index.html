@@ -2667,6 +2667,23 @@ function getReeqItemLabel(it,idx){
   const raw=String(it?.item_pe||it?.item||'').trim();
   return raw||String(idx+1).padStart(2,'0');
 }
+function cleanReeqDesc(v){
+  return String(v||'').toLowerCase().replace(/\s+/g,' ').trim();
+}
+function getReeqItemDescWithSize(it){
+  const desc=String(it?.desc_resumida||it?.desc||'').trim();
+  const tam=String(it?.tamanho||'').trim();
+  if(!tam) return desc;
+  const hasTam=/\bt(am|amanho)\b/i.test(desc)||String(desc).toLowerCase().includes(String(tam).toLowerCase());
+  return hasTam?desc:`${desc} tam ${tam}`;
+}
+function buildReeqProductSummary(items){
+  const vals=[...new Set((items||[]).map(it=>cleanReeqDesc(getReeqItemDescWithSize(it))).filter(Boolean))];
+  if(!vals.length) return 'produtos constantes da ata';
+  if(vals.length===1) return vals[0];
+  if(vals.length<=4) return vals.slice(0,-1).join(', ')+' e '+vals[vals.length-1];
+  return vals.slice(0,4).join(', ')+` e outros ${vals.length-4} item(ns)`;
+}
 function formatReeqItemRefs(items){
   const refs=[...new Set(items.map(getReeqItemLabel).filter(Boolean))];
   if(!refs.length) return 'itens selecionados';
@@ -2681,6 +2698,46 @@ function formatReeqUnitValues(items){
   if(!vals.length) return 'valor unitário registrado';
   if(vals.length===1) return vals[0];
   return vals.join(', ');
+}
+function numberUnderThousandPt(n){
+  const u=['zero','um','dois','três','quatro','cinco','seis','sete','oito','nove'];
+  const teens=['dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
+  const tens=['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
+  const hundreds=['','cento','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
+  n=Math.floor(Number(n)||0);
+  if(n===100) return 'cem';
+  if(n<10) return u[n]||'zero';
+  if(n<20) return teens[n-10];
+  if(n<100) return tens[Math.floor(n/10)]+(n%10?' e '+u[n%10]:'');
+  return hundreds[Math.floor(n/100)]+(n%100?' e '+numberUnderThousandPt(n%100):'');
+}
+function integerToWordsPt(n){
+  n=Math.floor(Math.abs(Number(n)||0));
+  if(n<1000) return numberUnderThousandPt(n);
+  if(n<1000000){
+    const mil=Math.floor(n/1000);
+    const rest=n%1000;
+    return (mil===1?'mil':numberUnderThousandPt(mil)+' mil')+(rest?' '+(rest<100?'e ':'')+numberUnderThousandPt(rest):'');
+  }
+  const mi=Math.floor(n/1000000);
+  const rest=n%1000000;
+  return numberUnderThousandPt(mi)+' '+(mi===1?'milhão':'milhões')+(rest?' '+integerToWordsPt(rest):'');
+}
+function currencyToWords(value){
+  const cents=Math.round(num(value||0)*100);
+  const reais=Math.floor(cents/100);
+  const cent=cents%100;
+  const parts=[];
+  if(reais) parts.push(integerToWordsPt(reais)+' '+(reais===1?'real':'reais'));
+  if(cent) parts.push(numberUnderThousandPt(cent)+' '+(cent===1?'centavo':'centavos'));
+  return parts.length?parts.join(' e '):'zero real';
+}
+function formatReeqUnitValuePhrase(items){
+  const vals=[...new Set((items||[]).map(getReeqUnitValue).filter(v=>v>0).map(v=>roundN(v,4)))];
+  if(!vals.length) return 'ao valor unitário registrado';
+  const formatted=vals.map(v=>`${fmt(v)} (${currencyToWords(v)})`);
+  if(formatted.length===1) return `ao valor unitário de ${formatted[0]}`;
+  return `aos valores unitários de ${formatted.slice(0,-1).join(', ')} e ${formatted[formatted.length-1]}`;
 }
 function buildReeqDefaultFromContract(row,pvs){
   const items=pvs.flatMap(pv=>pv.itens||[]);
@@ -2701,9 +2758,12 @@ function buildReeqDefaultFromContract(row,pvs){
     itens_ref:formatReeqItemRefs(items),
     itens_qtd:formatReeqItemQuantities(items),
     valor_total:fmt(total),
+    valor_total_extenso:currencyToWords(total),
     valor_unitario:formatReeqUnitValues(items),
+    valor_unitario_frase:formatReeqUnitValuePhrase(items),
     novo_valor_unitario:'',
-    produto_resumo:String(firstItem.desc||'produtos constantes da ata').toLowerCase(),
+    produto_resumo:buildReeqProductSummary(items),
+    incluir_protecao_ata:true,
     local_data:new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})
   };
 }
@@ -2727,6 +2787,10 @@ function updateReeqField(field,value){
   if(!_reeqModalState.pedido) return;
   _reeqModalState.pedido[field]=String(value||'');
 }
+function updateReeqBoolField(field,checked){
+  if(!_reeqModalState.pedido) return;
+  _reeqModalState.pedido[field]=!!checked;
+}
 function renderReeqModal(){
   const row=_reeqModalState.contrato;
   const pvs=_reeqModalState.pvs||[];
@@ -2749,11 +2813,15 @@ function renderReeqModal(){
     <div class="ah-field"><label>Data do empenho</label><input type="text" value="${esc(pedido.data_empenho)}" oninput="updateReeqField('data_empenho',this.value)" placeholder="Ex.: 13 de abril de 2026"></div>
     <div class="ah-field"><label>Novo valor unitário solicitado</label><input type="text" value="${esc(pedido.novo_valor_unitario)}" oninput="updateReeqField('novo_valor_unitario',this.value)" placeholder="Ex.: R$ 2,05"></div>
     <div class="ah-field" style="grid-column:1/-1"><label>Descrição resumida do produto</label><input type="text" value="${esc(pedido.produto_resumo)}" oninput="updateReeqField('produto_resumo',this.value)"></div>
+    <label class="ah-field" style="grid-column:1/-1;display:flex;align-items:center;gap:10px;cursor:pointer">
+      <input type="checkbox" ${pedido.incluir_protecao_ata!==false?'checked':''} onchange="updateReeqBoolField('incluir_protecao_ata',this.checked)" style="width:18px;height:18px;accent-color:var(--gold)">
+      <span><strong>Incluir item II.B</strong><br><small style="color:var(--gray-400)">DA PROTEÇÃO NA NOVA LEI DE LICITAÇÕES E NO INSTRUMENTO CONTRATUAL</small></span>
+    </label>
   `;
   const rows=items.map((it,idx)=>`
     <tr>
       <td>${esc(getReeqItemLabel(it,idx))}</td>
-      <td>${esc(it.desc||'—')}</td>
+      <td>${esc(getReeqItemDescWithSize(it)||'—')}</td>
       <td class="num">${num(it.qtd||0).toLocaleString('pt-BR',{maximumFractionDigits:4})}</td>
       <td>${esc(it.und||'—')}</td>
       <td class="num">${fmt(getReeqUnitValue(it))}</td>
@@ -2777,7 +2845,7 @@ function replaceTextAcrossNodes(xml,replacements){
   const nodes=[...doc.getElementsByTagNameNS(ns,'t')];
   function replaceOne(find,replace){
     if(!find) return;
-    replace=String(replace||'—');
+    replace=replace==null?'—':String(replace);
     if(String(find)===replace) return;
     let guard=0;
     while(guard<200){
@@ -2804,7 +2872,7 @@ function replaceTextAcrossNodes(xml,replacements){
       }
     }
   }
-  replacements.forEach(([find,replace])=>replaceOne(find,String(replace||'—')));
+  replacements.forEach(([find,replace])=>replaceOne(find,replace));
   return new XMLSerializer().serializeToString(doc);
 }
 function buildReeqDocxReplacements(){
@@ -2815,20 +2883,30 @@ function buildReeqDocxReplacements(){
   const orgaoTxt=pedido.orgao_texto||row?.orgao||'este órgão';
   const dataEmp=pedido.data_empenho||'data constante da Nota de Empenho';
   const novoValor=pedido.novo_valor_unitario||'valor unitário indicado na planilha de composição de custos anexa';
-  return [
+  const includeAtaProtection=pedido.incluir_protecao_ata!==false;
+  const ataProtectionPhrase=`e nas cláusulas 6.1.1 e 7.2 da Ata de Registro de Preços nº ${pedido.ata_registro||row?.contrato||'—'}, `;
+  const totalText=pedido.valor_total||fmt(pvs.reduce((sum,pv)=>sum+num(pv.valor||0),0));
+  const totalExt=pedido.valor_total_extenso||currencyToWords(pvs.reduce((sum,pv)=>sum+num(pv.valor||0),0));
+  const unitPhrase=pedido.valor_unitario_frase||formatReeqUnitValuePhrase(items);
+  const replacements=[
     ['MINISTÉRIO DA SAÚDE',pedido.orgao_linha_1||row?.orgao||''],
-    ['HOSPITAL FEDERAL DA LAGOA – RIO DE JANEIRO',pedido.orgao_linha_2||row?.orgao||''],
+    ['HOSPITAL FEDERAL DA LAGOA – RIO DE JANEIRO',pedido.orgao_linha_2||''],
     ['33408.141737/2024-33',pedido.processo_administrativo||'____________________'],
     ['91020/2025',pedido.pregao_eletronico||'____/____'],
     ['20/2026',pedido.ata_registro||row?.contrato||'____/____'],
     ['2026NE000460',pedido.notas_empenho||'____________________'],
+    ['e nas cláusulas 6.1.1 e 7.2 da Ata de Registro de Preços nº 20/2026, ',includeAtaProtection?ataProtectionPhrase:''],
     ['este Hospital Federal da Lagoa',`este(a) ${orgaoTxt}`],
     ['este Hospital Federal da Lagoa',`este(a) ${orgaoTxt}`],
     ['luvas cirúrgicas',pedido.produto_resumo||'produtos registrados'],
     ['os itens 03, 04 e 05',formatReeqItemRefs(items)],
     ['27.000 unidades do item 03, 6.500 unidades do item 04 e 2.100 unidades do item 05',formatReeqItemQuantities(items)],
     ['13 de abril de 2026',dataEmp],
-    ['R$ 39.516,00',pedido.valor_total||fmt(pvs.reduce((sum,pv)=>sum+num(pv.valor||0),0))],
+    ['R$ 39.516,00 (trinta e nove mil, quinhentos e dezesseis reais)',`${totalText} (${totalExt})`],
+    ['ao valor unitário de R$ 1,11 (um real e onze centavos)',unitPhrase],
+    ['trinta e nove mil, quinhentos e dezesseis reais',totalExt],
+    ['um real e onze centavos',unitPhrase.replace(/^aos? valores? unitários? de /,'')],
+    ['R$ 39.516,00',totalText],
     ['R$ 1,11',pedido.valor_unitario||formatReeqUnitValues(items)],
     ['R$ 2,05',novoValor],
     ['itens 03, 04 e 05',formatReeqItemRefs(items)],
@@ -2841,12 +2919,23 @@ function buildReeqDocxReplacements(){
     ['Arquivo em PDF anexado referente à Nota de Empenho nº 2026NE000460.',`Arquivo em PDF anexado referente à(s) Nota(s) de Empenho nº ${pedido.notas_empenho||'—'}.`],
     ['Arquivo em PDF anexado referente à Ata de Registro de Preços nº 20/2026.',`Arquivo em PDF anexado referente à Ata de Registro de Preços nº ${pedido.ata_registro||row?.contrato||'—'}.`]
   ];
+  if(!includeAtaProtection){
+    replacements.push(
+      ['DA PROTEÇÃO NA NOVA LEI DE LICITAÇÕES E NO INSTRUMENTO CONTRATUAL',''],
+      ['A proteção à equação econômico-financeira, para além de sua matriz constitucional, encontra guarida explícita e instrumental na Lei nº 14.133/2021, a nova Lei de Licitações e Contratos Administrativos. O legislador, ciente da complexidade das relações contratuais de longo prazo e da dinamicidade do mercado, estabeleceu no art. 124, II, "d", um mecanismo de salvaguarda, permitindo a alteração do contrato, por acordo entre as partes, "para restabelecer o equilíbrio econômico-financeiro inicial do contrato em caso de força maior, caso fortuito ou fato do príncipe ou em decorrência de fatos imprevisíveis ou previsíveis de consequências incalculáveis, que inviabilizem a execução do contrato tal como pactuado". Esta norma de regência não é mera faculdade, mas um instrumento de gestão contratual destinado a garantir a própria exequibilidade do objeto e a continuidade do fornecimento, evitando que a Administração se depare com um colapso na prestação por se aferrar a condições que a realidade tornou obsoletas.',''],
+      ['De forma ainda mais contundente, a própria Administração, ao redigir o edital e a respectiva Ata de Registro de Preços nº 20/2026, internalizou essa proteção, transformando a previsão legal em',''],
+      ['cláusula contratual expressa. A cláusula 6.1.1 do referido instrumento é um espelho da norma legal, ao prever a alteração dos preços registrados em decorrência de fatos imprevisíveis ou previsíveis de consequências incalculáveis, que inviabilizem a execução da ata tal como pactuada.',''],
+      ['Adicionalmente, a cláusula 7.2 estabelece um procedimento específico e pragmático, facultando ao fornecedor "requerer ao gerenciador a alteração do preço registrado" na hipótese de o preço de mercado se tornar superior ao preço registrado e o fornecedor não puder cumprir as obrigações, condicionando o pleito à "comprovação de fato superveniente".',''],
+      ['Portanto, o presente requerimento não representa uma tentativa de se esquivar de obrigações, mas sim o exercício regular de um direito duplamente assegurado: pela lei geral e pelo contrato firmado entre as partes. A existência de tais cláusulas de salvaguarda demonstra que a própria Administração reconheceu, a priori, a possibilidade de ocorrência de eventos desestabilizadores e, prudentemente, estabeleceu o caminho para a sua correção, afastando a ideia de que o risco empresarial do contratado seria absoluto e ilimitado. A Requerente, assim, apenas aciona o mecanismo contratual que foi desenhado para situações exatamente como a presente.','']
+    );
+  }
+  return replacements;
 }
 function applyReeqReplacementsToText(text){
   let out=String(text||'');
   buildReeqDocxReplacements().forEach(([find,replace])=>{
     if(!find) return;
-    out=out.split(find).join(String(replace||'—'));
+    out=out.split(find).join(replace==null?'—':String(replace));
   });
   return out;
 }
@@ -2870,7 +2959,7 @@ function buildReeqPreviewHtml(){
     'ANDRÉ LEMOS LATTARI SÓCIO DIRETOR',
     'CPF: 130.339.117-14'
   ].map(applyReeqReplacementsToText);
-  const itemRows=items.map((it,idx)=>`<tr><td>${esc(getReeqItemLabel(it,idx))}</td><td>${esc(it.desc||'—')}</td><td class="num">${num(it.qtd||0).toLocaleString('pt-BR',{maximumFractionDigits:4})}</td><td>${esc(it.und||'—')}</td><td class="num">${fmt(getReeqUnitValue(it))}</td><td class="num">${fmt(num(it.valor||0))}</td></tr>`).join('');
+  const itemRows=items.map((it,idx)=>`<tr><td>${esc(getReeqItemLabel(it,idx))}</td><td>${esc(getReeqItemDescWithSize(it)||'—')}</td><td class="num">${num(it.qtd||0).toLocaleString('pt-BR',{maximumFractionDigits:4})}</td><td>${esc(it.und||'—')}</td><td class="num">${fmt(getReeqUnitValue(it))}</td><td class="num">${fmt(num(it.valor||0))}</td></tr>`).join('');
   return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Prévia - Pedido de Reequilíbrio</title>
   <style>
     body{margin:0;background:#eef2f7;color:#0a1628;font-family:Arial,Helvetica,sans-serif}
@@ -6024,6 +6113,12 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
           ata_key:contractKey,
           orgao,
           pregao_eletronico:pregao,
+          item_pe:String(r['ITEM']||r['Item PE']||'').trim(),
+          desc_resumida:String(r['DESC RESUMIDA']||r['Desc. Resumida']||r['DESCRIÇÃO']||'').trim(),
+          tamanho:String(r['TAMANHO']||r['Tamanho']||'').trim(),
+          marca:String(r['MARCA']||r['Fabricante']||'').trim(),
+          unitario:toN(r['R$ UND']||r['R$ UN']||r['Un']||0),
+          custo_un:toN(r['CUSTO UN']||r['Custo Un']||0),
           total:toN(r['R$ TOTAL']||0),
           consumo:toN(r['CONSUMO (R$)']||0),
           saldo:toN(r['Saldo a Empenhar R$']||0),
@@ -6105,12 +6200,15 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
       cMap[contrato].pvMap[pv].valor+=val;
       cMap[contrato].pvMap[pv].mc_valor+=mc;
       cMap[contrato].pvMap[pv].itens.push({
-        item_pe:String(r['Item PE']||r['ITEM']||'').trim(),
-        desc:String(r['Desc. Resumida']||r['DESCRIÇÃO']||'—').substring(0,120),
+        item_pe:String(linked?.item_pe||r['Item PE']||r['ITEM']||'').trim(),
+        desc:String(linked?.desc_resumida||r['Desc. Resumida']||r['DESCRIÇÃO']||'—').substring(0,160),
+        desc_resumida:String(linked?.desc_resumida||r['Desc. Resumida']||r['DESCRIÇÃO']||'—').substring(0,160),
+        tamanho:String(linked?.tamanho||r['TAMANHO']||r['Tamanho']||'').trim(),
+        marca:String(linked?.marca||r['Fabricante']||'').trim(),
         qtd:toN(r['Qtd.']||r['QUANT']||0),
         und:String(r['Und']||r['Un']||'—'),
-        unitario:toN(r['Un']||0),
-        custo_un:toN(r['Custo Un']||0),
+        unitario:num(linked?.unitario||0)||toN(r['Un']||0),
+        custo_un:num(linked?.custo_un||0)||toN(r['Custo Un']||0),
         valor:round(val),
         mc_valor:round(mc),
         mc_pct:val>0?round(mc/val*100,1):0,
