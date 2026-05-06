@@ -8,6 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.27.0/lib/msal-browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 :root{
@@ -443,6 +444,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .acordo-report-table tbody tr:hover:not(.group-head){background:#fbfbfd}
 .acordo-report-table .num{text-align:right;font-variant-numeric:tabular-nums}
 .acordo-report-table .center{text-align:center}
+.reeq-print-note{font-size:12px;color:var(--gray-600);padding:10px 12px;border:1px solid var(--gray-200);border-radius:10px;background:#fff;margin-bottom:12px}
+.reeq-items-preview{width:100%;border-collapse:collapse;font-size:12px;background:#fff;border:1px solid var(--gray-200);border-radius:10px;overflow:hidden}
+.reeq-items-preview th,.reeq-items-preview td{padding:8px 9px;border-bottom:1px solid var(--gray-100);vertical-align:top}
+.reeq-items-preview th{background:var(--gray-50);font-size:10px;text-transform:uppercase;letter-spacing:.55px;color:var(--gray-400);text-align:left}
+.reeq-items-preview .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.reeq-contract-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.reeq-select-cell{width:34px;text-align:center}
+.reeq-select-cell input{width:16px;height:16px;accent-color:var(--gold);cursor:pointer}
+.reeq-mini-help{font-size:11px;color:var(--gray-400)}
 
 /* SIMULADOR */
 .sim-modal{position:fixed;inset:0;z-index:1200;display:flex;align-items:stretch;justify-content:center;padding:20px;background:rgba(10,22,40,.7);backdrop-filter:blur(6px)}
@@ -633,6 +643,31 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
       <div class="contract-list-meta" id="acordoReportMeta">—</div>
     </div>
     <div class="contract-list-body" id="acordoReportBody"></div>
+  </div>
+</div>
+
+<div class="sim-modal hidden" id="reeqModal" onclick="if(event.target===this) closeReeqModal()">
+  <div class="sim-panel" role="dialog" aria-modal="true" aria-labelledby="reeqModalTitle">
+    <div class="sim-header">
+      <div>
+        <h3 id="reeqModalTitle">Pedido de Reequilíbrio Econômico-Financeiro</h3>
+        <p id="reeqModalSubtitle">Selecione os empenhos no contrato expandido</p>
+        <div class="sim-header-meta" id="reeqModalMeta"></div>
+      </div>
+      <button class="sim-close" type="button" aria-label="Fechar reequilíbrio" onclick="closeReeqModal()">×</button>
+    </div>
+    <div class="sim-toolbar">
+      <div class="sim-toolbar-copy">Preencha os campos que dependem de conferência da ata. Os itens, quantidades e valores vêm do empenho selecionado.</div>
+      <div class="sim-toolbar-actions">
+        <button class="btn btn-primary" type="button" onclick="downloadReeqDocx()">📄 Baixar Word</button>
+        <button class="btn btn-outline" type="button" style="color:var(--navy);border-color:var(--gray-200)" onclick="closeReeqModal()">Fechar</button>
+      </div>
+    </div>
+    <div class="sim-content">
+      <div class="reeq-print-note">O Processo Administrativo deve ser colado pelo funcionário após conferência na ata. Revise também Pregão, Ata e Nota de Empenho antes de imprimir.</div>
+      <div class="acordo-header-grid" id="reeqHeaderGrid"></div>
+      <div id="reeqItemsPreview"></div>
+    </div>
   </div>
 </div>
 
@@ -2590,6 +2625,234 @@ function printAcordoTermo(){
   w.document.open();
   w.document.write(html);
   w.document.close();
+}
+
+// ============================================================
+// REEQUILÍBRIO ECONÔMICO-FINANCEIRO — DOCX por contrato
+// ============================================================
+const REEQ_TEMPLATE_DOCX_URL = encodeURI('REEQUILIBRIO LAGOA ATA202026/PE 91020 2025 - Pedido de Reequilíbrio Econômico - MARCK ATUALIZADO.docx');
+let _reeqModalState = {contrato:null,pvs:[],pedido:null};
+let _reeqSelectedPvs = {};
+
+function getReeqSelectionKey(contrato,pv){return [contrato,pv].map(v=>String(v||'').trim()).join('||');}
+function getReeqSelectedPvsForContract(row){
+  const pvs=Array.isArray(row?.pv_rows)?row.pv_rows:[];
+  return pvs.filter(pv=>_reeqSelectedPvs[getReeqSelectionKey(row.contrato,pv.pv)]);
+}
+function setReeqPvSelected(contrato,pv,checked){
+  const key=getReeqSelectionKey(contrato,pv);
+  if(checked) _reeqSelectedPvs[key]=true;
+  else delete _reeqSelectedPvs[key];
+}
+function setAllReeqPvs(contrato,checked){
+  const row=findContratoRowByNumero(contrato);
+  (row?.pv_rows||[]).forEach(pv=>setReeqPvSelected(contrato,pv.pv,checked));
+  renderContratos();
+}
+function findContratoRowByNumero(contrato){
+  const all=[...(D.contratos?.['2026']?.rows||[]),...(D.contratos?.['2025']?.rows||[]),...(D.contratos?.total?.rows||[])];
+  return all.find(r=>String(r.contrato)===String(contrato))||null;
+}
+function getReeqUnitValue(item){
+  const unit=num(item?.unitario||item?.preco_unitario||0);
+  if(unit>0) return unit;
+  const qtd=num(item?.qtd||0);
+  return qtd>0?num(item?.valor||0)/qtd:0;
+}
+function getReeqItemLabel(it,idx){
+  const raw=String(it?.item_pe||it?.item||'').trim();
+  return raw||String(idx+1).padStart(2,'0');
+}
+function formatReeqItemRefs(items){
+  const refs=[...new Set(items.map(getReeqItemLabel).filter(Boolean))];
+  if(!refs.length) return 'itens selecionados';
+  if(refs.length===1) return `item ${refs[0]}`;
+  return `itens ${refs.slice(0,-1).join(', ')} e ${refs[refs.length-1]}`;
+}
+function formatReeqItemQuantities(items){
+  return items.map((it,idx)=>`${num(it.qtd||0).toLocaleString('pt-BR',{maximumFractionDigits:4})} ${it.und||'un.'} do item ${getReeqItemLabel(it,idx)}`).join(', ');
+}
+function formatReeqUnitValues(items){
+  const vals=[...new Set(items.map(it=>fmt(getReeqUnitValue(it))).filter(Boolean))];
+  if(!vals.length) return 'valor unitário registrado';
+  if(vals.length===1) return vals[0];
+  return vals.join(', ');
+}
+function buildReeqDefaultFromContract(row,pvs){
+  const items=pvs.flatMap(pv=>pv.itens||[]);
+  const empenhos=[...new Set(pvs.map(pv=>String(pv.empenho||'').trim()).filter(Boolean))];
+  const nfe=[...new Set(pvs.map(pv=>String(pv.nfe||'').trim()).filter(v=>v&&v!=='—'))];
+  const total=pvs.reduce((sum,pv)=>sum+num(pv.valor||0),0);
+  const firstItem=items[0]||{};
+  return {
+    orgao_linha_1:String(row?.orgao||row?.cliente_principal||'').toUpperCase(),
+    orgao_linha_2:'',
+    orgao_texto:String(row?.orgao||row?.cliente_principal||'este órgão'),
+    processo_administrativo:'',
+    pregao_eletronico:String(firstItem.pregao_eletronico||'').trim(),
+    ata_registro:String(row?.contrato||'').trim(),
+    notas_empenho:empenhos.join(', '),
+    data_empenho:'',
+    nfe:nfe.join(', '),
+    itens_ref:formatReeqItemRefs(items),
+    itens_qtd:formatReeqItemQuantities(items),
+    valor_total:fmt(total),
+    valor_unitario:formatReeqUnitValues(items),
+    novo_valor_unitario:'',
+    produto_resumo:String(firstItem.desc||'produtos constantes da ata').toLowerCase(),
+    local_data:new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})
+  };
+}
+function openReeqContratoModal(contrato){
+  const row=findContratoRowByNumero(contrato);
+  if(!row){alert('Contrato não encontrado no recorte carregado.');return;}
+  const selected=getReeqSelectedPvsForContract(row);
+  if(!selected.length){alert('Selecione ao menos um PV/empenho do contrato para gerar o pedido.');return;}
+  _reeqModalState={contrato:row,pvs:selected,pedido:buildReeqDefaultFromContract(row,selected)};
+  document.body.style.overflow='hidden';
+  renderReeqModal();
+  document.getElementById('reeqModal').classList.remove('hidden');
+}
+function closeReeqModal(){
+  const m=document.getElementById('reeqModal');
+  if(m) m.classList.add('hidden');
+  document.body.style.overflow='';
+  _reeqModalState={contrato:null,pvs:[],pedido:null};
+}
+function updateReeqField(field,value){
+  if(!_reeqModalState.pedido) return;
+  _reeqModalState.pedido[field]=String(value||'');
+}
+function renderReeqModal(){
+  const row=_reeqModalState.contrato;
+  const pvs=_reeqModalState.pvs||[];
+  const pedido=_reeqModalState.pedido;
+  if(!row||!pedido) return;
+  const items=pvs.flatMap(pv=>pv.itens||[]);
+  document.getElementById('reeqModalSubtitle').textContent=`Contrato ${row.contrato||'—'} · ${row.orgao||'—'}`;
+  document.getElementById('reeqModalMeta').innerHTML=
+    `<span class="sim-chip">${pvs.length} PV(s)</span>`+
+    `<span class="sim-chip">${items.length} item(ns)</span>`+
+    `<span class="sim-chip">Empenho(s) ${esc(pedido.notas_empenho||'—')}</span>`+
+    `<span class="sim-chip">Total ${esc(pedido.valor_total||'—')}</span>`;
+  document.getElementById('reeqHeaderGrid').innerHTML=`
+    <div class="ah-field"><label>Órgão linha 1</label><input type="text" value="${esc(pedido.orgao_linha_1)}" oninput="updateReeqField('orgao_linha_1',this.value)"></div>
+    <div class="ah-field"><label>Órgão linha 2</label><input type="text" value="${esc(pedido.orgao_linha_2)}" oninput="updateReeqField('orgao_linha_2',this.value)" placeholder="Opcional"></div>
+    <div class="ah-field"><label>Processo Administrativo nº</label><input type="text" value="${esc(pedido.processo_administrativo)}" oninput="updateReeqField('processo_administrativo',this.value)" placeholder="Colar após conferir na ata"></div>
+    <div class="ah-field"><label>Pregão Eletrônico nº</label><input type="text" value="${esc(pedido.pregao_eletronico)}" oninput="updateReeqField('pregao_eletronico',this.value)" placeholder="Ex.: 91020/2025"></div>
+    <div class="ah-field"><label>Ata de Registro de Preços nº</label><input type="text" value="${esc(pedido.ata_registro)}" oninput="updateReeqField('ata_registro',this.value)"></div>
+    <div class="ah-field"><label>Nota(s) de Empenho nº</label><input type="text" value="${esc(pedido.notas_empenho)}" oninput="updateReeqField('notas_empenho',this.value)"></div>
+    <div class="ah-field"><label>Data do empenho</label><input type="text" value="${esc(pedido.data_empenho)}" oninput="updateReeqField('data_empenho',this.value)" placeholder="Ex.: 13 de abril de 2026"></div>
+    <div class="ah-field"><label>Novo valor unitário solicitado</label><input type="text" value="${esc(pedido.novo_valor_unitario)}" oninput="updateReeqField('novo_valor_unitario',this.value)" placeholder="Ex.: R$ 2,05"></div>
+    <div class="ah-field" style="grid-column:1/-1"><label>Descrição resumida do produto</label><input type="text" value="${esc(pedido.produto_resumo)}" oninput="updateReeqField('produto_resumo',this.value)"></div>
+  `;
+  const rows=items.map((it,idx)=>`
+    <tr>
+      <td>${esc(getReeqItemLabel(it,idx))}</td>
+      <td>${esc(it.desc||'—')}</td>
+      <td class="num">${num(it.qtd||0).toLocaleString('pt-BR',{maximumFractionDigits:4})}</td>
+      <td>${esc(it.und||'—')}</td>
+      <td class="num">${fmt(getReeqUnitValue(it))}</td>
+      <td class="num">${fmt(num(it.custo_un||0))}</td>
+      <td class="num">${fmt(num(it.valor||0))}</td>
+    </tr>
+  `).join('');
+  document.getElementById('reeqItemsPreview').innerHTML=`
+    <table class="reeq-items-preview">
+      <thead><tr><th>Item</th><th>Descrição</th><th class="num">Qtd</th><th>Und</th><th class="num">Unitário</th><th class="num">Custo un.</th><th class="num">Total</th></tr></thead>
+      <tbody>${rows||'<tr><td colspan="7" style="text-align:center;color:var(--gray-400)">Sem itens nos empenhos selecionados</td></tr>'}</tbody>
+    </table>`;
+}
+function escapeXmlText(s){
+  return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function replaceTextAcrossNodes(xml,replacements){
+  const parser=new DOMParser();
+  const doc=parser.parseFromString(xml,'application/xml');
+  const ns='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+  const nodes=[...doc.getElementsByTagNameNS(ns,'t')];
+  function replaceOne(find,replace){
+    if(!find) return;
+    const pieces=nodes.map(n=>n.textContent||'');
+    const full=pieces.join('');
+    const start=full.indexOf(find);
+    if(start<0) return;
+    const end=start+find.length;
+    let pos=0,first=-1,last=-1,startOff=0,endOff=0;
+    for(let i=0;i<nodes.length;i++){
+      const next=pos+pieces[i].length;
+      if(first<0&&start>=pos&&start<=next){first=i;startOff=start-pos;}
+      if(first>=0&&end>=pos&&end<=next){last=i;endOff=end-pos;break;}
+      pos=next;
+    }
+    if(first<0||last<0) return;
+    if(first===last){
+      nodes[first].textContent=pieces[first].slice(0,startOff)+replace+pieces[first].slice(endOff);
+      return;
+    }
+    nodes[first].textContent=pieces[first].slice(0,startOff)+replace;
+    for(let i=first+1;i<last;i++) nodes[i].textContent='';
+    nodes[last].textContent=pieces[last].slice(endOff);
+  }
+  replacements.forEach(([find,replace])=>replaceOne(find,String(replace||'—')));
+  return new XMLSerializer().serializeToString(doc);
+}
+function buildReeqDocxReplacements(){
+  const row=_reeqModalState.contrato;
+  const pvs=_reeqModalState.pvs||[];
+  const pedido=_reeqModalState.pedido||{};
+  const items=pvs.flatMap(pv=>pv.itens||[]);
+  const orgaoTxt=pedido.orgao_texto||row?.orgao||'este órgão';
+  const dataEmp=pedido.data_empenho||'data constante da Nota de Empenho';
+  const novoValor=pedido.novo_valor_unitario||'valor unitário indicado na planilha de composição de custos anexa';
+  return [
+    ['MINISTÉRIO DA SAÚDE',pedido.orgao_linha_1||row?.orgao||''],
+    ['HOSPITAL FEDERAL DA LAGOA – RIO DE JANEIRO',pedido.orgao_linha_2||row?.orgao||''],
+    ['33408.141737/2024-33',pedido.processo_administrativo||'____________________'],
+    ['91020/2025',pedido.pregao_eletronico||'____/____'],
+    ['20/2026',pedido.ata_registro||row?.contrato||'____/____'],
+    ['2026NE000460',pedido.notas_empenho||'____________________'],
+    ['este Hospital Federal da Lagoa',`este(a) ${orgaoTxt}`],
+    ['este Hospital Federal da Lagoa',`este(a) ${orgaoTxt}`],
+    ['luvas cirúrgicas',pedido.produto_resumo||'produtos registrados'],
+    ['os itens 03, 04 e 05',formatReeqItemRefs(items)],
+    ['27.000 unidades do item 03, 6.500 unidades do item 04 e 2.100 unidades do item 05',formatReeqItemQuantities(items)],
+    ['13 de abril de 2026',dataEmp],
+    ['R$ 39.516,00',pedido.valor_total||fmt(pvs.reduce((sum,pv)=>sum+num(pv.valor||0),0))],
+    ['R$ 1,11',pedido.valor_unitario||formatReeqUnitValues(items)],
+    ['R$ 2,05',novoValor],
+    ['itens 03, 04 e 05',formatReeqItemRefs(items)],
+    ['Nota de Empenho nº 2026NE000460',`Nota(s) de Empenho nº ${pedido.notas_empenho||'—'}`],
+    ['Nota de Empenho nº 2026NE000460',`Nota(s) de Empenho nº ${pedido.notas_empenho||'—'}`],
+    ['Nota de Empenho nº 2026NE000460',`Nota(s) de Empenho nº ${pedido.notas_empenho||'—'}`],
+    ['Ata de Registro de Preços nº 20/2026',`Ata de Registro de Preços nº ${pedido.ata_registro||row?.contrato||'—'}`],
+    ['Pregão Eletrônico nº 91020/2025',`Pregão Eletrônico nº ${pedido.pregao_eletronico||'—'}`],
+    ['Niterói/RJ, 27 de abril de 2026.',`Niterói/RJ, ${pedido.local_data||new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}.`],
+    ['Arquivo em PDF anexado referente à Nota de Empenho nº 2026NE000460.',`Arquivo em PDF anexado referente à(s) Nota(s) de Empenho nº ${pedido.notas_empenho||'—'}.`],
+    ['Arquivo em PDF anexado referente à Ata de Registro de Preços nº 20/2026.',`Arquivo em PDF anexado referente à Ata de Registro de Preços nº ${pedido.ata_registro||row?.contrato||'—'}.`]
+  ];
+}
+async function downloadReeqDocx(){
+  if(!_reeqModalState.contrato||!_reeqModalState.pvs?.length||!_reeqModalState.pedido){alert('Abra um contrato com empenhos selecionados para gerar o Word.');return;}
+  if(!window.JSZip){alert('JSZip não carregou. Verifique a conexão com o CDN e tente novamente.');return;}
+  try{
+    const resp=await fetch(REEQ_TEMPLATE_DOCX_URL,{cache:'no-store'});
+    if(!resp.ok) throw new Error('Modelo DOCX não encontrado: '+resp.status);
+    const buf=await resp.arrayBuffer();
+    const zip=await JSZip.loadAsync(buf);
+    const file=zip.file('word/document.xml');
+    if(!file) throw new Error('word/document.xml não encontrado no modelo.');
+    const xml=await file.async('string');
+    const nextXml=replaceTextAcrossNodes(xml,buildReeqDocxReplacements());
+    zip.file('word/document.xml',nextXml);
+    const blob=await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+    const contrato=String(_reeqModalState.contrato.contrato||'contrato').replace(/[^\w.-]+/g,'_');
+    const empenhos=String(_reeqModalState.pedido.notas_empenho||'empenhos').replace(/[^\w.-]+/g,'_').slice(0,80);
+    downloadBlob(blob,`Pedido_Reequilibrio_${contrato}_${empenhos}.docx`);
+  }catch(e){
+    console.error(e);
+    alert('Não foi possível gerar o Word de reequilíbrio: '+(e.message||e));
+  }
 }
 
 function getItemComparedMetrics(item){
@@ -4657,13 +4920,21 @@ function renderContratoPvDetail(row){
   const pvs=Array.isArray(row.pv_rows)?row.pv_rows:[];
   const q=normTxt(_contratosSearch);
   if(!pvs.length) return `<div class="contract-pv-wrap"><div class="contract-pv-empty">Nenhum PV encontrado para este contrato neste recorte.</div></div>`;
+  const selectedCount=getReeqSelectedPvsForContract(row).length;
+  const contratoArg=JSON.stringify(String(row.contrato||''));
   return `<div class="contract-pv-wrap">
     <div class="contract-pv-head">
       <div class="contract-pv-title">PVs vinculados ao contrato ${esc(row.contrato)}</div>
-      <div class="contract-pv-count">${pvs.length} PV${pvs.length!==1?'s':''} no recorte atual</div>
+      <div class="reeq-contract-actions">
+        <span class="contract-pv-count">${pvs.length} PV${pvs.length!==1?'s':''} no recorte atual</span>
+        <button class="btn btn-primary" type="button" style="padding:7px 12px;font-size:12px" onclick='event.stopPropagation();openReeqContratoModal(${contratoArg})'>📄 Reequilíbrio</button>
+        <button class="btn btn-outline" type="button" style="color:var(--navy);border-color:var(--gray-200);padding:7px 10px;font-size:12px" onclick='event.stopPropagation();setAllReeqPvs(${contratoArg},true)'>Selecionar todos</button>
+        <button class="btn btn-outline" type="button" style="color:var(--navy);border-color:var(--gray-200);padding:7px 10px;font-size:12px" onclick='event.stopPropagation();setAllReeqPvs(${contratoArg},false)'>Limpar</button>
+        <span class="reeq-mini-help">${selectedCount} selecionado${selectedCount!==1?'s':''}</span>
+      </div>
     </div>
     <table class="contract-pv-table">
-      <thead><tr><th style="width:30px"></th><th>PV</th><th>Cliente</th><th>Empenho</th><th>NF-e</th><th>Valor</th><th>MC (R$)</th><th>MC (%)</th><th>Status Ent.</th></tr></thead>
+      <thead><tr><th class="reeq-select-cell">Sel.</th><th style="width:30px"></th><th>PV</th><th>Cliente</th><th>Empenho</th><th>NF-e</th><th>Valor</th><th>MC (R$)</th><th>MC (%)</th><th>Status Ent.</th></tr></thead>
       <tbody>${pvs.map(pv=>{
         const statusTxt=String(pv.status_ent||'').trim();
         const entCls=statusTxt==='Entregue'?'badge-green':statusTxt==='Pendente'?'badge-red':'badge-navy';
@@ -4673,7 +4944,10 @@ function renderContratoPvDetail(row){
         const opened=_contratoPvExpanded.has(rid)||match.item;
         const issue=pv.data_issue||null;
         const issueBadge=issue?`<span class="contract-quality-badge" title="${esc(issue.acao||'Corrigido automaticamente')}">Corrigido</span>`:'';
+        const checked=_reeqSelectedPvs[getReeqSelectionKey(row.contrato,pv.pv)]?'checked':'';
+        const pvArg=JSON.stringify(String(pv.pv||''));
         return `<tr class="expand-row${match.any?' contract-match-row':''}" onclick="toggleContratoPvItems('${rid}', event)">
+          <td class="reeq-select-cell"><input type="checkbox" ${checked} title="Incluir este empenho no pedido de reequilíbrio" onclick='event.stopPropagation();setReeqPvSelected(${contratoArg},${pvArg},this.checked);renderContratos()'></td>
           <td><span class="expand-toggle${opened?' open':''}" id="tog-${rid}">▶</span></td>
           <td><strong>${contratoMatchCell(pv.pv||'—',match.pv)}</strong><span class="itens-count">${itens.length} ite${itens.length!==1?'ns':'m'}</span>${issueBadge}</td>
           <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(pv.cliente||'—')}">${contratoMatchCell(pv.cliente||'—',match.cliente)}</td>
@@ -4685,7 +4959,7 @@ function renderContratoPvDetail(row){
           <td><span class="badge ${entCls}">${esc(statusTxt||'—')}</span></td>
         </tr>
         <tr class="expand-detail${opened?' open':''}" id="${rid}">
-          <td colspan="9"><div class="itens-wrapper" style="padding-left:24px">
+          <td colspan="10"><div class="itens-wrapper" style="padding-left:24px">
             <table class="itens-table">
               <thead><tr><th>Descrição</th><th style="text-align:center">Qtd</th><th>Und</th><th style="text-align:right">Valor</th><th style="text-align:right">MC $</th><th style="text-align:right">MC %</th></tr></thead>
               <tbody>
@@ -5749,12 +6023,16 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
       cMap[contrato].pvMap[pv].valor+=val;
       cMap[contrato].pvMap[pv].mc_valor+=mc;
       cMap[contrato].pvMap[pv].itens.push({
+        item_pe:String(r['Item PE']||r['ITEM']||'').trim(),
         desc:String(r['Desc. Resumida']||r['DESCRIÇÃO']||'—').substring(0,120),
         qtd:toN(r['Qtd.']||r['QUANT']||0),
         und:String(r['Und']||r['Un']||'—'),
+        unitario:toN(r['Un']||0),
+        custo_un:toN(r['Custo Un']||0),
         valor:round(val),
         mc_valor:round(mc),
         mc_pct:val>0?round(mc/val*100,1):0,
+        pregao_eletronico:String(r['Pregão']||r['Pregao']||r['PE']||r['Pregão Eletrônico']||r['Pregao Eletronico']||'').trim(),
       });
       if(linked && !cMap[contrato].itemLinks.has(linked.key)){
         cMap[contrato].itemLinks.add(linked.key);
@@ -5962,6 +6240,8 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
       mc_valor:round(mv),
       nfe:String(r['NFe']||r['NF-e']||r['NFe Saída']||r['Nota Fiscal']||'').trim(),
       pregao:String(r['Contrato']||'').trim(),
+      pregao_eletronico:String(r['Pregão']||r['Pregao']||r['PE']||r['Pregão Eletrônico']||r['Pregao Eletronico']||'').trim(),
+      ata_registro:String(getAtaNumero(r)||r['Contrato']||'').trim(),
       sim:{
         preco_venda_un:toN(r['Un']||0),
         custo_un:toN(r['Custo Un']||0),
