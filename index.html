@@ -2885,6 +2885,24 @@ function removeDocxParagraphsContaining(xml,patterns){
   });
   return new XMLSerializer().serializeToString(doc);
 }
+function removeDocxSectionBetween(xml,startPattern,endPattern){
+  const parser=new DOMParser();
+  const doc=parser.parseFromString(xml,'application/xml');
+  const ns='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+  const body=doc.getElementsByTagNameNS(ns,'body')[0];
+  if(!body) return xml;
+  const children=[...body.childNodes].filter(n=>n.nodeType===1);
+  const textOf=node=>{
+    const texts=node.getElementsByTagNameNS?[...node.getElementsByTagNameNS(ns,'t')]:[];
+    return texts.map(t=>t.textContent||'').join('').replace(/\s+/g,' ').trim();
+  };
+  const start=children.findIndex(node=>textOf(node).includes(startPattern));
+  if(start<0) return new XMLSerializer().serializeToString(doc);
+  const endRel=children.slice(start+1).findIndex(node=>textOf(node).includes(endPattern));
+  const end=endRel<0?start+1:start+1+endRel;
+  for(let i=end-1;i>=start;i--) body.removeChild(children[i]);
+  return new XMLSerializer().serializeToString(doc);
+}
 function getReeqDocxRemovePatterns(){
   if(_reeqModalState.pedido?.incluir_protecao_ata!==false) return [];
   return [
@@ -3018,7 +3036,15 @@ async function downloadReeqDocx(){
     const file=zip.file('word/document.xml');
     if(!file) throw new Error('word/document.xml não encontrado no modelo.');
     const xml=await file.async('string');
-    const cleanedXml=removeDocxParagraphsContaining(xml,getReeqDocxRemovePatterns());
+    let cleanedXml=xml;
+    if(_reeqModalState.pedido?.incluir_protecao_ata===false){
+      cleanedXml=removeDocxSectionBetween(
+        cleanedXml,
+        'DA PROTEÇÃO NA NOVA LEI DE LICITAÇÕES E NO INSTRUMENTO CONTRATUAL',
+        'DA TEORIA DA IMPREVISÃO E DA DISTINÇÃO DAS ÁLEAS'
+      );
+    }
+    cleanedXml=removeDocxParagraphsContaining(cleanedXml,getReeqDocxRemovePatterns());
     const nextXml=replaceTextAcrossNodes(cleanedXml,buildReeqDocxReplacements());
     zip.file('word/document.xml',nextXml);
     const blob=await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
