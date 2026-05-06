@@ -659,6 +659,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
     <div class="sim-toolbar">
       <div class="sim-toolbar-copy">Preencha os campos que dependem de conferência da ata. Os itens, quantidades e valores vêm do empenho selecionado.</div>
       <div class="sim-toolbar-actions">
+        <button class="btn btn-outline" type="button" style="color:var(--navy);border-color:var(--gray-200)" onclick="previewReeqDoc()">👁 Prévia</button>
         <button class="btn btn-primary" type="button" onclick="downloadReeqDocx()">📄 Baixar Word</button>
         <button class="btn btn-outline" type="button" style="color:var(--navy);border-color:var(--gray-200)" onclick="closeReeqModal()">Fechar</button>
       </div>
@@ -2635,6 +2636,9 @@ let _reeqModalState = {contrato:null,pvs:[],pedido:null};
 let _reeqSelectedPvs = {};
 
 function getReeqSelectionKey(contrato,pv){return [contrato,pv].map(v=>String(v||'').trim()).join('||');}
+function getPregaoNumero(row){
+  return String(row?.['PREGÃO']||row?.['Pregão']||row?.['Pregao']||row?.['PE']||row?.['Pregão Eletrônico']||row?.['Pregao Eletronico']||'').trim();
+}
 function getReeqSelectedPvsForContract(row){
   const pvs=Array.isArray(row?.pv_rows)?row.pv_rows:[];
   return pvs.filter(pv=>_reeqSelectedPvs[getReeqSelectionKey(row.contrato,pv.pv)]);
@@ -2689,7 +2693,7 @@ function buildReeqDefaultFromContract(row,pvs){
     orgao_linha_2:'',
     orgao_texto:String(row?.orgao||row?.cliente_principal||'este órgão'),
     processo_administrativo:'',
-    pregao_eletronico:String(firstItem.pregao_eletronico||'').trim(),
+    pregao_eletronico:String(row?.pregao_eletronico||firstItem.pregao_eletronico||'').trim(),
     ata_registro:String(row?.contrato||'').trim(),
     notas_empenho:empenhos.join(', '),
     data_empenho:'',
@@ -2773,26 +2777,32 @@ function replaceTextAcrossNodes(xml,replacements){
   const nodes=[...doc.getElementsByTagNameNS(ns,'t')];
   function replaceOne(find,replace){
     if(!find) return;
-    const pieces=nodes.map(n=>n.textContent||'');
-    const full=pieces.join('');
-    const start=full.indexOf(find);
-    if(start<0) return;
-    const end=start+find.length;
-    let pos=0,first=-1,last=-1,startOff=0,endOff=0;
-    for(let i=0;i<nodes.length;i++){
-      const next=pos+pieces[i].length;
-      if(first<0&&start>=pos&&start<=next){first=i;startOff=start-pos;}
-      if(first>=0&&end>=pos&&end<=next){last=i;endOff=end-pos;break;}
-      pos=next;
+    replace=String(replace||'—');
+    if(String(find)===replace) return;
+    let guard=0;
+    while(guard<200){
+      guard++;
+      const pieces=nodes.map(n=>n.textContent||'');
+      const full=pieces.join('');
+      const start=full.indexOf(find);
+      if(start<0) return;
+      const end=start+find.length;
+      let pos=0,first=-1,last=-1,startOff=0,endOff=0;
+      for(let i=0;i<nodes.length;i++){
+        const next=pos+pieces[i].length;
+        if(first<0&&start>=pos&&start<=next){first=i;startOff=start-pos;}
+        if(first>=0&&end>=pos&&end<=next){last=i;endOff=end-pos;break;}
+        pos=next;
+      }
+      if(first<0||last<0) return;
+      if(first===last){
+        nodes[first].textContent=pieces[first].slice(0,startOff)+replace+pieces[first].slice(endOff);
+      }else{
+        nodes[first].textContent=pieces[first].slice(0,startOff)+replace;
+        for(let i=first+1;i<last;i++) nodes[i].textContent='';
+        nodes[last].textContent=pieces[last].slice(endOff);
+      }
     }
-    if(first<0||last<0) return;
-    if(first===last){
-      nodes[first].textContent=pieces[first].slice(0,startOff)+replace+pieces[first].slice(endOff);
-      return;
-    }
-    nodes[first].textContent=pieces[first].slice(0,startOff)+replace;
-    for(let i=first+1;i<last;i++) nodes[i].textContent='';
-    nodes[last].textContent=pieces[last].slice(endOff);
   }
   replacements.forEach(([find,replace])=>replaceOne(find,String(replace||'—')));
   return new XMLSerializer().serializeToString(doc);
@@ -2831,6 +2841,71 @@ function buildReeqDocxReplacements(){
     ['Arquivo em PDF anexado referente à Nota de Empenho nº 2026NE000460.',`Arquivo em PDF anexado referente à(s) Nota(s) de Empenho nº ${pedido.notas_empenho||'—'}.`],
     ['Arquivo em PDF anexado referente à Ata de Registro de Preços nº 20/2026.',`Arquivo em PDF anexado referente à Ata de Registro de Preços nº ${pedido.ata_registro||row?.contrato||'—'}.`]
   ];
+}
+function applyReeqReplacementsToText(text){
+  let out=String(text||'');
+  buildReeqDocxReplacements().forEach(([find,replace])=>{
+    if(!find) return;
+    out=out.split(find).join(String(replace||'—'));
+  });
+  return out;
+}
+function buildReeqPreviewHtml(){
+  const row=_reeqModalState.contrato;
+  const pvs=_reeqModalState.pvs||[];
+  const pedido=_reeqModalState.pedido||{};
+  const items=pvs.flatMap(pv=>pv.itens||[]);
+  const baseParas=[
+    'MINISTÉRIO DA SAÚDE',
+    'HOSPITAL FEDERAL DA LAGOA – RIO DE JANEIRO',
+    'Processo Administrativo nº: 33408.141737/2024-33 Pregão Eletrônico nº: 91020/2025',
+    'Ata de Registro de Preços nº: 20/2026 Nota de Empenho nº: 2026NE000460',
+    'Ref.: Requerimento Administrativo de Reequilíbrio Econômico-Financeiro',
+    'MARCK SERVIÇOS E DISTRIBUIÇÃO DE EQUIPAMENTOS DE SEGURANÇA E PRODUTOS PARA SAÚDE LTDA., pessoa jurídica de direito privado, inscrita no CNPJ/MF sob o nº 37.119.089/0001-10, com sede na Rua Luiz Leopoldo Fernandes Pinheiro, nº 555, sala 802, Centro, Niterói/RJ, CEP 24030-127, neste ato representada por seus administradores, vem, com o devido acato, perante Vossa Senhoria, com fundamento no art. 37, XXI, da Constituição Federal, no art. 124, II, “d”, da Lei nº 14.133/2021, e nas cláusulas 6.1.1 e 7.2 da Ata de Registro de Preços nº 20/2026, expor e requerer o que se segue.',
+    'A Requerente sagrou-se vencedora no Pregão Eletrônico nº 91020/2025, promovido por este Hospital Federal da Lagoa, para o registro de preços de luvas cirúrgicas, o que resultou na assinatura da Ata de Registro de Preços nº 20/2026. Por meio de tal instrumento, foram consignados em favor da peticionária os itens 03, 04 e 05, todos relativos a luvas cirúrgicas, ao valor unitário de R$ 1,11 (um real e onze centavos).',
+    'Recentemente, em 13 de abril de 2026, foi emitida a Nota de Empenho nº 2026NE000460, no valor total de R$ 39.516,00 (trinta e nove mil, quinhentos e dezesseis reais), formalizando a demanda para o fornecimento de 27.000 unidades do item 03, 6.500 unidades do item 04 e 2.100 unidades do item 05, mantido o preço unitário originariamente registrado.',
+    'No mérito, o julgamento de total procedência do pleito para o fim de DEFERIR, em caráter definitivo, o REEQUILÍBRIO ECONÔMICO-FINANCEIRO do ajuste, com a consequente revisão extraordinária do preço unitário registrado para os itens 03, 04 e 05, para o novo valor unitário de R$ 2,05, a ser aplicado tanto à Nota de Empenho nº 2026NE000460 quanto a eventuais futuras contratações decorrentes da referida Ata, restabelecendo-se, assim, a comutatividade e a exequibilidade da avença;',
+    'Nestes termos, Pede deferimento.',
+    'Niterói/RJ, 27 de abril de 2026.',
+    'ANDRÉ LEMOS LATTARI SÓCIO DIRETOR',
+    'CPF: 130.339.117-14'
+  ].map(applyReeqReplacementsToText);
+  const itemRows=items.map((it,idx)=>`<tr><td>${esc(getReeqItemLabel(it,idx))}</td><td>${esc(it.desc||'—')}</td><td class="num">${num(it.qtd||0).toLocaleString('pt-BR',{maximumFractionDigits:4})}</td><td>${esc(it.und||'—')}</td><td class="num">${fmt(getReeqUnitValue(it))}</td><td class="num">${fmt(num(it.valor||0))}</td></tr>`).join('');
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Prévia - Pedido de Reequilíbrio</title>
+  <style>
+    body{margin:0;background:#eef2f7;color:#0a1628;font-family:Arial,Helvetica,sans-serif}
+    .bar{position:sticky;top:0;background:#0a1628;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+    .bar button{padding:8px 14px;border:1px solid #fff;background:#fff;color:#0a1628;border-radius:6px;font-weight:700;cursor:pointer}
+    .page{width:794px;min-height:1123px;margin:24px auto;background:#fff;padding:70px 72px;box-shadow:0 8px 28px rgba(10,22,40,.16);box-sizing:border-box}
+    h1{font-size:16px;text-align:center;margin:18px 0 16px}
+    p{font-size:12px;line-height:1.55;text-align:justify;margin:0 0 10px}
+    .center{text-align:center;font-weight:700}
+    .muted{color:#5c6578;font-size:11px;margin-bottom:18px}
+    table{width:100%;border-collapse:collapse;margin:14px 0 18px;font-size:10.5px}
+    th,td{border:1px solid #cbd5e1;padding:6px 7px;vertical-align:top}
+    th{background:#eef2f8;text-align:left}
+    .num{text-align:right;white-space:nowrap}
+    @media print{.bar{display:none}.page{box-shadow:none;margin:0;width:auto;min-height:auto}}
+  </style></head><body>
+  <div class="bar"><div><strong>Prévia de conferência</strong><div class="muted" style="margin:2px 0 0;color:#d8e2f2">O Word baixado mantém o layout do modelo original; esta tela serve para revisar os dados preenchidos.</div></div><button onclick="window.print()">Imprimir prévia</button></div>
+  <main class="page">
+    <p class="center">${esc(baseParas[0])}</p>
+    <p class="center">${esc(baseParas[1])}</p>
+    <p>${esc(baseParas[2])}</p>
+    <p>${esc(baseParas[3])}</p>
+    <h1>${esc(baseParas[4])}</h1>
+    ${baseParas.slice(5,9).map(p=>`<p>${esc(p)}</p>`).join('')}
+    <table><thead><tr><th>Item</th><th>Descrição</th><th class="num">Qtd</th><th>Und</th><th class="num">Unitário</th><th class="num">Total</th></tr></thead><tbody>${itemRows||'<tr><td colspan="6" style="text-align:center">Sem itens</td></tr>'}</tbody></table>
+    ${baseParas.slice(9).map(p=>`<p>${esc(p)}</p>`).join('')}
+  </main></body></html>`;
+}
+function previewReeqDoc(){
+  if(!_reeqModalState.contrato||!_reeqModalState.pvs?.length||!_reeqModalState.pedido){alert('Abra um contrato com empenhos selecionados para ver a prévia.');return;}
+  const w=window.open('','_blank','width=980,height=1000');
+  if(!w){alert('Pop-up bloqueado. Permita pop-ups para abrir a prévia.');return;}
+  w.document.open();
+  w.document.write(buildReeqPreviewHtml());
+  w.document.close();
 }
 async function downloadReeqDocx(){
   if(!_reeqModalState.contrato||!_reeqModalState.pvs?.length||!_reeqModalState.pedido){alert('Abra um contrato com empenhos selecionados para gerar o Word.');return;}
@@ -5941,12 +6016,14 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
       const contractCode=getAtaNumero(r);
       const contractKey=hasContractId(contractCode)?contratoLinkPart(contractCode):'';
       const orgao=getContratoOrgao(r)||'—';
+      const pregao=getPregaoNumero(r);
       if(key){
         itemMap[key]={
           key,
           ata_numero:contractCode,
           ata_key:contractKey,
           orgao,
+          pregao_eletronico:pregao,
           total:toN(r['R$ TOTAL']||0),
           consumo:toN(r['CONSUMO (R$)']||0),
           saldo:toN(r['Saldo a Empenhar R$']||0),
@@ -5961,10 +6038,12 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
         saldo:0,
         statuses:new Set(),
         orgaos:{},
+        pregoes:new Set(),
         itens_total:0,
         ano:contratoAnoCodigo(contractCode)||contratoAnoCodigo(String(r['Nª DA ATA']||''))
       };
       if(orgao&&orgao!=='—') contractMap[contractKey].orgaos[orgao]=(contractMap[contractKey].orgaos[orgao]||0)+toN(r['R$ TOTAL']||0);
+      if(pregao) contractMap[contractKey].pregoes.add(pregao);
       contractMap[contractKey].total+=toN(r['R$ TOTAL']||0);
       contractMap[contractKey].consumo+=toN(r['CONSUMO (R$)']||0);
       contractMap[contractKey].saldo+=toN(r['Saldo a Empenhar R$']||0);
@@ -5977,6 +6056,7 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
       const orgaoEntries=Object.entries(entry.orgaos||{}).sort((a,b)=>b[1]-a[1]);
       entry.orgao=orgaoEntries[0]?.[0]||'—';
       entry.orgaos_count=orgaoEntries.length;
+      entry.pregao_eletronico=[...(entry.pregoes||[])].filter(Boolean).join(', ');
       const statusKey=getAtaStatusKey(entry.statuses);
       counts.total.todos+=1;
       counts.total[statusKey]+=1;
@@ -5999,7 +6079,7 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
       const contrato=(linked?.ata_numero && hasContractId(linked.ata_numero)) ? String(linked.ata_numero).trim() : rawContrato;
       const contratoKey=contratoLinkPart(contrato);
       const ataSummary=telaStats.contractMap?.[contratoKey]||null;
-      if(!cMap[contrato]) cMap[contrato]={contrato,faturamento:0,mc_valor:0,pvs:new Set(),clientes:{},orgaos:{},orgao:'—',orgaos_count:0,valor_entregue:0,valor_pendente:0,total_contrato:0,consumo_valor:0,saldo_consumir:0,statuses:new Set(),itemLinks:new Set(),pvMap:{}};
+      if(!cMap[contrato]) cMap[contrato]={contrato,faturamento:0,mc_valor:0,pvs:new Set(),clientes:{},orgaos:{},pregoes:new Set(),orgao:'—',orgaos_count:0,valor_entregue:0,valor_pendente:0,total_contrato:0,consumo_valor:0,saldo_consumir:0,statuses:new Set(),itemLinks:new Set(),pvMap:{}};
       const val=toN(r['Total']||0);
       const mc=toN(r['MC ($)']||0);
       const cliente=String(r['Cliente']||'—').trim()||'—';
@@ -6011,6 +6091,8 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
       cMap[contrato].pvs.add(pv);
       cMap[contrato].clientes[cliente]=(cMap[contrato].clientes[cliente]||0)+val;
       if(linked?.orgao&&linked.orgao!=='—') cMap[contrato].orgaos[linked.orgao]=(cMap[contrato].orgaos[linked.orgao]||0)+(linked.total||val||0);
+      const pregaoLinha=linked?.pregao_eletronico||getPregaoNumero(r);
+      if(pregaoLinha) cMap[contrato].pregoes.add(pregaoLinha);
       if(String(r['Status Ent']||'').trim()==='Entregue') cMap[contrato].valor_entregue+=val;
       if(String(r['Status Ent']||'').trim()==='Pendente') cMap[contrato].valor_pendente+=val;
       if(!cMap[contrato].pvMap[pv]) cMap[contrato].pvMap[pv]={pv,cliente,empenho:String(r['Empenho']||'—').trim()||'—',nfe_set:new Set(),status_ent:String(r['Status Ent']||'').trim()||'—',valor:0,mc_valor:0,itens:[]};
@@ -6032,7 +6114,7 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
         valor:round(val),
         mc_valor:round(mc),
         mc_pct:val>0?round(mc/val*100,1):0,
-        pregao_eletronico:String(r['Pregão']||r['Pregao']||r['PE']||r['Pregão Eletrônico']||r['Pregao Eletronico']||'').trim(),
+        pregao_eletronico:pregaoLinha,
       });
       if(linked && !cMap[contrato].itemLinks.has(linked.key)){
         cMap[contrato].itemLinks.add(linked.key);
@@ -6045,6 +6127,7 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
         cMap[contrato].saldo_consumir=ataSummary.saldo;
         cMap[contrato].orgao=ataSummary.orgao||'—';
         cMap[contrato].orgaos_count=ataSummary.orgaos_count||0;
+        if(ataSummary.pregao_eletronico) cMap[contrato].pregoes.add(ataSummary.pregao_eletronico);
       }
     });
     const rows=Object.values(cMap).map(row=>{
@@ -6069,6 +6152,7 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
         contrato:row.contrato,
         orgao,
         orgaos_count:orgaosCount,
+        pregao_eletronico:[...(row.pregoes||[])].filter(Boolean).join(', '),
         cliente_principal:clientePrincipal,
         clientes_count:clienteEntries.length,
         faturamento,
@@ -6240,7 +6324,7 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
       mc_valor:round(mv),
       nfe:String(r['NFe']||r['NF-e']||r['NFe Saída']||r['Nota Fiscal']||'').trim(),
       pregao:String(r['Contrato']||'').trim(),
-      pregao_eletronico:String(r['Pregão']||r['Pregao']||r['PE']||r['Pregão Eletrônico']||r['Pregao Eletronico']||'').trim(),
+      pregao_eletronico:getPregaoNumero(r),
       ata_registro:String(getAtaNumero(r)||r['Contrato']||'').trim(),
       sim:{
         preco_venda_un:toN(r['Un']||0),
