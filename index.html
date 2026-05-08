@@ -665,7 +665,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
       </div>
     </div>
     <div class="sim-content">
-      <div class="reeq-print-note">O Processo Administrativo deve ser colado pelo funcionário após conferência na ata. Revise também Pregão, Ata e Nota de Empenho antes de imprimir.</div>
+      <div class="reeq-print-note">O Processo Administrativo vem da coluna Nª PROCESSO SEI da Tela - Contratos quando preenchido. Revise também Pregão, Ata e Nota de Empenho antes de imprimir.</div>
       <div class="acordo-header-grid" id="reeqHeaderGrid"></div>
       <div id="reeqItemsPreview"></div>
     </div>
@@ -2639,6 +2639,9 @@ function getReeqSelectionKey(contrato,pv){return [contrato,pv].map(v=>String(v||
 function getPregaoNumero(row){
   return String(row?.['PREGÃO']||row?.['Pregão']||row?.['Pregao']||row?.['PE']||row?.['Pregão Eletrônico']||row?.['Pregao Eletronico']||'').trim();
 }
+function getProcessoSeiNumero(row){
+  return String(row?.['Nª PROCESSO SEI']||row?.['Nº PROCESSO SEI']||row?.['N PROCESSO SEI']||row?.['PROCESSO SEI']||row?.['Processo SEI']||row?.['Processo Administrativo']||'').trim();
+}
 function getReeqSelectedPvsForContract(row){
   const pvs=Array.isArray(row?.pv_rows)?row.pv_rows:[];
   return pvs.filter(pv=>_reeqSelectedPvs[getReeqSelectionKey(row.contrato,pv.pv)]);
@@ -2748,7 +2751,7 @@ function buildReeqDefaultFromContract(row,pvs){
     orgao_linha_1:String(row?.orgao||row?.cliente_principal||'').toUpperCase(),
     orgao_linha_2:'',
     orgao_texto:String(row?.orgao||row?.cliente_principal||'este órgão'),
-    processo_administrativo:'',
+    processo_administrativo:String(row?.processo_administrativo||firstItem.processo_administrativo||'').trim(),
     pregao_eletronico:String(row?.pregao_eletronico||firstItem.pregao_eletronico||'').trim(),
     ata_registro:String(row?.contrato||'').trim(),
     notas_empenho:empenhos.join(', '),
@@ -2805,7 +2808,7 @@ function renderReeqModal(){
   document.getElementById('reeqHeaderGrid').innerHTML=`
     <div class="ah-field"><label>Órgão linha 1</label><input type="text" value="${esc(pedido.orgao_linha_1)}" oninput="updateReeqField('orgao_linha_1',this.value)"></div>
     <div class="ah-field"><label>Órgão linha 2</label><input type="text" value="${esc(pedido.orgao_linha_2)}" oninput="updateReeqField('orgao_linha_2',this.value)" placeholder="Opcional"></div>
-    <div class="ah-field"><label>Processo Administrativo nº</label><input type="text" value="${esc(pedido.processo_administrativo)}" oninput="updateReeqField('processo_administrativo',this.value)" placeholder="Colar após conferir na ata"></div>
+    <div class="ah-field"><label>Processo Administrativo nº</label><input type="text" value="${esc(pedido.processo_administrativo)}" oninput="updateReeqField('processo_administrativo',this.value)" placeholder="Nª PROCESSO SEI"></div>
     <div class="ah-field"><label>Pregão Eletrônico nº</label><input type="text" value="${esc(pedido.pregao_eletronico)}" oninput="updateReeqField('pregao_eletronico',this.value)" placeholder="Ex.: 91020/2025"></div>
     <div class="ah-field"><label>Ata de Registro de Preços nº</label><input type="text" value="${esc(pedido.ata_registro)}" oninput="updateReeqField('ata_registro',this.value)"></div>
     <div class="ah-field"><label>Nota(s) de Empenho nº</label><input type="text" value="${esc(pedido.notas_empenho)}" oninput="updateReeqField('notas_empenho',this.value)"></div>
@@ -6144,6 +6147,7 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
       const contractKey=hasContractId(contractCode)?contratoLinkPart(contractCode):'';
       const orgao=getContratoOrgao(r)||'—';
       const pregao=getPregaoNumero(r);
+      const processoSei=getProcessoSeiNumero(r);
       if(key){
         itemMap[key]={
           key,
@@ -6151,6 +6155,7 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
           ata_key:contractKey,
           orgao,
           pregao_eletronico:pregao,
+          processo_administrativo:processoSei,
           item_pe:String(r['ITEM']||r['Item PE']||'').trim(),
           desc_resumida:String(r['DESC RESUMIDA']||r['Desc. Resumida']||r['DESCRIÇÃO']||'').trim(),
           tamanho:String(r['TAMANHO']||r['Tamanho']||'').trim(),
@@ -6172,11 +6177,13 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
         statuses:new Set(),
         orgaos:{},
         pregoes:new Set(),
+        processos:new Set(),
         itens_total:0,
         ano:contratoAnoCodigo(contractCode)||contratoAnoCodigo(String(r['Nª DA ATA']||''))
       };
       if(orgao&&orgao!=='—') contractMap[contractKey].orgaos[orgao]=(contractMap[contractKey].orgaos[orgao]||0)+toN(r['R$ TOTAL']||0);
       if(pregao) contractMap[contractKey].pregoes.add(pregao);
+      if(processoSei) contractMap[contractKey].processos.add(processoSei);
       contractMap[contractKey].total+=toN(r['R$ TOTAL']||0);
       contractMap[contractKey].consumo+=toN(r['CONSUMO (R$)']||0);
       contractMap[contractKey].saldo+=toN(r['Saldo a Empenhar R$']||0);
@@ -6190,6 +6197,7 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
       entry.orgao=orgaoEntries[0]?.[0]||'—';
       entry.orgaos_count=orgaoEntries.length;
       entry.pregao_eletronico=[...(entry.pregoes||[])].filter(Boolean).join(', ');
+      entry.processo_administrativo=[...(entry.processos||[])].filter(Boolean).join(', ');
       const statusKey=getAtaStatusKey(entry.statuses);
       counts.total.todos+=1;
       counts.total[statusKey]+=1;
@@ -6212,7 +6220,7 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
       const contrato=(linked?.ata_numero && hasContractId(linked.ata_numero)) ? String(linked.ata_numero).trim() : rawContrato;
       const contratoKey=contratoLinkPart(contrato);
       const ataSummary=telaStats.contractMap?.[contratoKey]||null;
-      if(!cMap[contrato]) cMap[contrato]={contrato,faturamento:0,mc_valor:0,pvs:new Set(),clientes:{},orgaos:{},pregoes:new Set(),orgao:'—',orgaos_count:0,valor_entregue:0,valor_pendente:0,total_contrato:0,consumo_valor:0,saldo_consumir:0,statuses:new Set(),itemLinks:new Set(),pvMap:{}};
+      if(!cMap[contrato]) cMap[contrato]={contrato,faturamento:0,mc_valor:0,pvs:new Set(),clientes:{},orgaos:{},pregoes:new Set(),processos:new Set(),orgao:'—',orgaos_count:0,valor_entregue:0,valor_pendente:0,total_contrato:0,consumo_valor:0,saldo_consumir:0,statuses:new Set(),itemLinks:new Set(),pvMap:{}};
       const val=toN(r['Total']||0);
       const mc=toN(r['MC ($)']||0);
       const cliente=String(r['Cliente']||'—').trim()||'—';
@@ -6225,7 +6233,9 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
       cMap[contrato].clientes[cliente]=(cMap[contrato].clientes[cliente]||0)+val;
       if(linked?.orgao&&linked.orgao!=='—') cMap[contrato].orgaos[linked.orgao]=(cMap[contrato].orgaos[linked.orgao]||0)+(linked.total||val||0);
       const pregaoLinha=linked?.pregao_eletronico||getPregaoNumero(r);
+      const processoLinha=linked?.processo_administrativo||getProcessoSeiNumero(r);
       if(pregaoLinha) cMap[contrato].pregoes.add(pregaoLinha);
+      if(processoLinha) cMap[contrato].processos.add(processoLinha);
       if(String(r['Status Ent']||'').trim()==='Entregue') cMap[contrato].valor_entregue+=val;
       if(String(r['Status Ent']||'').trim()==='Pendente') cMap[contrato].valor_pendente+=val;
       if(!cMap[contrato].pvMap[pv]) cMap[contrato].pvMap[pv]={pv,cliente,empenho:String(r['Empenho']||'—').trim()||'—',nfe_set:new Set(),status_ent:String(r['Status Ent']||'').trim()||'—',valor:0,mc_valor:0,itens:[]};
@@ -6251,6 +6261,7 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
         mc_valor:round(mc),
         mc_pct:val>0?round(mc/val*100,1):0,
         pregao_eletronico:pregaoLinha,
+        processo_administrativo:processoLinha,
       });
       if(linked && !cMap[contrato].itemLinks.has(linked.key)){
         cMap[contrato].itemLinks.add(linked.key);
@@ -6264,6 +6275,7 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
         cMap[contrato].orgao=ataSummary.orgao||'—';
         cMap[contrato].orgaos_count=ataSummary.orgaos_count||0;
         if(ataSummary.pregao_eletronico) cMap[contrato].pregoes.add(ataSummary.pregao_eletronico);
+        if(ataSummary.processo_administrativo) cMap[contrato].processos.add(ataSummary.processo_administrativo);
       }
     });
     const rows=Object.values(cMap).map(row=>{
@@ -6289,6 +6301,7 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
         orgao,
         orgaos_count:orgaosCount,
         pregao_eletronico:[...(row.pregoes||[])].filter(Boolean).join(', '),
+        processo_administrativo:[...(row.processos||[])].filter(Boolean).join(', '),
         cliente_principal:clientePrincipal,
         clientes_count:clienteEntries.length,
         faturamento,
