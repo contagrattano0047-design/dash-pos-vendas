@@ -2741,6 +2741,13 @@ function formatReeqUnitValuePhrase(items){
   if(formatted.length===1) return `ao valor unitário de ${formatted[0]}`;
   return `aos valores unitários de ${formatted.slice(0,-1).join(', ')} e ${formatted[formatted.length-1]}`;
 }
+function formatReeqUnitValueWords(items){
+  const vals=[...new Set((items||[]).map(getReeqUnitValue).filter(v=>v>0).map(v=>roundN(v,4)))];
+  if(!vals.length) return 'valor unitário registrado';
+  const words=vals.map(v=>currencyToWords(v));
+  if(words.length===1) return words[0];
+  return `${words.slice(0,-1).join(', ')} e ${words[words.length-1]}`;
+}
 function buildReeqDefaultFromContract(row,pvs){
   const items=pvs.flatMap(pv=>pv.itens||[]);
   const empenhos=[...new Set(pvs.map(pv=>String(pv.empenho||'').trim()).filter(Boolean))];
@@ -2845,10 +2852,14 @@ function replaceTextAcrossNodes(xml,replacements){
   const doc=parser.parseFromString(xml,'application/xml');
   const ns='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
   const nodes=[...doc.getElementsByTagNameNS(ns,'t')];
+  const deferredTokens=[];
   function replaceOne(find,replace){
     if(!find) return;
     replace=replace==null?'—':String(replace);
     if(String(find)===replace) return;
+    const token=replace.includes(String(find))?`__REEQ_TOKEN_${deferredTokens.length}_${Date.now()}__`:null;
+    const finalReplace=token||replace;
+    if(token) deferredTokens.push([token,replace]);
     let guard=0;
     while(guard<200){
       guard++;
@@ -2866,15 +2877,20 @@ function replaceTextAcrossNodes(xml,replacements){
       }
       if(first<0||last<0) return;
       if(first===last){
-        nodes[first].textContent=pieces[first].slice(0,startOff)+replace+pieces[first].slice(endOff);
+        nodes[first].textContent=pieces[first].slice(0,startOff)+finalReplace+pieces[first].slice(endOff);
       }else{
-        nodes[first].textContent=pieces[first].slice(0,startOff)+replace;
+        nodes[first].textContent=pieces[first].slice(0,startOff)+finalReplace;
         for(let i=first+1;i<last;i++) nodes[i].textContent='';
         nodes[last].textContent=pieces[last].slice(endOff);
       }
     }
   }
   replacements.forEach(([find,replace])=>replaceOne(find,replace));
+  deferredTokens.forEach(([token,replace])=>{
+    nodes.forEach(n=>{
+      if((n.textContent||'').includes(token)) n.textContent=n.textContent.split(token).join(replace);
+    });
+  });
   return new XMLSerializer().serializeToString(doc);
 }
 function removeDocxParagraphsContaining(xml,patterns){
@@ -2930,6 +2946,7 @@ function buildReeqDocxReplacements(){
   const totalText=pedido.valor_total||fmt(pvs.reduce((sum,pv)=>sum+num(pv.valor||0),0));
   const totalExt=pedido.valor_total_extenso||currencyToWords(pvs.reduce((sum,pv)=>sum+num(pv.valor||0),0));
   const unitPhrase=pedido.valor_unitario_frase||formatReeqUnitValuePhrase(items);
+  const unitWords=formatReeqUnitValueWords(items);
   const replacements=[
     ['MINISTÉRIO DA SAÚDE',pedido.orgao_linha_1||row?.orgao||''],
     ['HOSPITAL FEDERAL DA LAGOA – RIO DE JANEIRO',pedido.orgao_linha_2||''],
@@ -2947,7 +2964,7 @@ function buildReeqDocxReplacements(){
     ['R$ 39.516,00 (trinta e nove mil, quinhentos e dezesseis reais)',`${totalText} (${totalExt})`],
     ['ao valor unitário de R$ 1,11 (um real e onze centavos)',unitPhrase],
     ['trinta e nove mil, quinhentos e dezesseis reais',totalExt],
-    ['um real e onze centavos',unitPhrase.replace(/^aos? valores? unitários? de /,'')],
+    ['um real e onze centavos',unitWords],
     ['R$ 39.516,00',totalText],
     ['R$ 1,11',pedido.valor_unitario||formatReeqUnitValues(items)],
     ['R$ 2,05',novoValor],
