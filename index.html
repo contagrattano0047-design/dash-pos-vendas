@@ -911,6 +911,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
     <div class="pend-filter-bar">
       <input id="filtProduto" type="text" placeholder="🔍 Filtrar por produto (descrição)…" oninput="updatePendentesFilter('produto',this.value)">
       <select id="filtUf" onchange="updatePendentesFilter('uf',this.value)"><option value="">UF: Todas</option></select>
+      <select id="filtMc" onchange="updatePendentesFilter('mc',this.value)">
+        <option value="">MC%: Todos</option>
+        <option value="negativo">MC% negativo</option>
+      </select>
       <select id="filtCategoria" onchange="updatePendentesFilter('categoria',this.value)"><option value="">Categoria: Todas</option></select>
       <select id="filtMarca" onchange="updatePendentesFilter('marca',this.value)"><option value="">Marca: Todas</option></select>
       <select id="filtTipo" onchange="updatePendentesFilter('tipo',this.value)"><option value="">Tipo: Todos</option></select>
@@ -924,7 +928,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
             <th style="width:30px"></th>
             <th style="cursor:pointer" onclick="sortPendentes('pv')">PV ↕</th>
             <th style="cursor:pointer" onclick="sortPendentes('cliente')">Cliente ↕</th>
-            <th>Nº Empenho</th><th>UASG</th>
+            <th>Nº Empenho</th><th>UASG</th><th>UF</th>
             <th style="cursor:pointer;text-align:right" onclick="sortPendentes('valor')">Valor ↕</th>
             <th style="cursor:pointer;text-align:right" onclick="sortPendentes('mc')">MC $ ↕</th>
             <th style="cursor:pointer;text-align:center" onclick="sortPendentes('mcpct')">MC % ↕</th>
@@ -1222,7 +1226,7 @@ let _contractListSort = {idx:null,asc:true};
 let _contractListStatus = 'todos';
 let _pendentesData = [];
 let _pendentesSort = {col:'dias',asc:false};
-let _pendentesFilter = {produto:'',uf:'',categoria:'',marca:'',tipo:''};
+let _pendentesFilter = {produto:'',uf:'',mc:'',categoria:'',marca:'',tipo:''};
 let _pendentesSearch = '';
 let _pendentesExecFilter = 'todos';
 let _pendentesVisible = [];
@@ -3758,10 +3762,10 @@ function sortPendentes(col){
 function filterPendentes(q){_pendentesSearch=q;renderPendentesTable(_pendentesData,true);}
 function updatePendentesFilter(key,value){_pendentesFilter[key]=value;renderPendentesTable(_pendentesData,true);}
 function clearPendentesFilters(){
-  _pendentesFilter={produto:'',uf:'',categoria:'',marca:'',tipo:''};
+  _pendentesFilter={produto:'',uf:'',mc:'',categoria:'',marca:'',tipo:''};
   _pendentesSearch='';
   _pendentesExecFilter='todos';
-  ['filtProduto','filtUf','filtCategoria','filtMarca','filtTipo','searchPendentes'].forEach(id=>{
+  ['filtProduto','filtUf','filtMc','filtCategoria','filtMarca','filtTipo','searchPendentes'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   renderPendentesTable(_pendentesData,true);
@@ -3848,7 +3852,7 @@ function setPendentesImageStatus(msg,isError){
 function filterArr(arr,q){
   if(!q) return arr;
   const ql=q.toLowerCase();
-  return arr.filter(r=>r.cliente.toLowerCase().includes(ql)||String(r.empenho).toLowerCase().includes(ql)||String(r.pv).toLowerCase().includes(ql)||String(r.uasg).toLowerCase().includes(ql));
+  return arr.filter(r=>r.cliente.toLowerCase().includes(ql)||String(r.empenho).toLowerCase().includes(ql)||String(r.pv).toLowerCase().includes(ql)||String(r.uasg).toLowerCase().includes(ql)||String(inferPendUf(r)).toLowerCase().includes(ql));
 }
 function populatePendentesFilters(data){
   const ufs=new Set(),cats=new Set(),marcas=new Set(),tipos=new Set();
@@ -3909,6 +3913,8 @@ function buildPendentesRows(data){
   return searched.map(pv=>{
     const res=applyItemFilters(pv);
     if(res.filtered&&!res.itens.length) return null;
+    const mcPct=res.valor>0?(res.mc_valor/res.valor*100):0;
+    if(_pendentesFilter.mc==='negativo'&&mcPct>=0) return null;
     return {
       ...pv,
       _itens:res.itens,
@@ -3950,6 +3956,7 @@ function getPendentesFilterSummary(rows){
   if(_pendentesSearch) parts.push(`Busca: "${_pendentesSearch}"`);
   if(_pendentesFilter.produto) parts.push(`Produto: ${_pendentesFilter.produto}`);
   if(_pendentesFilter.uf) parts.push(`UF: ${_pendentesFilter.uf==='__fora_rj'?'Fora do RJ':_pendentesFilter.uf}`);
+  if(_pendentesFilter.mc==='negativo') parts.push('MC% negativo');
   if(_pendentesFilter.categoria) parts.push(`Categoria: ${_pendentesFilter.categoria}`);
   if(_pendentesFilter.marca) parts.push(`Marca: ${_pendentesFilter.marca}`);
   if(_pendentesFilter.tipo) parts.push(`Tipo: ${_pendentesFilter.tipo}`);
@@ -4622,6 +4629,7 @@ function renderPendentesTable(data,keepSort){
     html+=`<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.cliente}">${r.cliente}</td>`;
     html+=`<td style="font-size:11px;color:var(--gray-600)">${r.empenho}</td>`;
     html+=`<td style="font-size:11px;color:var(--gray-600)">${r.uasg||'—'}</td>`;
+    html+=`<td style="font-size:11px;text-align:center;color:var(--navy);font-weight:700">${inferPendUf(r)}</td>`;
     html+=r._has_compare
       ? `<td style="text-align:right"><div class="metric-stack end"><div class="metric-current">${fmt(r._valor)}</div><div class="metric-compare ${r._has_compare?'pos':''}">Cen. ${fmt(compareValor)}</div></div></td>`
       : `<td style="text-align:right"><strong>${fmt(r._valor)}</strong></td>`;
@@ -4637,7 +4645,7 @@ function renderPendentesTable(data,keepSort){
     html+=`<td>${execSelect}</td>`;
     html+=`<td style="text-align:center;font-size:11px;color:var(--gray-400)"><span class="compare-note ${r._has_compare?'active':''}">${compareNote}</span></td></tr>`;
 
-    html+=`<tr class="expand-detail" id="${rid}"><td colspan="13"><div class="itens-wrapper">`;
+    html+=`<tr class="expand-detail" id="${rid}"><td colspan="14"><div class="itens-wrapper">`;
     html+=`<table class="itens-table"><thead><tr><th>Descrição</th><th>Marca</th><th>Categoria</th><th>Tipo</th><th style="text-align:center">Qtd</th><th>Und</th><th style="text-align:right">Venda un.</th><th style="text-align:right">Custo un.</th><th style="text-align:right">Valor</th><th style="text-align:right">MC $</th><th style="text-align:center">MC %</th><th style="text-align:center">Simulação</th></tr></thead><tbody>`;
     r._itens.forEach(it=>{
       const iPct=it.valor>0?(it.mc_valor/it.valor*100):0;
@@ -4694,7 +4702,7 @@ function renderPendentesTable(data,keepSort){
   }).join('');
 
   if(!sorted.length){
-    tbody.innerHTML=`<tr><td colspan="13" style="text-align:center;color:var(--gray-400);padding:28px">Nenhum empenho pendente corresponde aos filtros</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="14" style="text-align:center;color:var(--gray-400);padding:28px">Nenhum empenho pendente corresponde aos filtros</td></tr>`;
   }
 }
 function togglePenItems(id,row){
