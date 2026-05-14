@@ -1319,7 +1319,7 @@ function normalizePendUf(v){
   return stateMap[normTxt(raw)]||'—';
 }
 function inferPendUf(row){
-  const explicit=normalizePendUf(row?.uf||row?.UF||row?.Estado||row?.estado||row?.['UF Cliente']||row?.['UF Entrega']);
+  const explicit=normalizePendUf(row?.uf||row?.['UF.']||row?.UF||row?.Uf||row?.Estado||row?.estado||row?.['UF Cliente']||row?.['UF Entrega']);
   if(explicit!=='—') return explicit;
   const cliente=normTxt(row?.cliente||row?.Cliente||'');
   const uasg=String(row?.uasg||row?.UASG||'').trim();
@@ -6088,7 +6088,7 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
   const days=d=>d?Math.floor((today-d)/86400000):0;
   const fmtD=d=>{if(!d)return '—';try{return d.toLocaleDateString('pt-BR');}catch{return '—';}};
   const getRowUf=r=>inferPendUf({
-    uf:r?.['UF']||r?.['Uf']||r?.['Estado']||r?.['ESTADO']||r?.['UF Cliente']||r?.['UF do Cliente']||r?.['UF Entrega']||r?.['Estado Entrega'],
+    uf:r?.['UF.']||r?.['UF']||r?.['Uf']||r?.['Estado']||r?.['ESTADO']||r?.['UF Cliente']||r?.['UF do Cliente']||r?.['UF Entrega']||r?.['Estado Entrega'],
     cliente:r?.['Cliente'],
     uasg:r?.['UASG']
   });
