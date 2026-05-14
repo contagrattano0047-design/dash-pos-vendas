@@ -910,6 +910,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 
     <div class="pend-filter-bar">
       <input id="filtProduto" type="text" placeholder="🔍 Filtrar por produto (descrição)…" oninput="updatePendentesFilter('produto',this.value)">
+      <select id="filtUf" onchange="updatePendentesFilter('uf',this.value)"><option value="">UF: Todas</option></select>
       <select id="filtCategoria" onchange="updatePendentesFilter('categoria',this.value)"><option value="">Categoria: Todas</option></select>
       <select id="filtMarca" onchange="updatePendentesFilter('marca',this.value)"><option value="">Marca: Todas</option></select>
       <select id="filtTipo" onchange="updatePendentesFilter('tipo',this.value)"><option value="">Tipo: Todos</option></select>
@@ -1221,7 +1222,7 @@ let _contractListSort = {idx:null,asc:true};
 let _contractListStatus = 'todos';
 let _pendentesData = [];
 let _pendentesSort = {col:'dias',asc:false};
-let _pendentesFilter = {produto:'',categoria:'',marca:'',tipo:''};
+let _pendentesFilter = {produto:'',uf:'',categoria:'',marca:'',tipo:''};
 let _pendentesSearch = '';
 let _pendentesExecFilter = 'todos';
 let _pendentesVisible = [];
@@ -1301,6 +1302,41 @@ function kpiCard(accent,icon,label,value,sub,bClass='',bText=''){
 function recorteTag(txt){return `<div class="recorte-tag">📅 Recorte: ${txt}</div>`;}
 function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function normTxt(v){return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
+function normalizePendUf(v){
+  const raw=String(v??'').trim();
+  if(!raw) return '—';
+  const up=raw.toUpperCase();
+  const match=up.match(/\b(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\b/);
+  if(match) return match[1];
+  const stateMap={
+    acre:'AC',alagoas:'AL',amapa:'AP',amazonas:'AM',bahia:'BA',ceara:'CE',
+    'distrito federal':'DF','espirito santo':'ES',goias:'GO',maranhao:'MA',
+    'mato grosso':'MT','mato grosso do sul':'MS','minas gerais':'MG',para:'PA',
+    paraiba:'PB',parana:'PR',pernambuco:'PE',piaui:'PI','rio de janeiro':'RJ',
+    'rio grande do norte':'RN','rio grande do sul':'RS',rondonia:'RO',roraima:'RR',
+    'santa catarina':'SC','sao paulo':'SP',sergipe:'SE',tocantins:'TO'
+  };
+  return stateMap[normTxt(raw)]||'—';
+}
+function inferPendUf(row){
+  const explicit=normalizePendUf(row?.uf||row?.UF||row?.Estado||row?.estado||row?.['UF Cliente']||row?.['UF Entrega']);
+  if(explicit!=='—') return explicit;
+  const cliente=normTxt(row?.cliente||row?.Cliente||'');
+  const uasg=String(row?.uasg||row?.UASG||'').trim();
+  if(uasg==='160136'||cliente.includes('9 grupamento logistico')) return 'MS';
+  if(['986001','160255','31545','250061'].includes(uasg)) return 'RJ';
+  if(/\brj\b/.test(cliente)||cliente.includes('rio de janeiro')||cliente.includes('macae')||cliente.includes('ufrj')||
+    cliente.includes('souza aguiar')||cliente.includes('antonio pedro')||cliente.includes('barata ribeiro')||
+    cliente.includes('philipe pinel')||cliente.includes('fernando magalhaes')||cliente.includes('nise da silveira')||
+    cliente.includes('andarai')||cliente.includes('rocha maia')||cliente.includes('pedro ernesto')||
+    cliente.includes('vigilancia sanitaria')||cliente.includes('ronaldo gazola')||
+    cliente.includes('servidores do estado')) return 'RJ';
+  return '—';
+}
+function enrichPendentesUf(rows){
+  (rows||[]).forEach(row=>{row.uf=inferPendUf(row);});
+  return rows||[];
+}
 function hasContractId(v){return /\d/.test(String(v??'').trim());}
 function contratoLinkPart(v){return String(v??'').trim().toUpperCase().replace(/\s+/g,'');}
 function contratoKeyVariants(contrato,uasg,item){
@@ -1731,7 +1767,7 @@ async function refreshSharedSimulationsFromSharePoint(){
     if(_acordoSharedTarget) await loadSharedAcordoStore({Authorization:'Bearer '+_msalToken});
     if(JSON.stringify(_simSharedStore||{})!==before||JSON.stringify(_acordoSharedStore||{})!==beforeAcordo){
       D=hydratePersistedAcordos(hydratePersistedSimulations(D));
-      _pendentesData = [...(D.pendentes_list||[])];
+      _pendentesData = enrichPendentesUf([...(D.pendentes_list||[])]);
       if(_pendentesData.length) renderPendentesTable(_pendentesData,true);
     }
   }catch(e){
@@ -1797,7 +1833,7 @@ async function forceSyncSimulations(){
     await loadSharedSimStore(headers);
     await loadSharedAcordoStore(headers);
     D=hydratePersistedAcordos(hydratePersistedSimulations(D));
-    _pendentesData=[...(D.pendentes_list||[])];
+    _pendentesData=enrichPendentesUf([...(D.pendentes_list||[])]);
     if(_pendentesData.length) renderPendentesTable(_pendentesData,true);
     const hint=document.getElementById('statusHint');
     if(hint) hint.textContent=_simSharedStatusMessage||'Sincronizacao concluida.';
@@ -3707,7 +3743,7 @@ function renderStatus(){
   });
 
   // Tabela pendentes
-  _pendentesData = [...(D.pendentes_list||[])];
+  _pendentesData = enrichPendentesUf([...(D.pendentes_list||[])]);
   _pendentesSort = {col:'dias',asc:false};
   populatePendentesFilters(_pendentesData);
   renderPendentesTable(_pendentesData);
@@ -3722,10 +3758,10 @@ function sortPendentes(col){
 function filterPendentes(q){_pendentesSearch=q;renderPendentesTable(_pendentesData,true);}
 function updatePendentesFilter(key,value){_pendentesFilter[key]=value;renderPendentesTable(_pendentesData,true);}
 function clearPendentesFilters(){
-  _pendentesFilter={produto:'',categoria:'',marca:'',tipo:''};
+  _pendentesFilter={produto:'',uf:'',categoria:'',marca:'',tipo:''};
   _pendentesSearch='';
   _pendentesExecFilter='todos';
-  ['filtProduto','filtCategoria','filtMarca','filtTipo','searchPendentes'].forEach(id=>{
+  ['filtProduto','filtUf','filtCategoria','filtMarca','filtTipo','searchPendentes'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   renderPendentesTable(_pendentesData,true);
@@ -3815,29 +3851,46 @@ function filterArr(arr,q){
   return arr.filter(r=>r.cliente.toLowerCase().includes(ql)||String(r.empenho).toLowerCase().includes(ql)||String(r.pv).toLowerCase().includes(ql)||String(r.uasg).toLowerCase().includes(ql));
 }
 function populatePendentesFilters(data){
-  const cats=new Set(),marcas=new Set(),tipos=new Set();
-  data.forEach(pv=>(pv.itens||[]).forEach(it=>{
+  const ufs=new Set(),cats=new Set(),marcas=new Set(),tipos=new Set();
+  enrichPendentesUf(data);
+  data.forEach(pv=>{
+    if(pv.uf&&pv.uf!=='—') ufs.add(pv.uf);
+    (pv.itens||[]).forEach(it=>{
     if(it.categoria&&it.categoria!=='—') cats.add(it.categoria);
     if(it.marca&&it.marca!=='—') marcas.add(it.marca);
     if(it.tipo&&it.tipo!=='—') tipos.add(it.tipo);
-  }));
-  const fill=(id,vals,placeholder)=>{
+    });
+  });
+  const fill=(id,vals,placeholder,extraOptions=[])=>{
     const sel=document.getElementById(id); if(!sel) return;
     const cur=sel.value;
     sel.innerHTML=`<option value="">${placeholder}</option>`+
+      extraOptions.map(opt=>`<option value="${opt.value}">${opt.label}</option>`).join('')+
       [...vals].sort((a,b)=>a.localeCompare(b,'pt-BR')).map(v=>`<option value="${v}">${v}</option>`).join('');
     sel.value=cur;
   };
+  fill('filtUf',ufs,'UF: Todas',[
+    {value:'__fora_rj',label:'Fora do RJ'}
+  ]);
   fill('filtCategoria',cats,'Categoria: Todas');
   fill('filtMarca',marcas,'Marca: Todas');
   fill('filtTipo',tipos,'Tipo: Todos');
 }
 function applyItemFilters(pv){
   const f=_pendentesFilter;
-  const hasFilter=!!(f.produto||f.categoria||f.marca||f.tipo);
-  if(!hasFilter){
+  const hasItemFilter=!!(f.produto||f.categoria||f.marca||f.tipo);
+  const rowUf=inferPendUf(pv);
+  if(f.uf==='__fora_rj'&&(!rowUf||rowUf==='—'||rowUf==='RJ')){
+    const compare=summarizeComparedItems([]);
+    return {itens:[],valor:0,mc_valor:0,filtered:true,...compare};
+  }
+  if(f.uf&&f.uf!=='__fora_rj'&&rowUf!==f.uf){
+    const compare=summarizeComparedItems([]);
+    return {itens:[],valor:0,mc_valor:0,filtered:true,...compare};
+  }
+  if(!hasItemFilter){
     const compare=summarizeComparedItems(pv.itens||[]);
-    return {itens:pv.itens||[],valor:pv.valor,mc_valor:pv.mc_valor,filtered:false,...compare};
+    return {itens:pv.itens||[],valor:pv.valor,mc_valor:pv.mc_valor,filtered:!!f.uf,...compare};
   }
   const q=(f.produto||'').toLowerCase();
   const itens=(pv.itens||[]).filter(it=>
@@ -3896,6 +3949,7 @@ function getPendentesFilterSummary(rows){
   const parts=[];
   if(_pendentesSearch) parts.push(`Busca: "${_pendentesSearch}"`);
   if(_pendentesFilter.produto) parts.push(`Produto: ${_pendentesFilter.produto}`);
+  if(_pendentesFilter.uf) parts.push(`UF: ${_pendentesFilter.uf==='__fora_rj'?'Fora do RJ':_pendentesFilter.uf}`);
   if(_pendentesFilter.categoria) parts.push(`Categoria: ${_pendentesFilter.categoria}`);
   if(_pendentesFilter.marca) parts.push(`Marca: ${_pendentesFilter.marca}`);
   if(_pendentesFilter.tipo) parts.push(`Tipo: ${_pendentesFilter.tipo}`);
@@ -6033,6 +6087,11 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
   };
   const days=d=>d?Math.floor((today-d)/86400000):0;
   const fmtD=d=>{if(!d)return '—';try{return d.toLocaleDateString('pt-BR');}catch{return '—';}};
+  const getRowUf=r=>inferPendUf({
+    uf:r?.['UF']||r?.['Uf']||r?.['Estado']||r?.['ESTADO']||r?.['UF Cliente']||r?.['UF do Cliente']||r?.['UF Entrega']||r?.['Estado Entrega'],
+    cliente:r?.['Cliente'],
+    uasg:r?.['UASG']
+  });
   const isLicitacoesRow=r=>normTxt(r?.['Departamento']||'').includes('licit');
   const pvKey=v=>String(v??'').trim().replace(/\s+/g,'');
   const pvBaseKey=v=>pvKey(v).split('/')[0]||pvKey(v);
@@ -6467,6 +6526,7 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
       cliente:String(r['Cliente']||''),
       empenho:String(r['Empenho']||'—'),
       uasg:String(r['UASG']||'—'),
+      uf:getRowUf(r),
       valor:0, mc_valor:0,
       prev_ent:fmtD(toD(r['Prev. Ent'])),
       n_itens:0, itens:[]
@@ -6571,7 +6631,7 @@ document.addEventListener('DOMContentLoaded', async()=>{
     if(pendResult.status==='fulfilled' && pendResult.value.ok){
       const pendentesSample = await pendResult.value.json();
       if(Array.isArray(pendentesSample) && pendentesSample.length){
-        DEFAULT_DATA.pendentes_list = pendentesSample;
+        DEFAULT_DATA.pendentes_list = enrichPendentesUf(pendentesSample);
       }
     }
     if(contratosResult.status==='fulfilled' && contratosResult.value.ok){
