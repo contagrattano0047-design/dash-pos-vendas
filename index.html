@@ -3817,6 +3817,14 @@ function setPendentesImageStatus(msg,isError){
     },4600);
   }
 }
+function pendentesSearchAliases(value){
+  const n=normTxt(value);
+  const aliases=[];
+  if(n.includes('empresa publica de saude do rio de janeiro')||n.includes('rio de janeiro empresa publica de saude')){
+    aliases.push('riosaude','rio saude','riosa');
+  }
+  return aliases.join(' ');
+}
 function filterArr(arr,q){
   if(!q) return arr;
   const ql=normTxt(q);
@@ -3825,10 +3833,10 @@ function filterArr(arr,q){
       it.desc,it.marca,it.categoria,it.tipo,it.chave,it.nfe,it.pregao
     ].join(' ')).join(' ');
     const rowText=[
-      r.orgao,r.orgão,r.cliente,r.cliente_principal,r.empenho,r.pv,r.uasg,inferPendUf(r),
+      r.orgao,r.orgão,r.orgao_contrato,r.orgaos_contrato,r.contrato,r.cliente,r.cliente_principal,r.empenho,r.pv,r.uasg,inferPendUf(r),
       r.prev_ent,r.status,r.risco,itemText
     ].join(' ');
-    return normTxt(rowText).includes(ql);
+    return normTxt(`${rowText} ${pendentesSearchAliases(rowText)}`).includes(ql);
   });
 }
 function populatePendentesFilters(data){
@@ -6485,6 +6493,26 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
       pendentes:contratoQualityPending.filter(byYear),
     };
   }
+  const contratosData={
+    '2025':contratosAno(contratos25,'2025'),
+    '2026':contratosAno(contratos26,'2026'),
+    'total':contratosAno(contratosSource,'total')
+  };
+  const pendenteContratoLookup={};
+  (contratosData.total.rows||[]).forEach(row=>{
+    (row.pv_rows||[]).forEach(pvRow=>{
+      const pv=pvKey(pvRow.pv);
+      if(!pv) return;
+      const info={
+        contrato:row.contrato||'',
+        orgao_contrato:row.orgao||'',
+        orgaos_contrato:[row.orgao,row.cliente_principal].filter(Boolean).join(' ')
+      };
+      if(!pendenteContratoLookup[pv]) pendenteContratoLookup[pv]=info;
+      const base=pvBaseKey(pv);
+      if(base&&!pendenteContratoLookup[base]) pendenteContratoLookup[base]=info;
+    });
+  });
 
   // Envelhecimento pendentes
   const penD=pen.map(r=>({...r,dias:days(toD(r['Data Ped']))}));
@@ -6503,9 +6531,13 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
   const pvPendMap={};
   penD.forEach(r=>{
     const pv=String(r['PV']||'');
+    const contratoInfo=pendenteContratoLookup[pvKey(pv)]||pendenteContratoLookup[pvBaseKey(pv)]||{};
     if(!pvPendMap[pv]) pvPendMap[pv]={
       pv, dias:r.dias,
       cliente:String(r['Cliente']||''),
+      orgao_contrato:String(contratoInfo.orgao_contrato||''),
+      orgaos_contrato:String(contratoInfo.orgaos_contrato||''),
+      contrato:String(contratoInfo.contrato||getAtaNumero(r)||r['Contrato']||''),
       empenho:String(r['Empenho']||'—'),
       uasg:String(r['UASG']||'—'),
       uf:getRowUf(r),
@@ -6585,7 +6617,7 @@ function parseSheet(rows, contratosRows=[], contratosMirror={columns:[],rows:[]}
     mensal:{'2025':mensalAno(all,2025),'2026':m26},
     status:{'2025':statusAno(all25),'2026':statusAno(all26),'total':statusAno(all)},
     empresas:{'2025':empresasAno(all25),'2026':empresasAno(all26),'total':empresasAno(all)},
-    contratos:{'2025':contratosAno(contratos25,'2025'),'2026':contratosAno(contratos26,'2026'),'total':contratosAno(contratosSource,'total')},
+    contratos:contratosData,
     contratos_lista:contratosMirror,
     contratos_diagnostics:{'2025':contratoDiagnosticsFor('2025'),'2026':contratoDiagnosticsFor('2026'),'total':contratoDiagnosticsFor('total')},
     envelhecimento,criticos,pendentes_list,previsao_semana,
