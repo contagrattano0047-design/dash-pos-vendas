@@ -495,6 +495,27 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .sim-delta-note.good{background:#e6f4ef;color:var(--green-light)}
 .sim-delta-note.bad{background:var(--red-pale);color:var(--red)}
 .sim-delta-note.neutral{background:#eef3fb;color:var(--navy)}
+.sim-tax-bridge{margin:0 0 14px;padding:12px;border-radius:14px;border:1px solid var(--gray-200);background:#fff}
+.sim-tax-bridge.covered{border-color:rgba(64,145,108,.28);background:linear-gradient(180deg,#f4fbf7 0%,#fff 100%)}
+.sim-tax-bridge.open{border-color:rgba(230,57,70,.25);background:linear-gradient(180deg,#fff5f5 0%,#fff 100%)}
+.sim-tax-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.sim-tax-title{font-size:11px;font-weight:800;letter-spacing:.65px;text-transform:uppercase;color:var(--gray-500)}
+.sim-tax-status{font-size:11px;font-weight:800;padding:5px 9px;border-radius:999px;white-space:nowrap}
+.sim-tax-status.covered{background:#e6f4ef;color:var(--green-light)}
+.sim-tax-status.open{background:var(--red-pale);color:var(--red)}
+.sim-tax-flow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sim-tax-box{padding:9px 10px;border-radius:12px;background:var(--gray-50);border:1px solid var(--gray-100)}
+.sim-tax-box.sale{border-color:rgba(230,57,70,.18);background:rgba(230,57,70,.05)}
+.sim-tax-box.purchase{border-color:rgba(42,157,143,.2);background:rgba(42,157,143,.06)}
+.sim-tax-box.balance{grid-column:1/-1;background:#fff;border-style:dashed}
+.sim-tax-box .label{font-size:10px;font-weight:800;letter-spacing:.55px;text-transform:uppercase;color:var(--gray-500)}
+.sim-tax-box .value{font-size:15px;font-weight:800;color:var(--navy);margin-top:4px}
+.sim-tax-box.sale .value{color:var(--red)}
+.sim-tax-box.purchase .value{color:var(--teal)}
+.sim-tax-box.balance .value.good{color:var(--green-light)}
+.sim-tax-box.balance .value.bad{color:var(--red)}
+.sim-tax-meter{height:8px;border-radius:999px;background:rgba(230,57,70,.16);overflow:hidden;margin-top:10px}
+.sim-tax-meter span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--teal),var(--green-light))}
 .sim-section-title{font-size:11px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--gray-400);margin:16px 0 10px}
 .sim-input-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .sim-field label{display:block;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:5px}
@@ -521,7 +542,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
   .sim-header{padding:16px 18px 14px}
   .sim-toolbar,.sim-board{padding-left:18px;padding-right:18px}
   .sim-cards{grid-auto-columns:minmax(300px,88vw)}
-  .sim-input-grid,.sim-output-grid,.sim-assumption-list,.sim-scenario-meta{grid-template-columns:1fr}
+  .sim-input-grid,.sim-output-grid,.sim-assumption-list,.sim-scenario-meta,.sim-tax-flow{grid-template-columns:1fr}
+  .sim-tax-box.balance{grid-column:auto}
   .sim-summary-grid{grid-template-columns:1fr}
 }
 
@@ -1274,19 +1296,18 @@ const pct = v => (v||0).toFixed(1)+'%';
 const C = {navy:'#0a1628',gold:'#c9a84c',teal:'#2a9d8f',red:'#e63946',green:'#40916c',orange:'#f4a261',blue:'#457b9d',purple:'#6a4c93'};
 const LABEL = {'2026':'Pedidos 2026','2025':'Pedidos 2025','total':'Toda a carteira'};
 const SIM_INPUT_SECTIONS = [
-  {title:'Comercial',fields:[
-    {key:'preco_venda_un',label:'Venda un.',hint:'Valor unitário bruto',step:'0.01',pct:false},
-    {key:'qtd',label:'Quantidade',hint:'Recalculada para manter o total',step:'0.0001',pct:false},
-    {key:'custo_un',label:'Custo un.',hint:'Custo base de compra',step:'0.01',pct:false},
-  ]},
-  {title:'Impostos venda',fields:[
+  {title:'Nota de saída',fields:[
+    {key:'qtd_nota',label:'Qtd nota',hint:'Quantidade que sai na NF',step:'0.0001',pct:false},
+    {key:'preco_venda_un',label:'Venda un. NF',hint:'Valor unitário bruto da nota',step:'0.01',pct:false},
     {key:'icms_pct',label:'ICMS venda %',hint:'Incide sobre total',step:'0.01',pct:true},
     {key:'pis_pct',label:'PIS %',hint:'Incide sobre total s/ ICMS',step:'0.01',pct:true},
     {key:'cofins_pct',label:'COFINS %',hint:'Incide sobre total s/ ICMS',step:'0.01',pct:true},
     {key:'difal_pct',label:'DIFAL %',hint:'Calculado sobre total',step:'0.01',pct:true},
   ]},
-  {title:'Custos e créditos',fields:[
-    {key:'cred_icms_pct',label:'Créd. ICMS %',hint:'Sobre custo total',step:'0.01',pct:true},
+  {title:'Compra / entrega',fields:[
+    {key:'qtd_compra',label:'Qtd compra/entrega',hint:'Quantidade comprada ou entregue',step:'0.0001',pct:false},
+    {key:'custo_un',label:'Custo un.',hint:'Custo base de compra',step:'0.01',pct:false},
+    {key:'cred_icms_pct',label:'Créd. ICMS %',hint:'Sobre compra total',step:'0.01',pct:true},
     {key:'cred_pis_pct',label:'Créd. PIS %',hint:'Sobre custo total - créd. ICMS',step:'0.01',pct:true},
     {key:'cred_cofins_pct',label:'Créd. COFINS %',hint:'Sobre custo total - créd. ICMS',step:'0.01',pct:true},
     {key:'ipi_pct',label:'IPI %',hint:'Sobre custo total',step:'0.01',pct:true},
@@ -1410,6 +1431,8 @@ function deriveSimInputs(item){
   };
   return {
     fixed_total:roundN(fixedTotal,4),
+    qtd_nota:qtd,
+    qtd_compra:qtd,
     preco_venda_un:precoVendaUn,
     qtd,
     custo_un:custoUn,
@@ -1427,7 +1450,9 @@ function deriveSimInputs(item){
   };
 }
 function calcSimScenario(inputs){
-  const qtd=Math.max(0,num(inputs.qtd));
+  const legacyQtd=Math.max(0,num(inputs.qtd));
+  const qtdNota=Math.max(0,num(inputs.qtd_nota!==undefined?inputs.qtd_nota:legacyQtd));
+  const qtdCompra=Math.max(0,num(inputs.qtd_compra!==undefined?inputs.qtd_compra:legacyQtd));
   const precoVendaUn=num(inputs.preco_venda_un);
   const custoUn=num(inputs.custo_un);
   const icmsPct=num(inputs.icms_pct);
@@ -1442,12 +1467,12 @@ function calcSimScenario(inputs){
   const fretePct=num(inputs.frete_pct);
   const freteCPct=num(inputs.frete_c_pct);
 
-  const total=precoVendaUn*qtd;
+  const total=precoVendaUn*qtdNota;
   const unitSemIcms=precoVendaUn-(precoVendaUn*icmsPct);
-  const totalSemIcms=unitSemIcms*qtd;
+  const totalSemIcms=unitSemIcms*qtdNota;
   const unitLiq=unitSemIcms-(unitSemIcms*(pisPct+cofinsPct));
-  const totalLiq=unitLiq*qtd;
-  const custoTotal=custoUn*qtd;
+  const totalLiq=unitLiq*qtdNota;
+  const custoTotal=custoUn*qtdCompra;
   const credIcmsValor=custoTotal*credIcmsPct;
   const baseCredPisCofins=Math.max(custoTotal-credIcmsValor,0);
   const credPisValor=baseCredPisCofins*credPisPct;
@@ -1461,11 +1486,11 @@ function calcSimScenario(inputs){
   const pisVendaValor=pisPct*totalSemIcms;
   const cofinsVendaValor=cofinsPct*totalSemIcms;
   const custoLiqTotal=custoTotal+ipiValor+icmsStValor-credIcmsValor-credPisValor-credCofinsValor+freteCompraValor+freteVendaValor;
-  const custoLiqUnit=qtd>0?custoLiqTotal/qtd:0;
+  const custoLiqUnit=qtdCompra>0?custoLiqTotal/qtdCompra:0;
   const mcValor=totalLiq-custoLiqTotal-difalValor;
   return {
     fixedTotal:num(inputs.fixed_total||0),
-    qtd,precoVendaUn,custoUn,total,unitSemIcms,totalSemIcms,unitLiq,totalLiq,custoTotal,custoLiqTotal,custoLiqUnit,
+    qtd:qtdCompra,qtdNota,qtdCompra,precoVendaUn,custoUn,total,unitSemIcms,totalSemIcms,unitLiq,totalLiq,custoTotal,custoLiqTotal,custoLiqUnit,
     credIcmsValor,credPisValor,credCofinsValor,ipiValor,icmsStValor,freteCompraValor,freteVendaValor,difalValor,
     icmsVendaValor,pisVendaValor,cofinsVendaValor,
     mcValor,
@@ -1483,6 +1508,14 @@ function getScenarioSeq(id){
   const m=String(id||'').match(/(\d+)$/);
   return m?num(m[1]):0;
 }
+function normalizeSimInputs(inputs){
+  const normalized=clone(inputs||{});
+  const qtd=Math.max(0,num(normalized.qtd||0));
+  if(normalized.qtd_nota===undefined) normalized.qtd_nota=qtd;
+  if(normalized.qtd_compra===undefined) normalized.qtd_compra=qtd;
+  if(normalized.qtd===undefined) normalized.qtd=normalized.qtd_nota;
+  return normalized;
+}
 function cloneScenarioData(scenario){
   return {
     id:String(scenario?.id||''),
@@ -1492,7 +1525,7 @@ function cloneScenarioData(scenario){
     created_at:String(scenario?.created_at||scenario?.createdAt||''),
     updated_by:String(scenario?.updated_by||scenario?.updatedBy||''),
     updated_at:String(scenario?.updated_at||scenario?.updatedAt||''),
-    inputs:clone(scenario?.inputs||{}),
+    inputs:normalizeSimInputs(scenario?.inputs||{}),
     raw_inputs:clone(scenario?.raw_inputs||{})
   };
 }
@@ -3122,7 +3155,8 @@ function getItemComparedMetrics(item){
   const baseInputs=deriveSimInputs(item);
   if(!activeScenario){
     return {
-      qtd:num(baseInputs.qtd||0),
+      qtd:num(baseInputs.qtd_nota||baseInputs.qtd||0),
+      qtd_compra:num(baseInputs.qtd_compra||baseInputs.qtd||0),
       preco_venda_un:num(baseInputs.preco_venda_un||0),
       valor:num(item?.valor||0),
       mc_valor:num(item?.mc_valor||0),
@@ -3135,7 +3169,8 @@ function getItemComparedMetrics(item){
   }
   const calc=calcSimScenario(activeScenario.inputs||baseInputs);
   return {
-    qtd:roundN(calc.qtd,4),
+    qtd:roundN(calc.qtdNota,4),
+    qtd_compra:roundN(calc.qtdCompra,4),
     preco_venda_un:roundN(calc.precoVendaUn,4),
     valor:roundN(calc.total),
     mc_valor:roundN(calc.mcValor),
@@ -3220,7 +3255,7 @@ function createSimScenario(inputs,name,id,meta={}){
     created_at:String(meta.created_at||(!id?now:'')),
     updated_by:String(meta.updated_by||''),
     updated_at:String(meta.updated_at||''),
-    inputs:clone(inputs),
+    inputs:normalizeSimInputs(inputs),
     raw_inputs:clone(meta.raw_inputs||{})
   };
   if(id){
@@ -3318,15 +3353,11 @@ function applySimScenarioFieldValue(id,key,value,isPct){
   const scenario=getSimScenario(id);
   if(!scenario) return;
   scenario.inputs[key]=isPct?parseSimInputNumber(value)/100:parseSimInputNumber(value);
-  if(key==='preco_venda_un' || key==='qtd'){
-    const fixedTotal=Math.max(0,num(scenario.inputs.fixed_total||_simModalState.baseInputs?.fixed_total||_simModalState.item?.valor||0));
-    if(key==='preco_venda_un'){
-      const precoVendaUn=Math.max(0,num(scenario.inputs.preco_venda_un));
-      scenario.inputs.qtd=precoVendaUn>0?roundN(fixedTotal/precoVendaUn,4):0;
-    }else{
-      const qtd=Math.max(0,num(scenario.inputs.qtd));
-      scenario.inputs.preco_venda_un=qtd>0?roundN(fixedTotal/qtd,4):0;
-    }
+  if(key==='qtd_nota'){
+    scenario.inputs.qtd= Math.max(0,num(scenario.inputs.qtd_nota));
+  }
+  if(key==='qtd_compra' && scenario.inputs.qtd_nota===undefined){
+    scenario.inputs.qtd= Math.max(0,num(scenario.inputs.qtd_compra));
   }
   touchSimScenario(scenario);
 }
@@ -3373,22 +3404,55 @@ function renderSimDelta(calc,base){
 }
 function renderSimOutputsBlock(calc){
   const mcCls=calc.mcValor>=0?'up':'down';
+  const icmsLiquido=calc.icmsVendaValor-calc.credIcmsValor;
+  const icmsCoberto=calc.credIcmsValor>=calc.icmsVendaValor-0.009;
+  const icmsDiff=calc.credIcmsValor-calc.icmsVendaValor;
+  const coberturaPct=calc.icmsVendaValor>0?Math.min(100,Math.max(0,(calc.credIcmsValor/calc.icmsVendaValor)*100)):(calc.credIcmsValor>0?100:0);
+  const verdictCls=calc.mcValor>=0?'up':'down';
+  const verdictTxt=calc.mcValor>=0?'Compensa':'Não compensa';
   return `
     <div class="sim-summary-grid">
       <div class="sim-summary-box"><div class="label">MC $</div><div class="value ${mcCls}">${fmt(calc.mcValor)}</div></div>
       <div class="sim-summary-box"><div class="label">MC %</div><div class="value">${pct(calc.mcPctBruto)}</div></div>
-      <div class="sim-summary-box"><div class="label">Total</div><div class="value">${fmt(calc.total)}</div></div>
+      <div class="sim-summary-box"><div class="label">Resultado</div><div class="value ${verdictCls}">${verdictTxt}</div></div>
     </div>
-    <div class="sim-section-title">Saídas calculadas</div>
+    <div class="sim-tax-bridge ${icmsCoberto?'covered':'open'}">
+      <div class="sim-tax-head">
+        <div class="sim-tax-title">Crédito da compra x imposto da venda</div>
+        <div class="sim-tax-status ${icmsCoberto?'covered':'open'}">${icmsCoberto?'Crédito cobre':'Falta crédito'}</div>
+      </div>
+      <div class="sim-tax-flow">
+        <div class="sim-tax-box sale">
+          <div class="label">Venda · ICMS saída</div>
+          <div class="value">${fmt(calc.icmsVendaValor)}</div>
+        </div>
+        <div class="sim-tax-box purchase">
+          <div class="label">Compra · crédito ICMS</div>
+          <div class="value">${fmt(calc.credIcmsValor)}</div>
+        </div>
+        <div class="sim-tax-box balance">
+          <div class="label">${icmsCoberto?'Sobra de crédito':'Imposto a pagar'}</div>
+          <div class="value ${icmsCoberto?'good':'bad'}">${fmt(Math.abs(icmsDiff))}</div>
+        </div>
+      </div>
+      <div class="sim-tax-meter" title="Cobertura do ICMS da venda pelo crédito da compra">
+        <span style="width:${coberturaPct.toFixed(2)}%"></span>
+      </div>
+    </div>
+    <div class="sim-section-title">Resumo da operação</div>
     <div class="sim-output-grid">
-      <div class="sim-output-box"><div class="label">Total bruto</div><div class="value">${fmt(calc.total)}</div></div>
+      <div class="sim-output-box"><div class="label">Qtd nota</div><div class="value">${calc.qtdNota.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:4})}</div></div>
+      <div class="sim-output-box"><div class="label">Qtd compra</div><div class="value">${calc.qtdCompra.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:4})}</div></div>
+      <div class="sim-output-box"><div class="label">Total NF</div><div class="value">${fmt(calc.total)}</div></div>
+      <div class="sim-output-box"><div class="label">Compra total</div><div class="value">${fmt(calc.custoTotal)}</div></div>
       <div class="sim-output-box"><div class="label">Total s/ ICMS</div><div class="value">${fmt(calc.totalSemIcms)}</div></div>
       <div class="sim-output-box"><div class="label">Total líq.</div><div class="value">${fmt(calc.totalLiq)}</div></div>
-      <div class="sim-output-box"><div class="label">Custo total</div><div class="value">${fmt(calc.custoTotal)}</div></div>
       <div class="sim-output-box"><div class="label">Custo líq. total</div><div class="value">${fmt(calc.custoLiqTotal)}</div></div>
       <div class="sim-output-box"><div class="label">DIFAL ($)</div><div class="value">${fmt(calc.difalValor)}</div></div>
       <div class="sim-output-box"><div class="label">Impostos venda</div><div class="value">${pct(calc.impostosPct)}</div></div>
+      <div class="sim-output-box"><div class="label">ICMS saída</div><div class="value">${fmt(calc.icmsVendaValor)}</div></div>
       <div class="sim-output-box"><div class="label">Créd. ICMS</div><div class="value">${fmt(calc.credIcmsValor)}</div></div>
+      <div class="sim-output-box"><div class="label">ICMS líquido</div><div class="value">${fmt(icmsLiquido)}</div></div>
       <div class="sim-output-box"><div class="label">Créd. PIS</div><div class="value">${fmt(calc.credPisValor)}</div></div>
       <div class="sim-output-box"><div class="label">Créd. COFINS</div><div class="value">${fmt(calc.credCofinsValor)}</div></div>
       <div class="sim-output-box"><div class="label">IPI + ICMS ST</div><div class="value">${fmt(calc.ipiValor+calc.icmsStValor)}</div></div>
@@ -3405,6 +3469,10 @@ function renderSimScenarioOutputs(id){
   const rawInputs=scenario.raw_inputs||{};
   const precoInput=document.getElementById(`preco_venda_un-${id}`);
   if(precoInput) precoInput.value=rawInputs.preco_venda_un??simValue({pct:false},scenario.inputs.preco_venda_un);
+  const qtdNotaInput=document.getElementById(`qtd_nota-${id}`);
+  if(qtdNotaInput) qtdNotaInput.value=rawInputs.qtd_nota??simValue({pct:false},scenario.inputs.qtd_nota);
+  const qtdCompraInput=document.getElementById(`qtd_compra-${id}`);
+  if(qtdCompraInput) qtdCompraInput.value=rawInputs.qtd_compra??simValue({pct:false},scenario.inputs.qtd_compra);
   const qtdInput=document.getElementById(`qtd-${id}`);
   if(qtdInput) qtdInput.value=rawInputs.qtd??simValue({pct:false},scenario.inputs.qtd);
   const mount=document.getElementById(`sim-outputs-${id}`);
@@ -3420,15 +3488,18 @@ function renderSimModal(){
     `<span class="sim-chip">${esc(item.cliente||'—')}</span>`+
     `<span class="sim-chip">Marca ${esc(item.marca||'—')}</span>`+
     `<span class="sim-chip">${num(item.qtd).toLocaleString('pt-BR')} ${esc(item.und||'und')}</span>`;
-  document.getElementById('simToolbarCopy').textContent='A base usa a lógica da planilha: o total do item fica travado, então ao mexer na Venda un. a quantidade é recalculada automaticamente. Escolha um cenário para aparecer na linha e entrar na imagem comparativa.';
+  document.getElementById('simToolbarCopy').textContent='A base usa a lógica da planilha, mas agora o cenário separa a quantidade da nota fiscal da quantidade comprada/entregue. Ajuste ICMS de saída e crédito de entrada para ver se a operação ainda compensa.';
   const clearBtn=document.getElementById('btnClearSimApplied');
   if(clearBtn) clearBtn.disabled=!(_simModalState.activeId||_simModalState.itemRef?.sim_active_id);
 
   const originalAssumptions = [
     ['Marca', item.marca||'—'],
+    ['Qtd nota', original.qtdNota.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:4})],
+    ['Qtd compra', original.qtdCompra.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:4})],
     ['Venda un.', fmt(original.precoVendaUn)],
     ['Custo un.', fmt(original.custoUn)],
     ['ICMS venda', pct((_simModalState.baseInputs.icms_pct||0)*100)],
+    ['Créd. ICMS', pct((_simModalState.baseInputs.cred_icms_pct||0)*100)],
     ['PIS + COFINS', pct(((_simModalState.baseInputs.pis_pct||0)+(_simModalState.baseInputs.cofins_pct||0))*100)],
     ['DIFAL', pct((_simModalState.baseInputs.difal_pct||0)*100)],
     ['Fretes', `${pct((_simModalState.baseInputs.frete_pct||0)*100)} / ${pct((_simModalState.baseInputs.frete_c_pct||0)*100)}`],
