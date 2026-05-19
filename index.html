@@ -858,45 +858,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
      3. STATUS
 -------------------------------------------------- -->
 <div class="view" id="view-status">
-  <div class="section-header">
-    <div>
-      <div class="section-title">Status Consolidado dos Empenhos</div>
-      <div class="section-subtitle">Selecione o recorte de tempo abaixo</div>
-    </div>
-    <div class="pill-group" id="pillsStatus">
-      <button class="pill active" onclick="setStatusAno('2026',this)">2026</button>
-      <button class="pill" onclick="setStatusAno('2025',this)">2025</button>
-      <button class="pill" onclick="setStatusAno('total',this)">Toda a carteira</button>
-    </div>
-  </div>
-
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-header">
-        <div><div class="card-title">Distribuição Entregue / Pendente</div><div class="card-subtitle" id="subtitleStatusDonut">PVs únicos com valor &gt; 0</div></div>
-        <div class="recorte-tag" id="tagStatusDonut">—</div>
-      </div>
-      <div class="chart-wrap" style="height:240px;padding-bottom:0"><canvas id="chartStatus"></canvas></div>
-      <div class="donut-legend" id="statusLegend"></div>
-    </div>
-    <div class="card">
-      <div class="card-header">
-        <div><div class="card-title">Eficiência por Mês</div><div class="card-subtitle" id="subtitleStatusMensal">Faturamento entregue mês a mês</div></div>
-        <div class="recorte-tag" id="tagStatusMensal">—</div>
-      </div>
-      <div class="chart-wrap" style="height:240px;padding-bottom:0"><canvas id="chartStatusMensal"></canvas></div>
-    </div>
-  </div>
-
-  <!-- Gráfico empresas com recorte -->
-  <div class="card" style="margin-bottom:16px">
-    <div class="card-header">
-      <div><div class="card-title">Marck vs. Grattano</div><div class="card-subtitle" id="subtitleEmpresas">Faturamento e MC por empresa</div></div>
-      <div class="recorte-tag" id="tagEmpresas">—</div>
-    </div>
-    <div class="chart-wrap" style="height:230px"><canvas id="chartEmpresas"></canvas></div>
-  </div>
-
   <div class="card" style="margin-bottom:16px">
     <div class="card-header" style="padding-bottom:14px">
       <div>
@@ -921,7 +882,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
         <div class="card-subtitle">Status Ent = Pendente · valor &gt; 0 · toda a carteira · clique na linha para ver itens</div>
       </div>
       <div class="header-tools">
-        <input id="searchPendentes" type="text" placeholder="Buscar PV, cliente, empenho…" oninput="filterPendentes(this.value)"
+        <input id="searchPendentes" type="text" placeholder="Buscar órgão, PV, empenho, produto, marca…" oninput="filterPendentes(this.value)"
           style="padding:6px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--navy);outline:none;width:220px">
         <button class="btn btn-copy" id="btnPendentesImage" type="button" style="padding:7px 12px;font-size:12px" onclick="sharePendentesAsImage()">🖼 Imagem WhatsApp</button>
         <button class="btn btn-primary" id="btnPendentesPdf" type="button" style="padding:7px 12px;font-size:12px" onclick="downloadPendentesAsPdf()">📄 PDF WhatsApp</button>
@@ -931,7 +892,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
     </div>
 
     <div class="pend-filter-bar">
-      <input id="filtProduto" type="text" placeholder="🔍 Filtrar por produto (descrição)…" oninput="updatePendentesFilter('produto',this.value)">
       <select id="filtUf" onchange="updatePendentesFilter('uf',this.value)"><option value="">UF: Todas</option></select>
       <select id="filtMc" onchange="updatePendentesFilter('mc',this.value)">
         <option value="">MC%: Todos</option>
@@ -1248,7 +1208,7 @@ let _contractListSort = {idx:null,asc:true};
 let _contractListStatus = 'todos';
 let _pendentesData = [];
 let _pendentesSort = {col:'dias',asc:false};
-let _pendentesFilter = {produto:'',uf:'',mc:'',categoria:'',marca:'',tipo:''};
+let _pendentesFilter = {uf:'',mc:'',categoria:'',marca:'',tipo:''};
 let _pendentesSearch = '';
 let _pendentesExecFilter = 'todos';
 let _pendentesVisible = [];
@@ -3750,72 +3710,9 @@ function setStatusAno(ano, el){
 }
 
 function renderStatus(){
-  const ano = _statusAno;
-  const s = D.status[ano];
-  const lbl = LABEL[ano];
-  const total = s.entregue_pvs + s.pendente_pvs;
-  const txE = total>0?(s.entregue_pvs/total*100).toFixed(1):'0.0';
-
-  // TAG recorte
-  document.getElementById('tagStatusDonut').textContent = '📅 '+lbl;
-  document.getElementById('subtitleStatusDonut').textContent = 'PVs únicos com valor > 0 · '+lbl;
-
   killChart('chartStatus');
-  charts.chartStatus = new Chart(document.getElementById('chartStatus'),{
-    type:'doughnut',
-    data:{labels:['Entregue','Pendente'],datasets:[{data:[s.entregue_pvs,s.pendente_pvs],backgroundColor:[C.green,C.red],borderWidth:3,borderColor:'#fff'}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.label+': '+ctx.raw+' PVs ('+pct(total>0?ctx.raw/total*100:0)+')'}}}}
-  });
-  document.getElementById('statusLegend').innerHTML=[
-    {l:'Entregue',v:s.entregue_pvs,f:s.fat_entregue,c:C.green},
-    {l:'Pendente',v:s.pendente_pvs,f:s.fat_pendente,c:C.red}
-  ].map(x=>`<div class="legend-item"><div class="legend-dot" style="background:${x.c}"></div><div class="legend-label">${x.l}</div><div class="legend-val">${x.v} PVs</div><div class="legend-pct">${pct(total>0?x.v/total*100:0)} · ${fmtS(x.f)}</div></div>`).join('');
-
-  // Mensal entregas chart
-  const mentEnt = s.mensal_ent||{};
-  const mKeys = Object.keys(mentEnt).sort();
-  const mLabels = mKeys.map(k=>mentEnt[k].label);
-  const mFat = mKeys.map(k=>mentEnt[k].fat);
-  const mPVs = mKeys.map(k=>mentEnt[k].pvs);
-
-  document.getElementById('tagStatusMensal').textContent = '📅 Entregas por mês · '+lbl;
-  document.getElementById('subtitleStatusMensal').textContent = 'Faturamento entregue por mês · '+lbl;
-
   killChart('chartStatusMensal');
-  charts.chartStatusMensal = new Chart(document.getElementById('chartStatusMensal'),{
-    type:'bar',
-    data:{labels:mLabels,datasets:[
-      {label:'Fat. Entregue',data:mFat.map(v=>v/1000),backgroundColor:C.green+'bb',borderRadius:4,yAxisID:'y'},
-      {label:'PVs Entregues',data:mPVs,type:'line',borderColor:C.gold,backgroundColor:C.gold+'33',pointBackgroundColor:C.gold,tension:.3,yAxisID:'y1'},
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'top',labels:{font:{family:'DM Sans',size:11},boxWidth:10}},
-        tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.dataset.yAxisID==='y'?'R$ '+ctx.raw.toFixed(0)+'k':ctx.raw+' PVs')}}},
-      scales:{
-        y:{grid:{color:'#f0f2f5'},ticks:{callback:v=>'R$'+v+'k',font:{size:10}},position:'left'},
-        y1:{grid:{display:false},ticks:{callback:v=>v+' PVs',font:{size:10}},position:'right'},
-        x:{grid:{display:false},ticks:{font:{size:10}}}
-      }
-    }
-  });
-
-  // Empresas
-  const emp = D.empresas[ano];
-  document.getElementById('tagEmpresas').textContent = '📅 '+lbl;
-  document.getElementById('subtitleEmpresas').textContent = 'Faturamento e MC · '+lbl;
   killChart('chartEmpresas');
-  charts.chartEmpresas = new Chart(document.getElementById('chartEmpresas'),{
-    type:'bar',
-    data:{labels:emp.nomes,datasets:[
-      {label:'Faturamento',data:emp.faturamento,backgroundColor:C.navy+'cc',borderRadius:6},
-      {label:'MC',data:emp.mc,backgroundColor:C.gold+'cc',borderRadius:6},
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'top',labels:{font:{family:'DM Sans',size:11},boxWidth:10}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+fmtS(ctx.raw)}}},
-      scales:{y:{grid:{color:'#f0f2f5'},ticks:{callback:v=>fmtS(v),font:{size:10}}},x:{grid:{display:false}}}
-    }
-  });
 
   // Tabela pendentes
   _pendentesData = enrichPendentesUf([...(D.pendentes_list||[])]);
@@ -3833,10 +3730,10 @@ function sortPendentes(col){
 function filterPendentes(q){_pendentesSearch=q;renderPendentesTable(_pendentesData,true);}
 function updatePendentesFilter(key,value){_pendentesFilter[key]=value;renderPendentesTable(_pendentesData,true);}
 function clearPendentesFilters(){
-  _pendentesFilter={produto:'',uf:'',mc:'',categoria:'',marca:'',tipo:''};
+  _pendentesFilter={uf:'',mc:'',categoria:'',marca:'',tipo:''};
   _pendentesSearch='';
   _pendentesExecFilter='todos';
-  ['filtProduto','filtUf','filtMc','filtCategoria','filtMarca','filtTipo','searchPendentes'].forEach(id=>{
+  ['filtUf','filtMc','filtCategoria','filtMarca','filtTipo','searchPendentes'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   renderPendentesTable(_pendentesData,true);
@@ -3922,8 +3819,17 @@ function setPendentesImageStatus(msg,isError){
 }
 function filterArr(arr,q){
   if(!q) return arr;
-  const ql=q.toLowerCase();
-  return arr.filter(r=>r.cliente.toLowerCase().includes(ql)||String(r.empenho).toLowerCase().includes(ql)||String(r.pv).toLowerCase().includes(ql)||String(r.uasg).toLowerCase().includes(ql)||String(inferPendUf(r)).toLowerCase().includes(ql));
+  const ql=normTxt(q);
+  return arr.filter(r=>{
+    const itemText=(r.itens||[]).map(it=>[
+      it.desc,it.marca,it.categoria,it.tipo,it.chave,it.nfe,it.pregao
+    ].join(' ')).join(' ');
+    const rowText=[
+      r.orgao,r.orgão,r.cliente,r.cliente_principal,r.empenho,r.pv,r.uasg,inferPendUf(r),
+      r.prev_ent,r.status,r.risco,itemText
+    ].join(' ');
+    return normTxt(rowText).includes(ql);
+  });
 }
 function populatePendentesFilters(data){
   const ufs=new Set(),cats=new Set(),marcas=new Set(),tipos=new Set();
@@ -3953,7 +3859,7 @@ function populatePendentesFilters(data){
 }
 function applyItemFilters(pv){
   const f=_pendentesFilter;
-  const hasItemFilter=!!(f.produto||f.categoria||f.marca||f.tipo);
+  const hasItemFilter=!!(f.categoria||f.marca||f.tipo);
   const rowUf=inferPendUf(pv);
   if(f.uf==='__fora_rj'&&(!rowUf||rowUf==='—'||rowUf==='RJ')){
     const compare=summarizeComparedItems([]);
@@ -3967,12 +3873,10 @@ function applyItemFilters(pv){
     const compare=summarizeComparedItems(pv.itens||[]);
     return {itens:pv.itens||[],valor:pv.valor,mc_valor:pv.mc_valor,filtered:!!f.uf,...compare};
   }
-  const q=(f.produto||'').toLowerCase();
   const itens=(pv.itens||[]).filter(it=>
     (!f.categoria||it.categoria===f.categoria)&&
     (!f.marca||it.marca===f.marca)&&
-    (!f.tipo||it.tipo===f.tipo)&&
-    (!q||String(it.desc||'').toLowerCase().includes(q))
+    (!f.tipo||it.tipo===f.tipo)
   );
   const valor=itens.reduce((a,it)=>a+(it.valor||0),0);
   const mc_valor=itens.reduce((a,it)=>a+(it.mc_valor||0),0);
@@ -4025,7 +3929,6 @@ function getPendentesRows(data){
 function getPendentesFilterSummary(rows){
   const parts=[];
   if(_pendentesSearch) parts.push(`Busca: "${_pendentesSearch}"`);
-  if(_pendentesFilter.produto) parts.push(`Produto: ${_pendentesFilter.produto}`);
   if(_pendentesFilter.uf) parts.push(`UF: ${_pendentesFilter.uf==='__fora_rj'?'Fora do RJ':_pendentesFilter.uf}`);
   if(_pendentesFilter.mc==='negativo') parts.push('MC% negativo');
   if(_pendentesFilter.categoria) parts.push(`Categoria: ${_pendentesFilter.categoria}`);
