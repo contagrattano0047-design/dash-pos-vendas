@@ -146,6 +146,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--nav
 .exec-status-card.gold{border-top-color:var(--gold)}.exec-status-card.green{border-top-color:var(--green-light)}.exec-status-card.orange{border-top-color:#d4821a}.exec-status-card.navy{border-top-color:var(--navy)}
 .exec-status-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--gray-500);margin-bottom:6px}
 .exec-status-value{font-family:'DM Serif Display',serif;font-size:22px;line-height:1;color:var(--navy);margin-bottom:4px}
+.exec-status-margin{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 5px;padding:7px 9px;border-radius:10px;background:var(--gray-50);border:1px solid var(--gray-100);font-size:11px;font-weight:800;color:var(--navy)}
+.exec-status-margin .mc-neg{color:var(--red)}.exec-status-margin .mc-pos{color:var(--green-light)}
 .exec-status-meta{font-size:11px;color:var(--gray-500);display:flex;justify-content:space-between;gap:8px;align-items:center}
 .exec-status-note{font-size:11px;color:var(--gray-600);margin-top:8px;line-height:1.35}
 .exec-select{width:100%;min-width:150px;border:1px solid var(--gray-200);border-radius:10px;padding:6px 8px;font:inherit;font-size:11px;font-weight:700;color:var(--navy);background:#fff}
@@ -3781,19 +3783,24 @@ function renderPendentesExecSummary(baseRows,visibleRows){
   const rows=baseRows||[];
   const defs=['todos','pronto_com_acordo','pronto_sem_acordo','negociar'];
   const summary={};
-  defs.forEach(k=>summary[k]={qtd:0,valor:0});
+  defs.forEach(k=>summary[k]={qtd:0,valor:0,mc:0});
   rows.forEach(r=>{
     const st=getPendExecStatus(r);
-    summary.todos.qtd+=1; summary.todos.valor+=num(r._valor||0);
-    summary[st].qtd+=1; summary[st].valor+=num(r._valor||0);
+    const valor=num(r._valor||0);
+    const mc=num(r._mc_valor||0);
+    summary.todos.qtd+=1; summary.todos.valor+=valor; summary.todos.mc+=mc;
+    summary[st].qtd+=1; summary[st].valor+=valor; summary[st].mc+=mc;
   });
   grid.innerHTML=defs.map(k=>{
     const m=getPendExecMeta(k);
     const active=_pendentesExecFilter===k?' active':'';
     const s=summary[k]||{qtd:0,valor:0};
+    const mcPct=s.valor>0?(s.mc/s.valor*100):0;
+    const mcCls=s.mc<0?'mc-neg':'mc-pos';
     return `<button class="exec-status-card ${m.color}${active}" type="button" onclick="setPendentesExecFilter('${k}')">
       <div class="exec-status-label">${m.label}</div>
       <div class="exec-status-value">${fmtS(s.valor)}</div>
+      <div class="exec-status-margin"><span>MC ${fmtS(s.mc)}</span><span class="${mcCls}">${pct(mcPct)}</span></div>
       <div class="exec-status-meta"><span>${s.qtd} pedido${s.qtd!==1?'s':''}</span><span>${rows.length?pct(s.qtd/rows.length*100):'0,0%'}</span></div>
       <div class="exec-status-note">${m.note}</div>
     </button>`;
