@@ -3314,11 +3314,18 @@ function isIncompleteSimNumber(value){
 function applySimScenarioFieldValue(id,key,value,isPct){
   const scenario=getSimScenario(id);
   if(!scenario) return;
+  const prevQtdNota=Math.max(0,num(scenario.inputs.qtd_nota!==undefined?scenario.inputs.qtd_nota:scenario.inputs.qtd));
+  const prevQtdCompra=Math.max(0,num(scenario.inputs.qtd_compra!==undefined?scenario.inputs.qtd_compra:prevQtdNota));
+  const qtdCompraLinked=Math.abs(prevQtdCompra-prevQtdNota)<0.0001;
   scenario.inputs[key]=isPct?parseSimInputNumber(value)/100:parseSimInputNumber(value);
   const fixedTotal=num(scenario.inputs.fixed_total||_simModalState.baseInputs?.fixed_total||0);
   if(key==='qtd_nota'){
     const qtdNota=Math.max(0,num(scenario.inputs.qtd_nota));
     scenario.inputs.qtd=qtdNota;
+    if(qtdCompraLinked){
+      scenario.inputs.qtd_compra=qtdNota;
+      if(scenario.raw_inputs) delete scenario.raw_inputs.qtd_compra;
+    }
     if(fixedTotal>0&&qtdNota>0){
       scenario.inputs.preco_venda_un=roundN(fixedTotal/qtdNota,4);
       if(scenario.raw_inputs) delete scenario.raw_inputs.preco_venda_un;
@@ -3329,9 +3336,11 @@ function applySimScenarioFieldValue(id,key,value,isPct){
     if(fixedTotal>0&&precoVendaUn>0){
       scenario.inputs.qtd_nota=roundN(fixedTotal/precoVendaUn,4);
       scenario.inputs.qtd=scenario.inputs.qtd_nota;
+      if(qtdCompraLinked) scenario.inputs.qtd_compra=scenario.inputs.qtd_nota;
       if(scenario.raw_inputs){
         delete scenario.raw_inputs.qtd_nota;
         delete scenario.raw_inputs.qtd;
+        if(qtdCompraLinked) delete scenario.raw_inputs.qtd_compra;
       }
     }
   }
